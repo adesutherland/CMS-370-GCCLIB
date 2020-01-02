@@ -1,0 +1,57 @@
+***********************************************************************
+* PDPPRLG is the standard GCC entry prolog macro.                     *
+*                                                                     *
+* Syntax is:                                                          *
+*                                                                     *
+* name  PDPPRLG CINDEX=index,FRAME=frame,BASER=base,ENTRY=entry       *
+*                                                                     *
+* where:                                                              *
+*    name     is the entry name of the routine, if the ENTRY          *
+*             parameter is specified.                                 *
+*                                                                     *
+*    BASER    specifies the register to be used as a base register.   *
+*                                                                     *
+*    CINDEX   is ignored.                                             *
+*                                                                     *
+*    ENTRY    is YES or NO.  If YES, 'name' is used as the entry      *
+*             point for the routine.                                  *
+*                                                                     *
+*    FRAME    specifies the number of bytes to be allocated on the    *
+*             GCC runtime stack for the local variables of the        *
+*             routine.                                                *
+*                                                                     *
+* I would really like to create a macro to avoid the hard-coded       *
+* offsets.  Until then, if any changes are made to CMSCRAB MACRO, the *
+* numbers below must be changed as well!!                             *
+*                                                                     *
+* Robert O'Hara, Redmond Washington, April 2009.                      *
+*                                                                     *
+* Based on code written by Chris Langford and Dave Jones.             *
+* Released to the public domain.                                      *
+***********************************************************************
+         MACRO
+&N       PDPPRLG &CINDEX=,&FRAME=,&BASER=,&ENTRY=
+         AIF     ('&ENTRY' EQ 'NO').NENT
+         ENTRY   &N
+.NENT    ANOP
+&N       DS    0H
+         USING *,&BASER       establish addressability
+         STM   14,12,12(13)   save the caller's registers
+         LR    &BASER,15      copy the base register from R15
+         L     15,76(13)      get next available byte in GCC stack
+         L     14,72(13)      get address of the CRAB
+         ST    13,4(15)       chain backwards to caller's save area
+         ST    15,8(13)       chain forwards to our save area
+         LR    13,15          R13 now points to our save area
+*** Debugging!!!!!!!
+*        CLM   14,8,0(13)
+*        BZ    *+14
+*        L     15,=V(@@DEBUG)
+*        BALR  14,15
+*        L     14,0(13)       get address of the CRAB
+*        L     15,76(13)      get next available byte in GCC stack
+*** Debugging!!!!!!!
+         A     15,=F'&FRAME'  calculate end of our stack usage
+         ST    15,76(13)      save as next available byte in GCC stack
+         ST    14,72(13)      save address of CRAB
+         MEND

@@ -1,0 +1,63 @@
+***********************************************************************
+* The CMSCRAB (C Runtime Anchor Block) provides memory for the local  *
+* variables of the user program.                                      *
+*                                                                     *
+* Robert O'Hara, Redmond Washington, April 2009.                      *
+*                                                                     *
+* Based on code written by Paul Edwards and modified by Dave Wade.    *
+* Released to the public domain.                                      *
+*                                                                     *
+* Notes:                                                              *
+*                                                                     *
+* 1.  The structure defined here is used in the PDPPRLG macro, so     *
+*     don't make changes here without corresponding changes there.    *
+*                                                                     *
+* 2.  The offset of GCCCRAB is hard-coded in CMSSTDIO.C.  So if this  *
+*     changes, that code must also be changed.                        *
+*                                                                     *
+* 4.  CONBUFIN *must* be directly after CONIFILE.                     *
+***********************************************************************
+         MACRO
+         CMSCRAB
+         SPACE
+* ---------------------------------------------------------------------
+* This first section describes the save area defined by each routine in
+* the runtime library.  The PDPPRLG macro uses the offsets, and the GCC
+* compiler knows that the local variables start at offset 88.
+* ---------------------------------------------------------------------
+CMSCRAB  DSECT                the GCC C Runtime Anchor Block
+SAVEAREA DS    18F            +0  register save area
+GCCCRAB  DS    F              +72 address of GCC C Runtime Anchor Block
+STACKNXT DS    F              +76 next available byte on the stack
+NUMCONV  DS    F              +80 numeric conversion buffer
+FUNCRSLT DS    F              +84 function result buffer
+         SPACE
+* ---------------------------------------------------------------------
+* We predefine FILE structures for console input and output so that no
+* memory allocation is required later on.  These are global static
+* variables to the rest of the runtime library.
+* ---------------------------------------------------------------------
+CONFILOU DS    F              +88 pointer to console output FILE struct
+CONFILIN DS    F              +92 pointer to console input FILE struct
+CONOFILE DS    23F            FILE structure for console output
+CONIFILE DS    23F            FILE structure for console input
+CONBUFIN DS    CL131          console input buf (must follow CONIFILE)
+         SPACE
+* ---------------------------------------------------------------------
+* Here are declared the local variables of CMSENTRY.
+* ---------------------------------------------------------------------
+PARMLIST DS    0F             parameter list to main program
+ARGC     DS    F              count of arguments
+ARGV     DS    F              pointer to argument pointer array
+ARGSTR   DS    F              pointer to CMS eplist argument string
+ARGVLIST DS    32F            array of pointers for main program args
+ARGVARGS DS    CL257          arguments to main program
+ARGSTRNG DS    CL257          copy of CMS argument string
+* ---------------------------------------------------------------------
+* Here begins the GCC stack:  local variables of the GCC routines.
+* ---------------------------------------------------------------------
+MAINSTK  DS    32000F
+         SPACE
+MAINLEN  EQU   *-MAINSTK      length of the stack
+STACKLEN EQU   *-CMSCRAB      length of the CRAB
+         MEND

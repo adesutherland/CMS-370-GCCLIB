@@ -1,0 +1,28 @@
+**********************************************************************
+*                                                                    *
+*  This macro was written by Paul Edwards                            *
+*  Released to the public domain                                     *
+*                                                                    *
+**********************************************************************
+**********************************************************************
+*                                                                    *
+*  PDPTOP - standard code for the start of every assembler file.     *
+*                                                                    *
+*  (version customized for S/370 - see PDPTOP/PDPORIG for original)  *
+*                                                                    *
+**********************************************************************
+*
+* Is the GCC or C/370 calling convention being used?
+*
+         GBLC &COMP               Declare compiler switch
+&COMP    SETC 'GCC'               Indicate that this is for GCC
+*
+* What system are the compiles being done for?
+*
+         GBLC &SYS                Declare variable for system
+&SYS     SETC 'S370'              Define either S370, S380 or S390
+*
+* Which OS are we targetting?
+*
+         GBLC &OS                 Declare compiler switch
+&OS      SETC 'CMS'               Indicate that this is for CMS

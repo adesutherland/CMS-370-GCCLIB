@@ -1,0 +1,22 @@
+***********************************************************************
+* PDPEPIL is the standard GCC entry epilog macro.                     *
+*                                                                     *
+* Syntax is:                                                          *
+*                                                                     *
+* name  PDPEPIL                                                       *
+*                                                                     *
+* where:                                                              *
+*    name     is a label for the macro.                               *
+*                                                                     *
+* Robert O'Hara, Redmond Washington, February 2009.                   *
+*                                                                     *
+* Based on code written by Chris Langford and Dave Jones.             *
+* Released to the public domain.                                      *
+***********************************************************************
+         MACRO
+&N       PDPEPIL
+&N       L     13,4(13)       get the address of our caller's save area
+         L     14,12(13)      restore R14, our return address
+         LM    0,12,20(13)    restore our caller's registers
+         BR    14             return to our caller
+         MEND

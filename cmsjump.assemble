@@ -1,0 +1,73 @@
+***********************************************************************
+* CMSJUMP contains C code for the routines in SETJMP.H.               *
+*    LONGJMP  Start execution at a certain point in the program.      *
+*    SETJMP   Set execution to start at a certain point in the pgm.   *
+*                                                                     *
+* This version will run in 24-bit mode only.  Support for 31-bit      *
+* addressing is a future objective.                                   *
+*                                                                     *
+* This code is not yet reentrant!!!!                                  *
+*                                                                     *
+* Robert O'Hara, Redmond Washington, March 2009.                      *
+* Released to the public domain.                                      *
+***********************************************************************
+CMSJUMP  CSECT
+         DS    0H
+         EJECT
+         ENTRY LONGJMP
+***********************************************************************
+* LONGJMP   Entry Point                                               *
+* Start execution at the point of the last call to setjmp(), which    *
+* stored the needed program state information in 'envbuf'.            *
+*                                                                     *
+* Syntax is:                                                          *
+*    void LONGJMP(jmpbuf envbuf, int status)                          *
+* where:                                                              *
+*    envbuf    stores program state information.  Use setjmp() to set *
+*              this variable, and pass the saved value to longjmp().  *
+*    status    is the value that setjmp() will return.  If it is 0,   *
+*              this routine will set it to 1.                         *
+* returns:                                                            *
+*    nothing.                                                         *
+***********************************************************************
+LONGJMP  DS    0H
+         LR    R12,R15
+         USING LONGJMP,R12    establish addressability
+         L     R2,0(R1)       addr of envir variable
+         L     R15,4(R1)      set return code from status variable
+         LTR   R15,R15        valid status variable?
+         BNZ   JUMP
+         LA    R15,1          no, set it to 1
+JUMP     DS    0H
+         LM    R0,R14,0(R2)   restore registers from envir variable
+         BR    R14
+         LTORG
+         EJECT
+         ENTRY SETJMP
+***********************************************************************
+* SETJMP    Entry Point                                               *
+* Set execution to start at a certain point in the program.  Program  *
+* state information is saved in 'envbuf' for use by a later call to   *
+* longjmp().  When you first call setjmp(), its return value is zero. *
+* Later, when you call longjmp(), the second argument of longjmp() is *
+* what the return value of setjmp() will be.                          *
+*                                                                     *
+* Syntax is:                                                          *
+*    int SETJMP(jmp_buf envbuf, 0)                                    *
+* where:                                                              *
+*    envbuf    stores program state information.  Use setjmp() to set *
+*              this variable, and pass the saved value to longjmp().  *
+* returns:                                                            *
+*    (int)     0 on a call to setjmp(), 'status' on a call from       *
+*              longjmp().                                             *
+***********************************************************************
+SETJMP   DS    0H
+         ST    R14,12(R13)    save our return address
+         L     R15,0(R1)      get the envir variable
+         STM   R0,R14,0(R15)  save the registers in the envir variable
+         SR    R15,R15        signal we have set the envir variable
+         L     R14,12(R13)    restore our return address
+         BR    R14            return to our caller
+         LTORG
+         REGEQU
+         END

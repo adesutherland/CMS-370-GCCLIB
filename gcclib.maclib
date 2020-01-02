@@ -1,0 +1,421 @@
+DMSLIB.v>***********************************************************************
+* The CMSCRAB (C Runtime Anchor Block) provides memory for the local  *
+* variables of the user program.                                      *
+*                                                                     *
+* Robert O'Hara, Redmond Washington, April 2009.                      *
+*                                                                     *
+* Based on code written by Paul Edwards and modified by Dave Wade.    *
+* Released to the public domain.                                      *
+*                                                                     *
+* Notes:                                                              *
+*                                                                     *
+* 1.  The structure defined here is used in the PDPPRLG macro, so     *
+*     don't make changes here without corresponding changes there.    *
+*                                                                     *
+* 2.  The offset of GCCCRAB is hard-coded in CMSSTDIO.C.  So if this  *
+*     changes, that code must also be changed.                        *
+*                                                                     *
+* 4.  CONBUFIN *must* be directly after CONIFILE.                     *
+***********************************************************************
+         MACRO
+         CMSCRAB
+         SPACE
+* ---------------------------------------------------------------------
+* This first section describes the save area defined by each routine in
+* the runtime library.  The PDPPRLG macro uses the offsets, and the GCC
+* compiler knows that the local variables start at offset 88.
+* ---------------------------------------------------------------------
+CMSCRAB  DSECT                the GCC C Runtime Anchor Block
+SAVEAREA DS    18F            +0  register save area
+GCCCRAB  DS    F              +72 address of GCC C Runtime Anchor Block
+STACKNXT DS    F              +76 next available byte on the stack
+NUMCONV  DS    F              +80 numeric conversion buffer
+FUNCRSLT DS    F              +84 function result buffer
+         SPACE
+* ---------------------------------------------------------------------
+* We predefine FILE structures for console input and output so that no
+* memory allocation is required later on.  These are global static
+* variables to the rest of the runtime library.
+* ---------------------------------------------------------------------
+CONFILOU DS    F              +88 pointer to console output FILE struct
+CONFILIN DS    F              +92 pointer to console input FILE struct
+CONOFILE DS    23F            FILE structure for console output
+CONIFILE DS    23F            FILE structure for console input
+CONBUFIN DS    CL131          console input buf (must follow CONIFILE)
+         SPACE
+* ---------------------------------------------------------------------
+* Here are declared the local variables of CMSENTRY.
+* ---------------------------------------------------------------------
+PARMLIST DS    0F             parameter list to main program
+ARGC     DS    F              count of arguments
+ARGV     DS    F              pointer to argument pointer array
+ARGSTR   DS    F              pointer to CMS eplist argument string
+ARGVLIST DS    32F            array of pointers for main program args
+ARGVARGS DS    CL257          arguments to main program
+ARGSTRNG DS    CL257          copy of CMS argument string
+* ---------------------------------------------------------------------
+* Here begins the GCC stack:  local variables of the GCC routines.
+* ---------------------------------------------------------------------
+MAINSTK  DS    32000F
+         SPACE
+MAINLEN  EQU   *-MAINSTK      length of the stack
+STACKLEN EQU   *-CMSCRAB      length of the CRAB
+         MEND
+/../
+***********************************************************************
+* PDPEPIL is the standard GCC entry epilog macro.                     *
+*                                                                     *
+* Syntax is:                                                          *
+*                                                                     *
+* name  PDPEPIL                                                       *
+*                                                                     *
+* where:                                                              *
+*    name     is a label for the macro.                               *
+*                                                                     *
+* Robert O'Hara, Redmond Washington, February 2009.                   *
+*                                                                     *
+* Based on code written by Chris Langford and Dave Jones.             *
+* Released to the public domain.                                      *
+***********************************************************************
+         MACRO
+&N       PDPEPIL
+&N       L     13,4(13)       get the address of our caller's save area
+         L     14,12(13)      restore R14, our return address
+         LM    0,12,20(13)    restore our caller's registers
+         BR    14             return to our caller
+         MEND
+/../
+***********************************************************************
+* PDPPRLG is the standard GCC entry prolog macro.                     *
+*                                                                     *
+* Syntax is:                                                          *
+*                                                                     *
+* name  PDPPRLG CINDEX=index,FRAME=frame,BASER=base,ENTRY=entry       *
+*                                                                     *
+* where:                                                              *
+*    name     is the entry name of the routine, if the ENTRY          *
+*             parameter is specified.                                 *
+*                                                                     *
+*    BASER    specifies the register to be used as a base register.   *
+*                                                                     *
+*    CINDEX   is ignored.                                             *
+*                                                                     *
+*    ENTRY    is YES or NO.  If YES, 'name' is used as the entry      *
+*             point for the routine.                                  *
+*                                                                     *
+*    FRAME    specifies the number of bytes to be allocated on the    *
+*             GCC runtime stack for the local variables of the        *
+*             routine.                                                *
+*                                                                     *
+* I would really like to create a macro to avoid the hard-coded       *
+* offsets.  Until then, if any changes are made to CMSCRAB MACRO, the *
+* numbers below must be changed as well!!                             *
+*                                                                     *
+* Robert O'Hara, Redmond Washington, April 2009.                      *
+*                                                                     *
+* Based on code written by Chris Langford and Dave Jones.             *
+* Released to the public domain.                                      *
+***********************************************************************
+         MACRO
+&N       PDPPRLG &CINDEX=,&FRAME=,&BASER=,&ENTRY=
+         AIF     ('&ENTRY' EQ 'NO').NENT
+         ENTRY   &N
+.NENT    ANOP
+&N       DS    0H
+         USING *,&BASER       establish addressability
+         STM   14,12,12(13)   save the caller's registers
+         LR    &BASER,15      copy the base register from R15
+         L     15,76(13)      get next available byte in GCC stack
+         L     14,72(13)      get address of the CRAB
+         ST    13,4(15)       chain backwards to caller's save area
+         ST    15,8(13)       chain forwards to our save area
+         LR    13,15          R13 now points to our save area
+*** Debugging!!!!!!!
+*        CLM   14,8,0(13)
+*        BZ    *+14
+*        L     15,=V(@@DEBUG)
+*        BALR  14,15
+*        L     14,0(13)       get address of the CRAB
+*        L     15,76(13)      get next available byte in GCC stack
+*** Debugging!!!!!!!
+         A     15,=F'&FRAME'  calculate end of our stack usage
+         ST    15,76(13)      save as next available byte in GCC stack
+         ST    14,72(13)      save address of CRAB
+         MEND
+/../
+**********************************************************************
+*                                                                    *
+*  This macro was written by Paul Edwards                            *
+*  Released to the public domain                                     *
+*                                                                    *
+**********************************************************************
+**********************************************************************
+*                                                                    *
+*  PDPTOP - standard code for the start of every assembler file.     *
+*                                                                    *
+*  (version customized for S/370 - see PDPTOP/PDPORIG for original)  *
+*                                                                    *
+**********************************************************************
+*
+* Is the GCC or C/370 calling convention being used?
+*
+         GBLC &COMP               Declare compiler switch
+&COMP    SETC 'GCC'               Indicate that this is for GCC
+*
+* What system are the compiles being done for?
+*
+         GBLC &SYS                Declare variable for system
+&SYS     SETC 'S370'              Define either S370, S380 or S390
+*
+* Which OS are we targetting?
+*
+         GBLC &OS                 Declare compiler switch
+&OS      SETC 'CMS'               Indicate that this is for CMS
+/../
+***********************************************************************
+* VTENTRY generates a vector table entry for the memory-resident GCC  *
+* runtime routines.  It must be called from within the VTABLE macro.  *
+*                                                                     *
+* Robert O'Hara, Redmond Washington, May 2009.                        *
+***********************************************************************
+         MACRO
+         VTENTRY &NAME,&VNAME,&CODE
+         GBLA    &OFFSET
+         AIF   ('&CODE' NE '').A1
+&VNAME   EQU   &OFFSET
+&OFFSET  SETA  &OFFSET+6
+         AGO   .A2
+.A1      ANOP
+*
+&NAME    DS    0H
+         USING *,R15
+         L     R15,=V(&NAME)
+         BR    R15
+.A2      ANOP
+         MEND
+/../
+***********************************************************************
+* CMSVTAB generates the complete vector table for the memory-resident *
+* GCC runtime routines.                                               *
+*                                                                     *
+* Robert O'Hara, Redmond Washington, May 2009.                        *
+***********************************************************************
+         MACRO
+         VTABLE  &CODE
+         GBLA    &OFFSET
+&OFFSET  SETA    0
+***********************************************************************
+* Entry points in CMSSYS ASSEMBLE / CMSSYS H                          *
+***********************************************************************
+         VTENTRY @@DEBUG,VTDEBUG,&CODE
+         VTENTRY @@ARGSTR,VTARGSTR,&CODE
+         VTENTRY @@ATTN,VTATTN,&CODE
+         VTENTRY @@CMSCMD,VTCMSCMD,&CODE
+         VTENTRY @@DMSFRE,VTDMSFRE,&CODE
+         VTENTRY @@DMSFRT,VTDMSFRT,&CODE
+         VTENTRY @@FSCLOS,VTFSCLOS,&CODE
+         VTENTRY @@FSERAS,VTFSERAS,&CODE
+         VTENTRY @@FSOPEN,VTFSOPEN,&CODE
+         VTENTRY @@FSREAD,VTFSREAD,&CODE
+         VTENTRY @@FSSTAT,VTFSSTAT,&CODE
+         VTENTRY @@FSWRIT,VTFSWRIT,&CODE
+         VTENTRY @@GETCLK,VTGETCLK,&CODE
+         VTENTRY @@PRINTL,VTPRINTL,&CODE
+         VTENTRY @@PUNCHC,VTPUNCHC,&CODE
+         VTENTRY @@RDCARD,VTRDCARD,&CODE
+*        VTENTRY @@RDTAPE,VTRDTAPE,&CODE
+         VTENTRY @@RDTERM,VTRDTERM,&CODE
+         VTENTRY @@RENAME,VTRENME,&CODE
+         VTENTRY @@STACKN,VTSTACKN,&CODE
+*        VTENTRY @@TAPCTL,VTTAPCTL,&CODE
+*        VTENTRY @@WAITD,VTWAITD,&CODE
+         VTENTRY @@WAITT,VTWAITT,&CODE
+*        VTENTRY @@WRTAPE,VTWRTAPE,&CODE
+         VTENTRY @@WRTERM,VTWRTERM,&CODE
+***********************************************************************
+* Entry points in CMSJUMP ASSEMBLE / SETJMP H                         *
+* Note: these are not included here as they fiddle with the call      *
+* stack, so it is easier just to link them directly with the user     *
+* program.                                                            *
+***********************************************************************
+*LONGJMP
+*SETJMP
+***********************************************************************
+* Entry points in CMSSTDIO C / STDIO H                                *
+***********************************************************************
+         VTENTRY CLEARERR,VTCLEARE,&CODE
+         VTENTRY FCLOSE,VTFCLOSE,&CODE
+         VTENTRY FEOF,VTFEOF,&CODE
+         VTENTRY FERROR,VTFERROR,&CODE
+         VTENTRY FFLUSH,VTFFLUSH,&CODE
+         VTENTRY FGETC,VTFGETC,&CODE
+*        VTENTRY FGETPOS,VTFGETPO,&CODE
+         VTENTRY FGETS,VTFGETS,&CODE
+         VTENTRY FOPEN,VTFOPEN,&CODE
+         VTENTRY FPRINTF,VTFPRINT,&CODE
+         VTENTRY FPUTC,VTFPUTC,&CODE
+         VTENTRY FPUTS,VTFPUTS,&CODE
+         VTENTRY XREAD,VTXREAD,&CODE
+         VTENTRY FREOPEN,VTFREOPE,&CODE
+         VTENTRY FSCANF,VTFSCANF,&CODE
+*        VTENTRY FSEEK,VTFSEEK,&CODE
+*        VTENTRY FSETPOS,VTFSETPO,&CODE
+         VTENTRY FTELL,VTFTELL,&CODE
+         VTENTRY FWRITE,VTFWRITE,&CODE
+         VTENTRY GETC,VTGETC,&CODE
+         VTENTRY GETCHAR,VTGETCHA,&CODE
+         VTENTRY GETS,VTGETS,&CODE
+*        VTENTRY PERROR,VTPERROR,&CODE
+         VTENTRY PRINTF,VTPRINTF,&CODE
+         VTENTRY PUTC,VTPUTC,&CODE
+         VTENTRY PUTCHAR,VTPUTCHA,&CODE
+         VTENTRY PUTS,VTPUTS,&CODE
+         VTENTRY REMOVE,VTREMOVE,&CODE
+         VTENTRY RENAME,VTRENAME,&CODE
+*        VTENTRY REWIND,VTREWIND,&CODE
+         VTENTRY SCANF,VTSCANF,&CODE
+         VTENTRY SETBUF,VTSETBUF,&CODE
+         VTENTRY SETVBUF,VTSETVBU,&CODE
+*        VTENTRY SNPRINTF,VTSNPRIN,&CODE
+         VTENTRY SPRINTF,VTSPRINT,&CODE
+         VTENTRY SSCANF,VTSSCANF,&CODE
+         VTENTRY TMPFILE,VTTMPFIL,&CODE
+         VTENTRY TMPNAM,VTTMPNAM,&CODE
+         VTENTRY UNGETC,VTUNGETC,&CODE
+         VTENTRY VFPRINTF,VTVFPRIN,&CODE
+         VTENTRY VSPRINTF,VTVSPRIN,&CODE
+***********************************************************************
+* Entry points in CMSSTDLB C / STDLIB H                               *
+***********************************************************************
+*        VTENTRY ABORT,VTABORT,&CODE
+         VTENTRY ABS,VTABS,&CODE
+*        VTENTRY ATEXIT,VTATEXIT,&CODE
+         VTENTRY ATOF,VTATOF,&CODE
+         VTENTRY ATOI,VTATOI,&CODE
+         VTENTRY ATOL,VTATOL,&CODE
+         VTENTRY BSEARCH,VTBSEARC,&CODE
+         VTENTRY CALLOC,VTCALLOC,&CODE
+         VTENTRY DIV,VTDIV,&CODE
+*        VTENTRY EXIT,VTEXIT,&CODE
+         VTENTRY GETENV,VTGETENV,&CODE
+         VTENTRY LABS,VTLABS,&CODE
+         VTENTRY LDIV,VTLDIV,&CODE
+         VTENTRY MBLEN,VTMBLEN,&CODE
+         VTENTRY MBSTOWCS,VTMBSTOW,&CODE
+         VTENTRY MBTOWC,VTMBTOWC,&CODE
+         VTENTRY QSORT,VTQSORT,&CODE
+         VTENTRY RAND,VTRAND,&CODE
+         VTENTRY REALLOC,VTREALLO,&CODE
+         VTENTRY SRAND,VTSRAND,&CODE
+         VTENTRY STRTOD,VTSTRTOD,&CODE
+         VTENTRY STRTOL,VTSTRTOL,&CODE
+         VTENTRY STRTOUL,VTSTRTOU,&CODE
+         VTENTRY SYSTEM,VTSYSTEM,&CODE
+         VTENTRY WCSTOMBS,VTWCSTOM,&CODE
+         VTENTRY WCTOMB,VTWCTOMB,&CODE
+***********************************************************************
+* Entry points in ASSERT C / ASSERT H                                 *
+* Note: these are not included here as they fiddle with the call      *
+* stack, so it is easier just to link them directly with the user     *
+* program.                                                            *
+***********************************************************************
+*ASSERT
+***********************************************************************
+* Entry points in CTYPE C / CTYPE H                                   *
+***********************************************************************
+         VTENTRY ISALNUM,VTISALNU,&CODE
+         VTENTRY ISALPHA,VTISALPH,&CODE
+         VTENTRY ISCNTRL,VTISCNTR,&CODE
+         VTENTRY ISDIGIT,VTISDIGI,&CODE
+         VTENTRY ISGRAPH,VTISGRAP,&CODE
+         VTENTRY ISLOWER,VTISLOWE,&CODE
+         VTENTRY ISPRINT,VTISPRIN,&CODE
+         VTENTRY ISPUNCT,VTISPUNC,&CODE
+         VTENTRY ISSPACE,VTISSPAC,&CODE
+         VTENTRY ISUPPER,VTISUPPE,&CODE
+         VTENTRY ISXDIGIT,VTISXDIG,&CODE
+         VTENTRY TOLOWER,VTTOLOWE,&CODE
+         VTENTRY TOUPPER,VTTOUPPE,&CODE
+***********************************************************************
+* Entry points in ERRNO C / ERRNO H                                   *
+***********************************************************************
+         VTENTRY ERRNO,VTERRNO,&CODE
+***********************************************************************
+* Entry points in LOCALE C / LOCALE H                                 *
+***********************************************************************
+         VTENTRY SETLOCAL,VTSETLOC,&CODE
+***********************************************************************
+* Entry points in MATH C / MATH H                                     *
+***********************************************************************
+         VTENTRY ACOS,VTACOS,&CODE
+         VTENTRY ASIN,VTASIN,&CODE
+         VTENTRY ATAN,VTATAN,&CODE
+         VTENTRY ATAN2,VTATAN2,&CODE
+         VTENTRY CEIL,VTCEIL,&CODE
+         VTENTRY COS,VTCOS,&CODE
+         VTENTRY COSH,VTCOSH,&CODE
+         VTENTRY EXP,VTEXP,&CODE
+         VTENTRY FABS,VTFABS,&CODE
+         VTENTRY FLOOR,VTFLOOR,&CODE
+         VTENTRY FMOD,VTFMOD,&CODE
+         VTENTRY FREXP,VTFREXP,&CODE
+         VTENTRY LDEXP,VTLDEXP,&CODE
+         VTENTRY LOG,VTLOG,&CODE
+         VTENTRY LOG10,VTLOG10,&CODE
+         VTENTRY MODF,VTMODF,&CODE
+         VTENTRY POW,VTPOW,&CODE
+         VTENTRY SIN,VTSIN,&CODE
+         VTENTRY SINH,VTSINH,&CODE
+         VTENTRY SQRT,VTSQRT,&CODE
+         VTENTRY TAN,VTTAN,&CODE
+         VTENTRY TANH,VTTANH,&CODE
+***********************************************************************
+* Entry points in SIGNAL C / SIGNAL H                                 *
+* Note: these are not included here as they fiddle with the call      *
+* stack, so it is easier just to link them directly with the user     *
+* program.                                                            *
+***********************************************************************
+*        VTENTRY RAISE,VTRAISE,&CODE
+*        VTENTRY SIGNAL,VTSIGNAL,&CODE
+***********************************************************************
+* Entry points in STRING C / STRING H                                 *
+***********************************************************************
+         VTENTRY MEMCHR,VTMEMCHR,&CODE
+         VTENTRY MEMCMP,VTMEMCMP,&CODE
+         VTENTRY MEMCPY,VTMEMCPY,&CODE
+         VTENTRY MEMMOVE,VTMEMMOV,&CODE
+         VTENTRY MEMSET,VTMEMSET,&CODE
+         VTENTRY STRCAT,VTSTRCAT,&CODE
+         VTENTRY STRCHR,VTSTRCHR,&CODE
+         VTENTRY STRCMP,VTSTRCMP,&CODE
+         VTENTRY STRCOLL,VTSTRCOL,&CODE
+         VTENTRY STRCPY,VTSTRCPY,&CODE
+         VTENTRY STRCSPN,VTSTRCSP,&CODE
+         VTENTRY STRERROR,VTSTRERR,&CODE
+         VTENTRY STRLEN,VTSTRLEN,&CODE
+         VTENTRY STRNCAT,VTSTRNCA,&CODE
+         VTENTRY STRNCMP,VTSTRNCM,&CODE
+         VTENTRY STRNCPY,VTSTRNCP,&CODE
+         VTENTRY STRPBRK,VTSTRPBR,&CODE
+         VTENTRY STRRCHR,VTSTRRCH,&CODE
+         VTENTRY STRSPN,VTSTRSPN,&CODE
+         VTENTRY STRSTR,VTSTRSTR,&CODE
+         VTENTRY STRTOK,VTSTRTOK,&CODE
+         VTENTRY STRXFRM,VTSTRXFR,&CODE
+***********************************************************************
+* Entry points in TIME C / TIME H                                     *
+***********************************************************************
+         VTENTRY ASCTIME,VTASCTIM,&CODE
+         VTENTRY CLOCK,VTCLOCK,&CODE
+         VTENTRY CTIME,VTCTIME,&CODE
+         VTENTRY DIFFTIME,VTDIFFTI,&CODE
+         VTENTRY GMTIME,VTGMTIME,&CODE
+         VTENTRY LOCALTIM,VTLOCALT,&CODE
+         VTENTRY MKTIME,VTMKTIME,&CODE
+         VTENTRY STRFTIME,VTSTRFTM,&CODE
+         VTENTRY TIME,VTTIME,&CODE
+*
+         MEND
+/../
+CMSCRAB +gcclib.parm
+-o dd:out - -w -S -DTARGET_CMS -D__CMS__
