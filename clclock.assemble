@@ -13,14 +13,14 @@
 *                                                                     *
 * Robert O'Hara, Redmond Washington, April 2009.                      *
 ***********************************************************************
-         USING NUCON,0
+         EXTRN GCCANCHR
 CLOCK    CSECT
          USING CLOCK,R15
-         L     R15,DOSTRANS   this seems to be an unused location
+         L     R15,=V(GCCANCHR) get anchor ptr
+         L     R15,0(R15)       get the anchor
          LA    R15,VTCLOCK(R15)
          BR    R15            go there
          LTORG
          VTABLE
          REGEQU
-         NUCON
          END

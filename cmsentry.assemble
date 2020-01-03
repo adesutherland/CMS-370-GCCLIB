@@ -50,6 +50,14 @@ CMSENTRY CSECT
          LR    R4,R1          save R1 so we can get the PLIST
          LR    R5,R0          save R0 so we can get the EPLIST
 * --------------------------------------------------------------------
+* HLA: GET THE ANCHOR TO THE RESIDENT GCCLIB
+* --------------------------------------------------------------------
+         LA    R1,GGCCCMD     INVOKE: RESLIB LIST GCCLIB ( NOTYPE
+         SVC   202            WHICH WILL PUT THE ADDRESS INTO R1
+         DC    AL4(*+4)
+         N     R1,=X'00FFFFFF' remove spurious data in high byte
+         ST    R1,GCCANCHR    store the resident GCCLIB base pointer
+* --------------------------------------------------------------------
 * Set up the GCC stack.
 * --------------------------------------------------------------------
          L     R0,=A(STACKLEN)
@@ -279,6 +287,15 @@ NOMEM    DS    0H             memory allocation failed
          LA    R15,57         perhaps should issue an error message
          B     RETURN
          LTORG
+GGCCCMD  DC CL8'RESLIB  '     HLA: PLIST TO GET THE GCCLIB-ANCHOR
+         DC CL8'LIST    '
+         DC CL8'GCCLIB  '
+         DC CL8'(       '
+         DC CL8'NOTYPE  '
+         DC 8X'FFFFFFFFFFFFFFFF'
+GCCANCHR DC F'0'              HLA: ANCHOR FOR RESIDENT GCCLIB
+         ENTRY GCCANCHR       HLA: MAKE THIS ANCHOR PUBLIC
+*
          EJECT
          ENTRY @@EXIT
 ***********************************************************************
