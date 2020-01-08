@@ -9,6 +9,7 @@
 *    @@FSCLOS Close an open file and save it to disk.                 *
 *    @@FSERAS Delete a CMS file.                                      *
 *    @@FSOPEN Open a CMS file for reading or writing.                 *
+*    @@FSPOIN Set the next item in a file to be read or written.      *
 *    @@FSREAD Read a record from an open file.                        *
 *    @@FSSTAT Determine whether a file exists.                        *
 *    @@FSWRIT Write a record to an open file.                         *
@@ -30,9 +31,12 @@
 * This version will run in 24-bit mode only.  Support for 31-bit      *
 * addressing is a future objective.                                   *
 *                                                                     *
-* This code is not yet reentrant!!!!                                  *
+* TODO:  Detect if we are in resident memory, and if so, BALR to the  *
+*        system functions instead of using SVC 202...                 *
 *                                                                     *
-* Robert O'Hara, Redmond Washington, May 2009.                        *
+* This code is not yet reentrant, but it is reuseable.                *
+*                                                                     *
+* Robert O'Hara, Redmond Washington, July 2010.                       *
 * Released to the public domain.                                      *
 ***********************************************************************
 CMSSYS   CSECT
@@ -195,11 +199,20 @@ TOKSCAN  DS    0H
 TOKSCAN1 DS    0H
          CLI   0(R4),C' '     look for end of this argument
          BE    TOKSCAN2       found it
+         CLI   0(R4),C'('     a paren could end it too
+         BE    TOKSCAN2       found it
+         CLI   0(R4),C')'     so could a close paren
+         BE    TOKSCAN2       found it
          BXLE  R4,R2,TOKSCAN1 keep looping if not
 TOKSCAN2 DS    0H             we are at the end of the argument
-         LR    R7,R4
+         LR    R7,R4          point to 1st byte after argument
          SR    R7,R6          get length of this argument
+         BNZ   TOKSCAN3       if len > 0, copy it
+         LA    R4,1(R4)       this arg is a paren, must bump scan ptr
+         B     TOKSCAN4
+TOKSCAN3 DS    0H
          BCTR  R7,0           less 1 for EX of MVC
+TOKSCAN4 DS    0H
          EX    R7,COPYTOK     copy argument to TOKPL
          EX    R7,XLATTOK     translate argument to uppercase
          LA    R5,8(R5)       bump token pointer
@@ -210,11 +223,19 @@ NEXTTOK  DS    0H             scan past any blanks before next arg
 NEXTTOK2 DS    0H
          CLI   0(R4),X'00'    have we reached the end?
          BE    TOKFENCE       yes, next add the fence
+         CLI   0(R4),C'('     but wait, we could be at a paren
+         BE    NEXTTOK3
+         CLI   0(R4),C')'     or a close paren
+         BE    NEXTTOK3
          L     R7,EPARGB
          LTR   R7,R7
          BNZ   TOKSCAN        we've already found first argument
          ST    R6,EPARGB      store start of first argument
          B     TOKSCAN        no, go process next argument
+NEXTTOK3 DS    0H
+         LR    R6,R4          save start of this argument
+         LA    R4,1(R4)       point to character after paren
+         B     TOKSCAN2       process the paren as an argument
 COPYTOK  MVC   0(0,R5),0(R6)
 XLATTOK  TR    0(0,R5),UPPER
 TOKFENCE DS    0H
@@ -411,7 +432,7 @@ FRTEND   DS    0H
 * Delete a CMS file.                                                  *
 *                                                                     *
 * Syntax is:                                                          *
-*    int __FSERAS(char * FILEID)                                      *
+*    int __FSERAS(char * fileid)                                      *
 * where:                                                              *
 *    fileid    is a pointer to the CMS fileid, an 18 character field. *
 *              The first 8 characters are the filename, the next 8    *
@@ -451,19 +472,19 @@ FRTEND   DS    0H
 *              The first 8 characters are the filename, the next 8    *
 *              are the filetype, and the last 2 are the filemode.     *
 *              This string is not NULL terminated.                    *
-*    BUFFER    is a pointer to the buffer from which records are read *
+*    buffer    is a pointer to the buffer from which records are read *
 *              from or written to.                                    *
-*    BSIZE     is the size of the buffer.                             *
-*    RECFM     is 'F' if you are writing a file of fixed-length       *
+*    bsize     is the size of the buffer.                             *
+*    recfm     is 'F' if you are writing a file of fixed-length       *
 *              records, 'V' if you are writing a file of variable-    *
 *              length records.  This parameter is ignored if you are  *
 *              reading from the file.                                 *
-*    NUMREC    is the number of records to be read or written at a    *
+*    numrec    is the number of records to be read or written at a    *
 *              time.  This parameter can be greater than 1 only when  *
 *              reading or writing fixed-length records.               *
-*    RECNUM    is the record number at which to begin reading or      *
+*    recnum    is the record number at which to begin reading or      *
 *              writing.                                               *
-*    FSCB      is a pointer to an FSCB.  It is updated by FSOPEN.     *
+*    fscb      is a pointer to an FSCB.  It is updated by FSOPEN.     *
 *              Pass this as an argument to other file I/O functions.  *
 * returns:                                                            *
 *     0        Success.                                               *
@@ -487,6 +508,49 @@ FRTEND   DS    0H
 * Use FSOPEN to open the file.
          FSOPEN (2),BUFFER=(3),BSIZE=(4),RECFM=(5),NOREC=(6),RECNO=(7),X
                FSCB=(8)
+         L     R14,12(R13)    restore our return address
+         LM    R0,R12,20(R13) restore the registers
+         BR    R14            return to our caller
+         LTORG
+         EJECT
+         ENTRY @@FSPOIN
+***********************************************************************
+* @@FSPOIN  Entry Point                                               *
+* Set the next item number (record) to read or write from a CMS file. *
+*                                                                     *
+* Syntax is:                                                          *
+*    int __FSPOIN(FSCB * fscb, int recnum, int rw)                    *
+* where:                                                              *
+*    fscb      is a pointer to an FSCB.  It is updated by FSPOINT.    *
+*              Pass this as an argument to other file I/O functions.  *
+*    recnum    is the record number at which to begin reading or      *
+*              writing.                                               *
+*    rw        is 0 to set the read pointer, 1 to set the write       *
+*              pointer.                                               *
+* returns:                                                            *
+*     0        Success.                                               *
+*     1        The file was not found.                                *
+*     2        Parameter list error.                                  *
+* Notes:                                                              *
+* 1. Pointing to an record number greater than the number of records  *
+*    in the file yields unpredictable results.                        *
+***********************************************************************
+@@FSPOIN DS    0H
+         STM   R14,R12,12(R13)
+         LR    R12,R15
+         USING @@FSPOIN,R12   establish addressability
+         L     R2,0(R1)       get FSCB
+         L     R3,4(R1)       get record number
+         L     R4,8(R1)       get read or write flag
+         LTR   R4,R4
+         BZ    POINTRD        set the read pointer
+* Use FSPOINT to set the write pointer
+         FSPOINT FSCB=(2),WRPNT=(3)
+         B     POINTED
+POINTRD  DS    0H
+* Use FSPOINT to set the read pointer
+         FSPOINT FSCB=(2),RDPNT=(3)
+POINTED  DS    0H
          L     R14,12(R13)    restore our return address
          LM    R0,R12,20(R13) restore the registers
          BR    R14            return to our caller
@@ -573,15 +637,18 @@ DONEREAD DS    0H
 * Determine whether a file exists.                                    *
 *                                                                     *
 * Syntax is:                                                          *
-*    int __FSSTAT(char * fileid, FSCB * fscb)                         *
+*    int __FSSTAT(char * fileid, FST * fst)                           *
 * where:                                                              *
 *    fileid    is a pointer to the CMS fileid, an 18 character field. *
 *              The first 8 characters are the filename, the next 8    *
 *              are the filetype, and the last 2 are the filemode.     *
-*              This string is not NULL terminated.                    *
-*    fscb      is a pointer to an FSCB.  It is updated by FSSTATE     *
-*              with the file attributes.  You can pass this as an     *
-*              argument to other file I/O functions.                  *
+*              The filename, filetype, and filemode may each be       *
+*              specified as *, in which case the first file           *
+*              satisfying the rest of the fileid is used.  This       *
+*              string is not NULL terminated.                         *
+*    fst       is a pointer to a copy of the CMS file state table     *
+*              (FST) for this file.  It provides details of the       *
+*              specified file.                                        *
 * returns:                                                            *
 *     0        Success.                                               *
 *    20        The fileid is invalid.                                 *
@@ -597,16 +664,13 @@ DONEREAD DS    0H
          MVC   FILEID(18),0(R2) copy fileid
          TR    FILEID(18),UPPER translate to uppercase
          LA    R2,FILEID
-         L     R3,4(R1)       get FSCB
+         L     R3,4(R1)       get FST address
 * Use FSSTATE to determine if the file exists.
-         FSSTATE (2),FSCB=(3)
-         USING FSTSECT,R1
-         USING FSCBD,R3
-         MVC   FSCBFM(2),FSTM store updated filemode in FSCB
+         FSSTATE (2)
+         ST    R1,0(R3)       store FST
          L     R14,12(R13)    restore our return address
          LM    R0,R12,20(R13) restore the registers
          BR    R14            return to our caller
-         DROP  R3
          LTORG
          EJECT
          ENTRY @@FSWRIT
@@ -652,6 +716,15 @@ DONEREAD DS    0H
 *    22        Virtual storage capacity exceeded.                     *
 *    25        Insufficent free storage available for file directory  *
 *              buffers.                                               *
+* Notes:                                                              *
+* 1. It is possible to overwrite a record within a file.  However,    *
+*    care must be taken that the record being written is the same     *
+*    length as the one it is replacing.  Failing to do this can       *
+*    result in corruption of the file and possibly the entire         *
+*    mini-disk.                                                       *
+* 2. To overwrite an existing file with new records, call             *
+*    @@FSERAS to first erase the file, then open the file and begin   *
+*    writing from record 1.                                           *
 ***********************************************************************
 @@FSWRIT DS    0H
          STM   R14,R12,12(R13)
@@ -712,7 +785,7 @@ DONEWRIT DS    0H
 * Syntax is:                                                          *
 *    int __PRINTL(char * line)                                        *
 * where:                                                              *
-*    LINE      is a pointer to the line to be printed.  The first     *
+*    line      is a pointer to the line to be printed.  The first     *
 *              character of the line must be a carriage control       *
 *              character (a blank skips to a new line).  The string   *
 *              must be NULL terminated.  The maximum length of the    *
@@ -761,7 +834,7 @@ PRINTL2  DS    0H
 * Syntax is:                                                          *
 *    int __PUNCHC(char * line)                                        *
 * where:                                                              *
-*    LINE      is a pointer to the line to be written to the punch.   *
+*    line      is a pointer to the line to be written to the punch.   *
 *              The line must be 80 bytes long.                        *
 * returns:                                                            *
 *     0        Success.                                               *
@@ -792,12 +865,12 @@ PRINTL2  DS    0H
 * Syntax is:                                                          *
 *    int __RDCARD(char * line, int * len)                             *
 * where:                                                              *
-*    LINE      is a pointer to the buffer into which the line is      *
+*    line      is a pointer to the buffer into which the line is      *
 *              read.  As it is possible to read printer output files, *
-*              the buffer should be at least 133 bytes in size.  The  *
+*              the buffer must be at least 133 bytes in size.  The    *
 *              incoming line is terminated with a null character,     *
 *              forming a C string.                                    *
-*    LEN       is a pointer to a variable that will receive the       *
+*    len       is a pointer to a variable that will receive the       *
 *              number of characters read.                             *
 * returns:                                                            *
 *     0        Success.                                               *
@@ -812,10 +885,11 @@ PRINTL2  DS    0H
          LR    R12,R15
          USING @@RDCARD,R12   establish addressability
          L     R2,0(R1)       get buffer address
-         L     R3,4(R1)       get address of length variable
+         L     R4,4(R1)       get address of length variable
+         LA    R3,132         length of line to read
 * Use RDCARD to read the line.
-         RDCARD (2)
-         ST    R0,0(R3)       return number of bytes read
+         RDCARD (2),(3)
+         ST    R0,0(R4)       return number of bytes read in 'len'
          SR    R1,R1
          STC   R1,0(R3,R2)    place null character at end of line
          L     R14,12(R13)    restore our return address
@@ -864,7 +938,7 @@ PRINTL2  DS    0H
 *              renamed.                                               *
 *    newfileid is a pointer to the CMS fileid of the new name for the *
 *              file.                                                  *
-*    Both FILEID and NEWFILEID point to an 18 character field.  The   *
+*    Both fileid and newfileid point to an 18 character field.  The   *
 *    first 8 characters are the filename, the next 8 are the          *
 *    filetype, and the last 2 are the filemode.  Neither string is    *
 *    NULL terminated.                                                 *
@@ -954,9 +1028,9 @@ RENFENCE DC    XL8'FFFFFFFFFFFFFFFF'
 * Display a line on the terminal.                                     *
 *                                                                     *
 * Syntax is:                                                          *
-*    int __WRTERM(char * line)                                        *
+*    int __WRTERM(char * line, int edit)                              *
 * where:                                                              *
-*    LINE      is a pointer to the line to be displayed.  The line    *
+*    line      is a pointer to the line to be displayed.  The line    *
 *              may contain embedded newline characters (x'15') which  *
 *              are honored.  Normally the line should end with a      *
 *              newline character, unless a subsequent call is to      *
@@ -964,6 +1038,9 @@ RENFENCE DC    XL8'FFFFFFFFFFFFFFFF'
 *              NULL terminated.  The maximum number of characters to  *
 *              be displayed is 130; a line longer than this is        *
 *              truncated without warning.                             *
+*    edit      is 1 if trailing blanks are to be removed and a        *
+*              newline character added to the end of the line; 0 if   *
+*              not.                                                   *
 * returns:                                                            *
 *    (int)     Return code from the WRTERM function, always 0.        *
 ***********************************************************************
@@ -972,6 +1049,7 @@ RENFENCE DC    XL8'FFFFFFFFFFFFFFFF'
          LR    R12,R15
          USING @@WRTERM,R12   establish addressability
          L     R6,0(R1)       R6 is start of line to display
+         L     R7,4(R1)       get edit setting
          LA    R3,129(R6)     last possible char to display
          LA    R2,1           loop increment
          LR    R4,R6          start of line to display
@@ -983,7 +1061,13 @@ WRTERM1  DS    0H
 WRTERM2  DS    0H
          SR    R4,R6          length of line to display
 * Use WRTERM to display the line.
+         LTR   R7,R7          edit the line?
+         BZ    WRTERM3        no
+         WRTERM (6),(4),EDIT=YES
+         B     WRTERM4
+WRTERM3  DS    0H
          WRTERM (6),(4),EDIT=NO
+WRTERM4  DS    0H
          L     R14,12(R13)    restore our return address
          LM    R0,R12,20(R13) restore the registers
          BR    R14            return to our caller

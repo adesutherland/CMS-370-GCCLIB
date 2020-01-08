@@ -8,7 +8,7 @@
 * Based on code written by Paul Edwards and modified by Dave Wade.    *
 * Released to the public domain.                                      *
 *                                                                     *
-* Robert O'Hara, Redmond Washington, May 2009.                        *
+* Robert O'Hara, Redmond Washington, July 2010.                       *
 *                                                                     *
 * Notes:                                                              *
 * 1.  The FILE DSECT defined here maps the FILE structure defined in  *
@@ -50,8 +50,7 @@ CMSENTRY CSECT
          LR    R4,R1          save R1 so we can get the PLIST
          LR    R5,R0          save R0 so we can get the EPLIST
 * --------------------------------------------------------------------
-* Set up the GCC stack and fill in the FILE structures for console
-* input and output.
+* Set up the GCC stack.
 * --------------------------------------------------------------------
          L     R0,=A(STACKLEN)
          SRL   R0,3           divide by 8 to get doublewords
@@ -60,25 +59,36 @@ CMSENTRY CSECT
          ST    R1,8(R13)      chain backward (our save area)
          LR    R13,R1         establish our save area
          USING CMSCRAB,R13
+         LA    R2,MAINSTK     where the GCC stack begins
+         ST    R2,STACKNXT    next available spot in stack
+         ST    R13,GCCCRAB    address of CRAB
+* --------------------------------------------------------------------
+* Fill in the FILE structures for console input.
+* --------------------------------------------------------------------
          LA    R2,CONIFILE    address of console input FILE structure
          ST    R2,CONFILIN    and store it here
          USING FILE,R2
-         LA    R3,2           see CMSSTDIO C for this value
+         LA    R3,1           set access to ACCESS_READ_TXT
          ST    R3,FACCESS     access is read text
          SR    R3,R3
          ST    R3,FDEVICE     device is console
          ST    R3,FEOF        not at EOF
          ST    R3,FERROR      no errors yet
+         ST    R3,FREADPTR    unsed for a console file
+         ST    R3,FWRITPTR    unsed for a console file
          LA    R3,FBUFFER     address of input buffer
          ST    R3,FBUFPTR     save the address of the input buffer
          ST    R3,FNEXT       and here
          ST    R3,FLAST       and here
          L     R3,=F'-2'      'unget' not yet valid
          ST    R3,FUNGETC     save it as ungetChar
+* --------------------------------------------------------------------
+* Fill in the FILE structures for console output.
+* --------------------------------------------------------------------
          LA    R2,CONOFILE    address of console output FILE structure
          ST    R2,CONFILOU    and store it here
          ST    R3,FUNGETC     save it as ungetChar
-         LA    R3,3           see CMSSTDIO C for this value
+         LA    R3,3           set access to ACCESS_WRITE_TXT
          ST    R3,FACCESS     access is write text
          SR    R3,R3
          ST    R3,FDEVICE     device is console
@@ -86,11 +96,27 @@ CMSENTRY CSECT
          ST    R3,FERROR      no errors yet
          ST    R3,FNEXT
          ST    R3,FLAST
-         ST    R3,FBUFPTR     no buffer for console output
+         ST    R3,FREADPTR    unsed for a console file
+         ST    R3,FWRITPTR    unsed for a console file
+         LA    R3,FBUFFER     address of output buffer
+         ST    R3,FBUFPTR     save the address of the output buffer
+         ST    R3,FNEXT       and here
+         LA    R3,130(R3)     point to end of buffer
+         ST    R3,FLAST       save it
          DROP  R2
-         LA    R2,MAINSTK     where the GCC stack begins
-         ST    R2,STACKNXT    next available spot in stack
-         ST    R13,GCCCRAB    address of CRAB
+* --------------------------------------------------------------------
+* Call CMSinit to initialize the runtime global variables.  We pass
+* the console input and output file handles as parameters, and use
+* the console input buffer (CONBUFIN) briefly as a place to build the
+* parameter list.
+* --------------------------------------------------------------------
+         LA    R2,CONIFILE    get the console input FILE pointer
+         ST    R2,CONBUFIN    store in parameter list
+         LA    R2,CONOFILE    get the console output FILE pointer
+         ST    R2,CONBUFIN+4  store in parameter list
+         LA    R1,CONBUFIN    address of parameter list
+         L     R15,=V(CMSINIT)
+         BALR  R14,R15        call CMSINIT to initialize stuff
 * ---------------------------------------------------------------------
 * Next get the program name and parameter list from CMS.
 * ---------------------------------------------------------------------
@@ -284,6 +310,9 @@ RETURN   DS    0H
 MAXARGS  EQU   32             maximum number of CMS arguments we allow
          SPACE
 FILE     DSECT                maps the C FILE structure in STDIO H
+***********************************************************************
+* Map the FILE structure defined in STDIO H.
+***********************************************************************
 FACCESS  DS    F              type of access (read, write, etc.)
 FDEVICE  DS    F              type of device (console, disk, etc.)
 FUNGETC  DS    F              character pushed back to the stream
@@ -292,6 +321,8 @@ FERROR   DS    F              return code from last I/O operation
 FCMSFILE DS    11F            CMS File System Control Block
 FNEXT    DS    F              next byte to read or current end of line
 FLAST    DS    F              1st unused byte or 1st after buf end
+FREADPTR DS    F              read pointer (disk files only)
+FWRITPTR DS    F              write pointer (disk files only)
 FNAME    DS    CL24           fileid as a string, for error messages
 FBUFPTR  DS    F              address of input or output buffer
 FBUFFER  DS    0F             start of the buffer

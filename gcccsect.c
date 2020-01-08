@@ -5,7 +5,7 @@
 /*                                                                                                */
 /* Usage:  GCCCSECT fn ft fm                                                                      */
 /*                                                                                                */
-/* Robert O'Hara, Redmond Washington, April 2009                                                  */
+/* Robert O'Hara, Redmond Washington, June 2010.                                                 */
 /**************************************************************************************************/
 #include <cmssys.h>
 #include <ctype.h>
@@ -26,14 +26,14 @@ int rc;
 int recnum;
 
 if (argc != 4) {
-   CMSconsoleWrite("Usage is GCCCSECT fn ft fm\n");
+   CMSconsoleWrite("Usage is GCCCSECT fn ft fm", CMS_EDIT);
    return 24;
    }
 
 // First build the fileid from the argument list.
-strncpy(readFileid, argv[1], 8); strncat(readFileid, "       ", 8 - strlen(readFileid));
-strncat(readFileid, argv[2], 8); strncat(readFileid, "       ", 16 - strlen(readFileid));
-strncat(readFileid, argv[3], 2); strncat(readFileid, " ", 18 - strlen(readFileid));
+strcpy(readFileid, argv[1]); strncat(readFileid, "       ", 8 - strlen(readFileid));
+strcat(readFileid, argv[2]); strncat(readFileid, "       ", 16 - strlen(readFileid));
+strcat(readFileid, argv[3]); strncat(readFileid, " ", 18 - strlen(readFileid));
 readFileid[18] = 0;
 for (i = 0; i < 18; i++) {                                    // now convert the fileid to uppercase
    readFileid[i] = toupper(readFileid[i]);
@@ -44,18 +44,18 @@ memcpy(&writeFileid[8], "ASMFIX  ", 8);
 // Open the input and output files.
 rc = CMSfileOpen(readFileid, buffer, RECLEN, 'V', 1, 1, &readFscb);
 if (rc != 0) {
-   CMSconsoleWrite("Unable to open input file.\n");
+   CMSconsoleWrite("Unable to open input file.", CMS_EDIT);
    return rc;
    }
 rc = CMSfileOpen(writeFileid, buffer, RECLEN, 'F', 1, 1, &writeFscb);
 if (!(rc == 0 || rc == 28)) {
-   CMSconsoleWrite("Unable to open output file.\n");
+   CMSconsoleWrite("Unable to open output file.", CMS_EDIT);
    return rc;
    }
 
 // Commence processing in earnest.  Loop to search for the CSECT record, and add a label.
-strncpy(csectName, argv[1], 7);
-strncat(csectName, "@@@@@@@", 8 - strlen(csectName));
+strcpy(csectName, argv[1]);
+strncat(csectName, "@@@@@@@@", 8 - strlen(csectName));
 for (i = 0; i < 8; i++) csectName[i] = toupper(csectName[i]);
 notyet = 1;
 rc = 0;
@@ -70,13 +70,13 @@ while (rc == 0) {                                                           // l
    rc = CMSfileWrite(&writeFscb, recnum, RECLEN);             // write the record to the output file
    recnum = 0;
    if (rc > 0) {
-      CMSconsoleWrite("Error writing output file.\n");
+      CMSconsoleWrite("Error writing output file.", CMS_EDIT);
       break;
       }
    rc = CMSfileRead(&readFscb, 0, &bytesRead);
    }
 if (rc == 12) rc = 0;                                 // rc of 12 means end of file, and all is well
-else CMSconsoleWrite("Error reading input file.\n");
+else CMSconsoleWrite("Error reading input file.", CMS_EDIT);
 CMSfileClose(&readFscb);
 CMSfileClose(&writeFscb);
 return rc;

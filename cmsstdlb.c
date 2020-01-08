@@ -5,10 +5,8 @@
 /*     void abort(void)                                                                           */
 /*     int atexit(void (* func)(void))                                                            */
 /*     void exit(int status)                                   (implemented in CMSENTRY ASSEMBLE) */
-/*     void free(void * ptr)                                     (implemented in CMSSYS ASSEMBLE) */
-/*     void * malloc(size_t size)                                (implemented in CMSSYS ASSEMBLE) */
 /*                                                                                                */
-/* Robert O'Hara, Redmond Washington, May 2009                                                    */
+/* Robert O'Hara, Redmond Washington, July 2010.                                                  */
 /*                                                                                                */
 /* Based code written by Paul Edwards and Dave Wade.                                              */
 /* Released to the public domain.                                                                 */
@@ -37,7 +35,8 @@ static unsigned long myseed = 1;                                 // seed for ran
 #ifdef abs
 #undef abs
 #endif
-int abs(int j)
+int
+abs(int j)
 /**************************************************************************************************/
 /* int abs(int j)                                                                                 */
 /**************************************************************************************************/
@@ -64,7 +63,8 @@ return j;
 // }                                                                                   // end of atexit
 
 
-double atof(const char *nptr)
+double
+atof(const char *nptr)
 /**************************************************************************************************/
 /* double atof(const char *nptr)                                                                  */
 /**************************************************************************************************/
@@ -73,7 +73,8 @@ return (strtod(nptr, (char **) NULL));
 }                                                                                     // end of atof
 
 
-int atoi(const char * nptr)
+int
+atoi(const char * nptr)
 /**************************************************************************************************/
 /* int atoi(const char * nptr)                                                                    */
 /**************************************************************************************************/
@@ -82,7 +83,8 @@ return ((int) strtol(nptr, (char **) NULL, 10));
 }                                                                                     // end of atoi
 
 
-long int atol(const char * nptr)
+long int
+atol(const char * nptr)
 /**************************************************************************************************/
 /* long int atol(const char * nptr)                                                               */
 /**************************************************************************************************/
@@ -91,7 +93,8 @@ return (strtol(nptr, (char **) NULL, 10));
 }                                                                                     // end of atol
 
 
-void * bsearch(const void * key, const void * base, size_t nmemb, size_t size,
+void *
+bsearch(const void * key, const void * base, size_t nmemb, size_t size,
    int (* compar) (const void *, const void *))
 /**************************************************************************************************/
 /* void * bsearch(const void * key, const void * base, size_t nmemb, size_t size,                 */
@@ -117,7 +120,8 @@ return NULL;
 }                                                                                  // end of bsearch
 
 
-void * calloc(size_t nmemb, size_t size)
+void *
+calloc(size_t nmemb, size_t size)
 /**************************************************************************************************/
 /* void * calloc(size_t nmemb, size_t size)                                                       */
 /*                                                                                                */
@@ -140,7 +144,8 @@ return ptr;
 }                                                                                   // end of calloc
 
 
-div_t div(int numer, int denom)
+div_t
+div(int numer, int denom)
 /**************************************************************************************************/
 /* div_t div(int numer, int denom)                                                                */
 /**************************************************************************************************/
@@ -161,17 +166,18 @@ return x;
 // __exit(status);
 // }                                                                                     // end of exit
 
-// Note:  free is implemented as a macro.  See stdlib.h.
-// void free(void * ptr)
-// /**************************************************************************************************/
-// /* void free(void * ptr)                                                                          */
-// /*                                                                                                */
-// /* Frees the previously allocated memory pointed to by 'ptr'.                                     */
-// /**************************************************************************************************/
-// {
-// if (ptr != NULL) CMSmemoryFree(ptr);
-// return;
-// }                                                                                     // end of free
+
+void
+free(void * ptr)
+/**************************************************************************************************/
+/* void free(void * ptr)                                                                          */
+/*                                                                                                */
+/* Frees the previously allocated memory pointed to by 'ptr'.                                     */
+/**************************************************************************************************/
+{
+if (ptr != NULL) CMSmemoryFree(ptr);
+return;
+}                                                                                     // end of free
 
 
 char * getenv(const char *name)
@@ -209,22 +215,23 @@ return x;
 }                                                                                     // end of ldiv
 
 
-// Note:  malloc is implemented as a macro.  See stdlib.h.
-// void * malloc(size_t size)
-// /**************************************************************************************************/
-// /* void * malloc(size_t size)                                                                     */
-// /*                                                                                                */
-// /* Allocate 'size' bytes of memory. The memory is allocated in CMS user free storage.             */
-// /*                                                                                                */
-// /* Returns:                                                                                       */
-// /*    a pointer to the memory, or NULL if the memory could not be allocated.                      */
-// /**************************************************************************************************/
-// {
-// return CMSmemoryAlloc(size, CMS_USER);
-// }                                                                                   // end of malloc
+void *
+malloc(size_t size)
+/**************************************************************************************************/
+/* void * malloc(size_t size)                                                                     */
+/*                                                                                                */
+/* Allocate 'size' bytes of memory. The memory is allocated in CMS user free storage.             */
+/*                                                                                                */
+/* Returns:                                                                                       */
+/*    a pointer to the memory, or NULL if the memory could not be allocated.                      */
+/**************************************************************************************************/
+{
+return CMSmemoryAlloc(size, CMS_USER);
+}                                                                                   // end of malloc
 
 
-int mblen(const char * s, size_t n)
+int
+mblen(const char * s, size_t n)
 /**************************************************************************************************/
 /* int mblen(const char * s, size_t n)                                                            */
 /**************************************************************************************************/
@@ -235,7 +242,8 @@ else return -1;
 }                                                                                    // end of mblen
 
 
-size_t mbstowcs(wchar_t * pwcs, const char * s, size_t n)
+size_t
+mbstowcs(wchar_t * pwcs, const char * s, size_t n)
 /**************************************************************************************************/
 /* size_t mbstowcs(wchar_t * pwcs, const char * s, size_t n)                                      */
 /**************************************************************************************************/
@@ -246,7 +254,8 @@ return strlen((char *) pwcs);
 }                                                                                 // end of mbstowcs
 
 
-int mbtowc(wchar_t * pwc, const char * s, size_t n)
+int
+mbtowc(wchar_t * pwc, const char * s, size_t n)
 /**************************************************************************************************/
 /* int mbtowc(wchar_t * pwc, const char * s, size_t n)                                            */
 /**************************************************************************************************/
@@ -261,7 +270,8 @@ else
 }                                                                                   // end of mbtowc
 
 
-void qsort(void * base, size_t nmemb, size_t size, int (* compar)(const void *, const void *))
+void
+qsort(void * base, size_t nmemb, size_t size, int (* compar)(const void *, const void *))
 /**************************************************************************************************/
 /* void qsort(void * base, size_t nmemb, size_t size, int (* compar)(const void *, const void *)) */
 /*                                                                                                */
@@ -308,7 +318,8 @@ while(nmemb > 1) {
    }
 }                                                                                    // end of qsort
 
-int rand(void)
+int
+rand(void)
 /**************************************************************************************************/
 /* int rand(void)                                                                                 */
 /**************************************************************************************************/
@@ -327,7 +338,8 @@ return ret;
 }                                                                                     // end of rand
 
 
-void * realloc(void * ptr, size_t size)
+void *
+realloc(void * ptr, size_t size)
 /**************************************************************************************************/
 /* void * realloc(void * ptr, size_t size)                                                        */
 /*                                                                                                */
@@ -355,7 +367,8 @@ return (newptr);
 }                                                                                  // end of realloc
 
 
-void srand(unsigned int seed)
+void
+srand(unsigned int seed)
 /**************************************************************************************************/
 /* void srand(unsigned int seed)                                                                  */
 /**************************************************************************************************/
@@ -365,7 +378,8 @@ return;
 }                                                                                    // end of srand
 
 
-double strtod(const char * nptr, char ** endptr)
+double
+strtod(const char * nptr, char ** endptr)
 /**************************************************************************************************/
 /* double strtod(const char * nptr, char ** endptr)                                               */
 /**************************************************************************************************/
@@ -436,7 +450,8 @@ return (x);
 }                                                                                   // end of strtod
 
 
-long int strtol(const char * nptr, char ** endptr, int base)
+long int
+strtol(const char * nptr, char ** endptr, int base)
 /**************************************************************************************************/
 /* long int strtol(const char * nptr, char ** endptr, int base)                                   */
 /**************************************************************************************************/
@@ -458,7 +473,8 @@ return x;
 }                                                                                   // end of strtol
 
 
-unsigned long int strtoul(const char * nptr, char ** endptr, int base)
+unsigned long int
+strtoul(const char * nptr, char ** endptr, int base)
 /**************************************************************************************************/
 /* unsigned long int strtoul(const char * nptr, char ** endptr, int base)                         */
 /*                                                                                                */
@@ -505,7 +521,8 @@ return (x);
 }                                                                                  // end of strtoul
 
 
-int system(const char * s)
+int
+system(const char * s)
 /**************************************************************************************************/
 /* int system(const char * s)                                                                     */
 /**************************************************************************************************/
@@ -514,7 +531,8 @@ return CMScommand(s, CMS_COMMAND);
 }                                                                                   // end of system
 
 
-size_t wcstombs(char * s, const wchar_t * pwcs, size_t n)
+size_t
+wcstombs(char * s, const wchar_t * pwcs, size_t n)
 /**************************************************************************************************/
 /* size_t wcstombs(char * s, const wchar_t * pwcs, size_t n)                                      */
 /**************************************************************************************************/
@@ -525,7 +543,8 @@ return strlen(s);
 }                                                                                  // end of wctombs
 
 
-int wctomb(char * s, wchar_t wchar)
+int
+wctomb(char * s, wchar_t wchar)
 /**************************************************************************************************/
 /* int wctomb(char * s, wchar_t wchar)                                                            */
 /**************************************************************************************************/

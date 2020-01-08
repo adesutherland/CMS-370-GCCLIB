@@ -2,7 +2,7 @@
 * The CMSCRAB (C Runtime Anchor Block) provides memory for the local  *
 * variables of the user program.                                      *
 *                                                                     *
-* Robert O'Hara, Redmond Washington, April 2009.                      *
+* Robert O'Hara, Redmond Washington, June 2009.                       *
 *                                                                     *
 * Based on code written by Paul Edwards and modified by Dave Wade.    *
 * Released to the public domain.                                      *
@@ -15,7 +15,8 @@
 * 2.  The offset of GCCCRAB is hard-coded in CMSSTDIO.C.  So if this  *
 *     changes, that code must also be changed.                        *
 *                                                                     *
-* 4.  CONBUFIN *must* be directly after CONIFILE.                     *
+* 4.  CONBUFIN *must* be directly after CONIFILE, and CONBUFOU *must* *
+*     be directly after CONOFILE.                                     *
 ***********************************************************************
          MACRO
          CMSCRAB
@@ -40,8 +41,9 @@ FUNCRSLT DS    F              +84 function result buffer
 CONFILOU DS    F              +88 pointer to console output FILE struct
 CONFILIN DS    F              +92 pointer to console input FILE struct
 CONOFILE DS    23F            FILE structure for console output
+CONBUFOU DS    CL132          console output buf (must follow CONOFILE)
 CONIFILE DS    23F            FILE structure for console input
-CONBUFIN DS    CL131          console input buf (must follow CONIFILE)
+CONBUFIN DS    CL132          console input buf (must follow CONIFILE)
          SPACE
 * ---------------------------------------------------------------------
 * Here are declared the local variables of CMSENTRY.

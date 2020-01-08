@@ -14,10 +14,10 @@
 * Robert O'Hara, Redmond Washington, July 2010.                       *
 ***********************************************************************
          USING NUCON,0
-TOUPPER  CSECT
-         USING TOUPPER,R15
+FSETPOS  CSECT
+         USING FSETPOS,R15
          L     R15,DOSTRANS   this seems to be an unused location
-         LA    R15,VTTOUPPE(R15)
+         LA    R15,VTFSETPO(R15)
          BR    R15            go there
          LTORG
          VTABLE

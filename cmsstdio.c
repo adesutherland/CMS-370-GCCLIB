@@ -2,89 +2,71 @@
 /* CMSSTDIO.C: Native CMS implementation of STDIO.H.                                              */
 /*                                                                                                */
 /* Not implemented:                                                                               */
-/*     int fgetpos(FILE * stream, fpos_t * position)                                              */
-/*     int fseek(FILE * stream, long offset, int origin)                                          */
-/*     int fsetpos(FILE * stream, const fpos_t * position)                                        */
 /*     void perror(const char * str)                                                              */
-/*     void rewind(FILE * stream)                                                                 */
 /*     int snprintf(char * buffer, int buff_size, const char * format, ...)                       */
 /*                                                                                                */
 /* Note also that we depend on the offset of the GCC CRAB pointer in the save area, currently 72  */
 /* (decimal) bytes.  If the CMSCRAB macro is changed, this code must change!!!!!!!!!!!!!!!!!!!!!  */
 /*                                                                                                */
-/* Robert O'Hara, Redmond Washington, May 2009                                                    */
+/* Robert O'Hara, Redmond Washington, July 2010.                                                  */
 /*                                                                                                */
 /* Based on code written by Paul Edwards and Dave Wade.                                           */
 /* Released to the public domain.                                                                 */
 /**************************************************************************************************/
+// #define STDIO_DEFINED
 #include <stdio.h>
 #include <ctype.h>
 #include <float.h>
 #include <time.h>
 
-/* Fix the CMSconsoleWrites with one arg in this file - got bored fixing each one - Adrian */
-#define ConsoleWrite(s1) (__wrterm((s1),0))
-
-
-// The CMSCRAB macro maps the GCC stack.  In the first stack frame are pointers to useful global
-// variables used by routines in CMSSTDIO.  Eventually I'll fill in more of the structure below.
-typedef struct {                                                   // map the start of the GCC stack
-   void * savearea[18];                             // register save area and save area chaining +00
-   void * crab;                              // pointer to the GCC C Runtime Anchor Block (CRAB) +72
-   void * stackNext;                                         // next available byte in the stack +76
-   void * numconv;                                                  // numeric conversion buffer +80
-   void * funcrslt;                                                    // function result buffer +84
-   FILE * consoleOutputFile;                      // address of FILE structure for console ouput +88
-   FILE * consoleInputFile;                       // address of FILE structure for console input +92
-   FILE actualConsoleOutputFileHandle;
-   FILE actualConsoleInputFileHandle;
-   char consoleInputBuffer[131];
-   } CMSCRAB;                                                          // CMS C Runtime Anchor Block
-#define LOADCRAB "L %0,72(13)"
-
+static FILE * checkStream(FILE * stream);
 static void dblcvt(double num, char cnvtype, size_t nwidth, size_t nprecision, char *result);
 static int examine(const char **formt, FILE *fq, char *s, va_list *arg, int chcount);
-int GetFileid(const char * fname, char * fileid);
+static int GetFileid(const char * fname, char * fileid);
 static int vvprintf(const char *format, va_list arg, FILE *fq, char *s);
 static int vvscanf(const char * format, va_list arg, FILE *fp, const char * s);
 
 // The following defines are used in vvprintf and vvscanf.
 #define unused(x) ((void)(x))
-#define outch(ch) ((fq == NULL) ? *s++ = (char)ch : putc(ch, fq))
-#define inch() ((fp == NULL) ? (ch = (unsigned char)*s++) : (ch = getc(fp)))
+#define outch(ch) ((fq == NULL) ? *s++ = (char)ch : fputc(ch, fq))
+#define inch() ((fp == NULL) ? (ch = (unsigned char)*s++) : (ch = fgetc(fp)))
 
-// In CMS, these are the only 6 relevant file access modes.  Bit 1 (ACCESS_WRITING) is on for
-// writing, off for reading.  Bit 2 (ACCESS_TEXT) is on for text files, off for binary files, and
-// bits 3 and 1 (ACCESS_APPENDING) are on for appending.
-#define ACCESS_WRITING    1
-#define ACCESS_TEXT       2
-#define ACCESS_APPENDING  5
+// In CMS, it is not possible to read then write to a file (or vice versa) without first closing it,
+// so the "+" mode of file access is not supported.  Thus these are the only 6 relevant file access
+// modes:
+//    Bit 1 (ACCESS_TEXT) is on for text files, off for binary files.
+//    Bit 2 (ACCESS_WRITING) is on for writing, off for reading.
+//    Bit 3 (ACCESS_APPENDING) is on for appending (and of course bit 2 is on as well).
+#define ACCESS_TEXT       1
+#define ACCESS_WRITING    2
+#define ACCESS_APPENDING  4
+#define ACCESS_READ_TXT   1                                                                  // 0001
 #define ACCESS_READ_BIN   0                                                                  // 0000
-#define ACCESS_WRITE_BIN  1                                                                  // 0001
-#define ACCESS_READ_TXT   2                                                                  // 0010
 #define ACCESS_WRITE_TXT  3                                                                  // 0011
-#define ACCESS_APPEND_BIN 5                                                                  // 0101
+#define ACCESS_WRITE_BIN  2                                                                  // 0010
 #define ACCESS_APPEND_TXT 7                                                                  // 0111
-#define NUM_MODES 15
+#define ACCESS_APPEND_BIN 6                                                                  // 0110
 
-// Note that we treate read/write (+) mode as read.
-static const char modes[NUM_MODES][4] =
-   {"r", "r+", "w", "w+", "a", "a+", "rb", "rb+", "r+b", "wb", "wb+", "w+b", "ab", "ab+", "a+b"};
-static const int modeVals[NUM_MODES] = {
-   ACCESS_READ_TXT, ACCESS_READ_TXT, ACCESS_WRITE_TXT, ACCESS_WRITE_TXT, ACCESS_APPEND_TXT,
-   ACCESS_APPEND_TXT, ACCESS_READ_BIN, ACCESS_READ_BIN, ACCESS_READ_BIN, ACCESS_WRITE_BIN,
-   ACCESS_WRITE_BIN, ACCESS_WRITE_BIN, ACCESS_APPEND_BIN, ACCESS_APPEND_BIN, ACCESS_APPEND_BIN};
+#define NUM_MODES 6
+static const char modes[NUM_MODES][4] = {"r", "w", "a", "rb", "wb", "ab"};
+static const int modeVals[NUM_MODES] = {ACCESS_READ_TXT, ACCESS_WRITE_TXT, ACCESS_APPEND_TXT,
+   ACCESS_READ_BIN, ACCESS_WRITE_BIN, ACCESS_APPEND_BIN};
 
 // Here are the specific devices for which a stream may be opened.
 #define NUM_DEVICES 5
 #define DEVICE_CON  0
-#define DEVICE_DSK  1
-#define DEVICE_PRT  2
-#define DEVICE_PUN  3
-#define DEVICE_RDR  4
+#define DEVICE_PRT  1
+#define DEVICE_PUN  2
+#define DEVICE_RDR  3
+#define DEVICE_DSK  4
 
+// Here we define the default values of the three predefined I/O streams.
+#define GCCSTDIN 1
+#define GCCSTDOUT 2
+#define GCCSTDERR 3
 
-void clearerr(FILE * stream)
+void
+clearerr(FILE * stream)
 /**************************************************************************************************/
 /* void clearerr(FILE * stream)                                                                   */
 /*                                                                                                */
@@ -92,12 +74,16 @@ void clearerr(FILE * stream)
 /*    stream   a pointer to the open input stream.                                                */
 /**************************************************************************************************/
 {
-if (stream == NULL) {ConsoleWrite("clearerr error: stream is NULL.\n"); return EOF;}
-stream->error = 0;
+FILE * file;
+
+if (stream == NULL) {CMSconsoleWrite("clearerr error: stream is NULL.", CMS_EDIT); return EOF;}
+if (stream <= GCCSTDERR) file = checkStream(stream); else file = stream;  // handle stdin and stdout
+file->error = 0;
 }                                                                                 // end of clearerr
 
 
-int fclose(FILE * stream)
+int
+fclose(FILE * stream)
 /**************************************************************************************************/
 /* int fclose(FILE * stream)                                                                      */
 /*                                                                                                */
@@ -108,57 +94,33 @@ int fclose(FILE * stream)
 /*    0 if all is well, EOF if there is an error.                                                 */
 /**************************************************************************************************/
 {
-char pad;
+FILE * file;
+int rc;
 
-if (stream == NULL) {ConsoleWrite("fclose error: stream is NULL.\n"); return EOF;}
-switch (stream->device) {
-   case DEVICE_CON:
-      return 0;                                                // nothing to do for a console stream
+if (stream == NULL) {CMSconsoleWrite("fclose error: stream is NULL.", CMS_EDIT); return EOF;}
+if (stream <= GCCSTDERR) file = checkStream(stream); else file = stream;  // handle stdin and stdout
+if (fflush(file) != 0) return EOF;                                      // error flushing the stream
+switch (file->device) {
    case DEVICE_DSK:
-      if ((stream->access & ACCESS_WRITING) && (stream->next > stream->buffer)) {   // data to write
-         if ((stream->fscb.format[0] == 'F') && (stream->next < stream->last)) {       // pad buffer
-            if (stream->access & ACCESS_TEXT) pad = ' '; else pad = 0;          // set pad character
-            for (; stream->next < stream->last; stream->next++) stream->next[0] = pad;
-            }
-         stream->error = CMSfileWrite(&stream->fscb, -1, stream->next - stream->buffer);
-         if (stream->error != 0) {
-            printf("fclose error: return code %u from FSWRITE.\n", stream->error);    // remove this
-            return EOF;
-            }
-         }
-      CMSfileClose(&stream->fscb);
+      rc = CMSfileClose(&file->fscb);                                              // close the file
       break;
    case DEVICE_PRT:
-      if ((stream->access & ACCESS_WRITING) && (stream->next > stream->buffer)) {   // data to write
-         stream->next = 0;                                                   // terminate the string
-         stream->error = CMSprintLine(stream->buffer);                                   // print it
-         if (stream->error != 0) {
-            printf("fclose error: return code %u from PRINTL.\n", stream->error);     // remove this
-            return EOF;
-            }
-         }
       CMScommand("CP CLOSE PRINTER", CMS_COMMAND);                              // close the printer
       break;
    case DEVICE_PUN:
-      if ((stream->access & ACCESS_WRITING) && (stream->next > stream->buffer)) {   // data to write
-         for (; stream->next < stream->last; stream->next++) stream->next[0] = ' ';  // pad the card
-         stream->error = CMScardPunch(stream->buffer);                                   // punch it
-         if (stream->error != 0) {
-            printf("fclose error: return code %u from PUNCHC.\n", stream->error);     // remove this
-            return EOF;
-            }
-         }
       CMScommand("CP CLOSE PUNCH", CMS_COMMAND);                             // close the card punch
       break;
    case DEVICE_RDR:
       CMScommand("CP CLOSE READER", CMS_COMMAND);                           // close the card reader
       break;
    }
-if (CMSmemoryFree(stream) == 0) return 0;
+if (CMSmemoryFree(file) == 0) return 0;
 else return EOF;
 }                                                                                   // end of fclose
 
-int feof(FILE * stream)
+
+int
+feof(FILE * stream)
 /**************************************************************************************************/
 /* int feof(FILE * stream)                                                                        */
 /*                                                                                                */
@@ -169,12 +131,16 @@ int feof(FILE * stream)
 /*    1 if EOF has been reached, 0 otherwise.                                                     */
 /**************************************************************************************************/
 {
-if (stream == NULL) {ConsoleWrite("feof error: stream is NULL.\n"); return EOF;}
-return stream->eof;
+FILE * file;
+
+if (stream == NULL) {CMSconsoleWrite("feof error: stream is NULL.", CMS_EDIT); return EOF;}
+if (stream <= GCCSTDERR) file = checkStream(stream); else file = stream;  // handle stdin and stdout
+return file->eof;
 }                                                                                     // end of feof
 
 
-int ferror(FILE * stream)
+int
+ferror(FILE * stream)
 /**************************************************************************************************/
 /* int ferror(FILE * stream)                                                                      */
 /*                                                                                                */
@@ -185,26 +151,75 @@ int ferror(FILE * stream)
 /*    the error status, or 0 if there is no error.                                                */
 /**************************************************************************************************/
 {
-if (stream == NULL) {ConsoleWrite("ferror error: stream is NULL.\n"); return EOF;}
-return stream->error;
+FILE * file;
+
+if (stream == NULL) {CMSconsoleWrite("ferror error: stream is NULL.", CMS_EDIT); return EOF;}
+if (stream <= GCCSTDERR) file = checkStream(stream); else file = stream;  // handle stdin and stdout
+return file->error;
 }                                                                                   // end of ferror
 
 
-int fflush(FILE * stream)
+int
+fflush(FILE * stream)
 /**************************************************************************************************/
 /* int fflush(FILE * stream)                                                                      */
 /*                                                                                                */
-/* This function does nothing.                                                                    */
+/* Writes any unwritten characters to the specified stream.                                       */
 /*                                                                                                */
 /* Returns:                                                                                       */
-/*    0, indicating that all is well.                                                             */
+/*    0, indicating that all is well, or a return code from the write operation.                  */
+/*                                                                                                */
+/* Notes:                                                                                         */
+/*    1.  If the stream is not open for output, fflush is a NOP.                                  */
 /**************************************************************************************************/
 {
+FILE * file;
+int pad;
+
+if (stream == NULL) {CMSconsoleWrite("fflush error: stream is NULL.", CMS_EDIT); return EOF;}
+if (stream <= GCCSTDERR) file = checkStream(stream); else file = stream;  // handle stdin and stdout
+if (!(file->access & ACCESS_WRITING)) return 0;           // nothing to do if not open for writing
+if (file->next == file->buffer) return 0;                      // nothing to do if no unwritten data
+switch (file->device) {
+   case DEVICE_CON:
+      file->next[0] = 0;                                 // terminate the line we are going to write
+      CMSconsoleWrite(file->buffer, CMS_NOEDIT);                                   // write the line
+      file->next = file->buffer;                                              // reset next char ptr
+      break;
+   case DEVICE_DSK:
+      if ((file->fscb.format[0] == 'F') && (file->next < file->last)) {                // pad buffer
+         if (file->access & ACCESS_TEXT) pad = ' '; else pad = 0;               // set pad character
+         for (; file->next < file->last; file->next++) file->next[0] = pad;                // pad it
+         }
+      file->error = CMSfileWrite(&file->fscb, -1, file->next - file->buffer);
+      if (file->error != 0) {
+         printf("fflush error: return code %u from FSWRITE.\n", file->error);         // remove this
+         return file->error;
+         }
+      break;
+   case DEVICE_PRT:
+      file->next = 0;                                                        // terminate the string
+      file->error = CMSprintLine(file->buffer);                                          // print it
+      if (file->error != 0) {
+         printf("fflush error: return code %u from PRINTL.\n", file->error);          // remove this
+         return file->error;
+         }
+      break;
+   case DEVICE_PUN:
+      for (; file->next < file->last; file->next++) file->next[0] = ' ';             // pad the card
+      file->error = CMScardPunch(file->buffer);                                          // punch it
+      if (file->error != 0) {
+         printf("fflush error: return code %u from PUNCHC.\n", file->error);          // remove this
+         return file->error;
+         }
+      break;
+   }
 return 0;
 }                                                                                   // end of fflush
 
 
-int fgetc(FILE * stream)
+int
+fgetc(FILE * stream)
 /**************************************************************************************************/
 /* int fgetc(FILE * stream)                                                                       */
 /*                                                                                                */
@@ -219,99 +234,102 @@ int fgetc(FILE * stream)
 /*        files.                                                                                  */
 /**************************************************************************************************/
 {
-char c;
 char errmsg[80];
+FILE * file;
+int c;
 int num;
 
-if (stream == NULL) {ConsoleWrite("fgetc error: stream is NULL.\n"); return EOF;}
-switch (stream->device) {
+if (stream == NULL) {CMSconsoleWrite("fgetc error: stream is NULL.", CMS_EDIT); return EOF;}
+if (stream <= GCCSTDERR) file = checkStream(stream); else file = stream;  // handle stdin and stdout
+switch (file->device) {
    case DEVICE_CON:
-      if (stream->access & ACCESS_READ_TXT) {                              // open for reading text?
-         if (stream->ungetChar >= 0) {               // was a character pushed back onto the stream?
-            c = stream->ungetChar;                                                   // yes, read it
-            stream->ungetChar = -1;                                 // set the unget buffer to empty
+      if (file->access & ACCESS_READ_TXT) {                                // open for reading text?
+         if (file->ungetChar >= 0) {                   // was a character pushed back onto the file?
+            c = file->ungetChar;                                                     // yes, read it
+            file->ungetChar = -1;                                   // set the unget buffer to empty
             break;
             }
-         if (stream->next == stream->last) {                        // empty buffer, read a new line
-            num = CMSconsoleRead(stream->buffer);
-            stream->next = stream->buffer;
-            stream->buffer[num] = '\n';          // add a newline character at the end of the buffer
-            stream->last = stream->buffer + num + 1;         // point to first byte after bytes read
+         if (file->next == file->last) {                            // empty buffer, read a new line
+            num = CMSconsoleRead(file->buffer);
+            file->next = file->buffer;
+            file->buffer[num] = '\n';            // add a newline character at the end of the buffer
+            file->last = file->buffer + num + 1;             // point to first byte after bytes read
             }
-         c = stream->next[0];                                               // deliver the character
-         stream->next++;
+         c = file->next[0];                                                 // deliver the character
+         file->next++;
          }
       else {
-         stream->error = 9;
-         ConsoleWrite("fgetc error: file not open for text input.\n");  // remove this
+         file->error = 9;
+         CMSconsoleWrite("fgetc error: file not open for text input.", CMS_EDIT);     // remove this
          return EOF;
          }
       break;
    case DEVICE_DSK:
-      if (stream->access & ACCESS_WRITING) {                                    // open for writing?
-         stream->error = 9;
-         ConsoleWrite("fgetc error: file not open for input.\n");       // remove this
+      if (file->access & ACCESS_WRITING) {                                      // open for writing?
+         file->error = 9;
+         CMSconsoleWrite("fgetc error: file not open for input.", CMS_EDIT);          // remove this
          return EOF;
          }
       else {
-         if (stream->ungetChar >= 0) {               // was a character pushed back onto the stream?
-            c = stream->ungetChar;                                                   // yes, read it
-            stream->ungetChar = -1;                                 // set the unget buffer to empty
+         if (file->ungetChar >= 0) {                   // was a character pushed back onto the file?
+            c = file->ungetChar;                                                     // yes, read it
+            file->ungetChar = -1;                                   // set the unget buffer to empty
             break;
             }
-         if (stream->next == stream->last) {                        // empty buffer, read a new line
-            stream->error = CMSfileRead(&stream->fscb, 0, &num);
-            switch (stream->error) {
+         if (file->next == file->last) {                            // empty buffer, read a new line
+            file->error = CMSfileRead(&file->fscb, 0, &num);
+            switch (file->error) {
                case 0:                                                                // no problems
-                  stream->next = stream->buffer;
-                  if (stream->access & ACCESS_TEXT) stream->buffer[num++] = '\n';       // append NL
-                  stream->last = stream->buffer + num;       // point to first byte after bytes read
+                  file->next = file->buffer;
+                  if (file->access & ACCESS_TEXT) file->buffer[num++] = '\n';           // append NL
+                  file->last = file->buffer + num;           // point to first byte after bytes read
                   break;
                case 12:                                       // we have reached the end of the file
-                  stream->error = 0;                                                 // not an error
-                  stream->eof = 1;                                                  // remember this
+                  file->error = 0;                                                   // not an error
+                  file->eof = 1;                                                    // remember this
                   return EOF;
                   break;
                default:                                               // error reading from the file
-                  sprintf(errmsg, "fgetc error: return code %d from CMSfileRead.\n", stream->error);
-                  ConsoleWrite(errmsg);                                 // remove this
+                  sprintf(errmsg, "fgetc error: return code %d from CMSfileRead.", file->error);
+                  CMSconsoleWrite(errmsg, CMS_EDIT);                                  // remove this
                   return EOF;
                   break;
                }
             }
-         c = stream->next[0];                                               // deliver the character
-         stream->next++;
+         c = file->next[0];                                                 // deliver the character
+         file->next++;                                                    // bump the buffer pointer
+         file->readPos++;                                          // bump the file position pointer
          }
       break;
    case DEVICE_PRT:
-      stream->error = 9;
-      ConsoleWrite("fgetc error: cannot read from the printer.\n");    // remove this
+      file->error = 9;
+      CMSconsoleWrite("fgetc error: cannot read from the printer.", CMS_EDIT);        // remove this
       return EOF;
       break;
    case DEVICE_PUN:
-      stream->error = 9;
-      ConsoleWrite("fgetc error: cannot read from the card punch.\n");  // remove this
+      file->error = 9;
+      CMSconsoleWrite("fgetc error: cannot read from the card punch.", CMS_EDIT);     // remove this
       return EOF;
       break;
    case DEVICE_RDR:
-      if (stream->access & ACCESS_WRITING) {                                    // open for writing?
-         stream->error = 9;
-         ConsoleWrite("fgetc error: file not open for input.\n");       // remove this
+      if (file->access & ACCESS_WRITING) {                                      // open for writing?
+         file->error = 9;
+         CMSconsoleWrite("fgetc error: file not open for input.", CMS_EDIT);          // remove this
          return EOF;
          }
       else {
-         if (stream->ungetChar >= 0) {               // was a character pushed back onto the stream?
-            c = stream->ungetChar;                                                   // yes, read it
-            stream->ungetChar = -1;                                 // set the unget buffer to empty
+         if (file->ungetChar >= 0) {                   // was a character pushed back onto the file?
+            c = file->ungetChar;                                                     // yes, read it
+            file->ungetChar = -1;                                   // set the unget buffer to empty
             break;
             }
-         if (stream->next == stream->last) {                        // empty buffer, read a new line
-            stream->error = CMScardRead(stream->buffer, &num);   // should we strip trailing blanks?
-            stream->next = stream->buffer;
-            stream->last = stream->buffer + num;             // point to first byte after bytes read
+         if (file->next == file->last) {                            // empty buffer, read a new line
+            file->error = CMScardRead(file->buffer, &num);       // should we strip trailing blanks?
+            file->next = file->buffer;
+            file->last = file->buffer + num;                 // point to first byte after bytes read
             }
-         c = stream->next[0];                                               // deliver the character
-         stream->next++;
+         c = file->next[0];                                                 // deliver the character
+         file->next++;
          }
       break;
    }
@@ -319,7 +337,39 @@ return c;
 }                                                                                    // end of fgetc
 
 
-char * fgets(char * str, int num, FILE * stream)
+int
+fgetpos(FILE * stream, fpos_t * position)
+/**************************************************************************************************/
+/* int fgetpos(FILE * stream, fpos_t * position)                                                  */
+/*                                                                                                */
+/* Updates 'position' with the file position indicator, the next byte to be read or written in    */
+/* the file.                                                                                      */
+/*                                                                                                */
+/* Returns:                                                                                       */
+/*    0 on success, -1 on failure.                                                                */
+/*                                                                                                */
+/* Notes:                                                                                         */
+/*    1.  fgetpos is only valid for a disk file that is open for reading.                         */
+/*    1.  fgetpos is only valid for a disk file.                                                  */
+/*    2.  Functioally, fgetpos is equivalent to ftell.                                            */
+/**************************************************************************************************/
+{
+FILE * file;
+
+if (stream == NULL) {CMSconsoleWrite("fgetpos error: stream is NULL.", CMS_EDIT); return 1;}
+if (stream <= GCCSTDERR) file = checkStream(stream); else file = stream;  // handle stdin and stdout
+if ((file->device == DEVICE_DSK) && (file->access & !ACCESS_WRITING))          // reading from disk?
+   *position = file->readPos;                                                // return read position
+else {
+   CMSconsoleWrite("fgetpos error: only valid for a disk file open for reading.", CMS_EDIT);
+   return -1;
+   }
+return 0;
+}                                                                                  // end of fgetpos
+
+
+char *
+fgets(char * str, int num, FILE * stream)
 /**************************************************************************************************/
 /* char * fgets(char * str, int num, FILE * stream)                                               */
 /*                                                                                                */
@@ -329,69 +379,61 @@ char * fgets(char * str, int num, FILE * stream)
 /* characters or encounters the EOF character.                                                    */
 /*                                                                                                */
 /* Returns:                                                                                       */
-/*    the a pointer to 'str', or NULL on EOF or if there is an error.                             */
+/*    the a pointer to 'str', or NULL or EOF or if there is an error.                             */
 /*                                                                                                */
 /* Notes:                                                                                         */
 /*    1.  fgets is only appropriate for a text file.                                              */
 /**************************************************************************************************/
 {
+FILE * file;
 int c;
 int i;
 
-if (stream == NULL) {
-   ConsoleWrite("fgets error: stream is NULL.\n");
-   return (char *) EOF;
-}
+if (stream == NULL) {CMSconsoleWrite("fgets error: stream is NULL.", CMS_EDIT); return (char *) EOF;}
+if (stream <= GCCSTDERR) file = checkStream(stream); else file = stream;  // handle stdin and stdout
 for (i = 0; i < num - 1; i++) {
-   c = fgetc(stream);                             // some day I will fix this to avoid calling fgetc
+   c = fgetc(file);                               // some day I will fix this to avoid calling fgetc
    if (c == EOF) {                                                     // end of file or other error
       if (i > 0) {c = 0; break;}             // return what we have read (next call will return EOF)
       return NULL;
       }
    str[i] = c;
-   if (c == '\n') {str[i + 1] = 0; break;}        // newline means we are done: terminate the string
+   if (c == '\n') {str[i + 1] = NULL; break;}     // newline means we are done: terminate the string
    }
 return str;
 }                                                                                    // end of fgets
 
 
-FILE * fopen(const char * filespec, const char * access)
+FILE *
+fopen(const char * filespec, const char * access)
 /**************************************************************************************************/
 /* FILE * fopen(const char * filespec, const char * access)                                       */
 /*                                                                                                */
 /* Open the specified file and return a stream associated with that file.                         */
 /*    filespec is a pointer to a string containing the specification of the file to be opened:    */
-/*             "CON:"   terminal console (read or write)                                          */
-/*             "PRT:"   printer (write only)                                                      */
-/*             "PUN:"   card punch (write only)                                                   */
-/*             "RDR:"   card reader (read only)                                                   */
-/*             "DSK:    filename filetype filemode [F|V [recordLength]]"                          */
-/*                      disk file (read or write), where:                                         */
-/*                      filename is the up to 8 character name.                                   */
-/*                      filetype is the up to 8 character type.                                   */
-/*                      filemode is the up to 2 character disk mode leter and optional number.    */
-/*                      F|V      specifies the record format fixed or variable.  It is ignored    */
-/*                               when opening a file for reading.                                 */
-/*                      reclen   specifies the record length.  It is required for fixed-length    */
-/*                               files, and is taken as the maximum record length for variable-   */
-/*                               length files.  It is ignored when opening a file for reading     */
+/*       "CONSOLE"   terminal console (read or write)                                             */
+/*       "PRINTER"   printer (write only)                                                         */
+/*       "PUNCH"     card punch (write only)                                                      */
+/*       "READER"    card reader (read only)                                                      */
+/*       filename filetype filemode [F|V [recordLength]]                                          */
+/*                   disk file (read or write), where:                                            */
+/*                   filename is the up to 8 character name.                                      */
+/*                   filetype is the up to 8 character type.                                      */
+/*                   filemode is the up to 2 character disk mode leter and optional number.       */
+/*                   F|V      specifies the record format fixed or variable.  It is ignored when  */
+/*                            opening a file for reading.                                         */
+/*                   reclen   specifies the record length.  It is required for fixed-length       */
+/*                            files, and is taken as the maximum record length for variable-      */
+/*                            length files.  It is ignored when opening a file for reading        */
+/*                   Each of the above items must be separated by one or more blanks.             */
 /*                                                                                                */
 /*    access   specifies how the file will be accessed (i.e. for input, output, etc):             */
-/*             "r"    Open a text file for reading                                                */
-/*             "w"    Create a text file for writing                                              */
-/*             "a"    Append to a text file                                                       */
-/*             "r+"   Open a text file for read/write                                             */
-/*             "w+"   Create a text file for read/write                                           */
-/*             "a+"   Open a text file for read/write                                             */
-/*             "rb"   Open a binary file for reading                                              */
-/*             "wb"   Create a binary file for writing                                            */
-/*             "ab"   Append to a binary file                                                     */
-/*             "rb+"  Open a binary file for read/write                                           */
-/*             "wb+"  Create a binary file for read/write                                         */
-/*             "ab+"  Open a binary file for read/write                                           */
-/*             "r+b"  Open a binary file for read/write                                           */
-/*             "w+b"  Create a binary file for read/write                                         */
-/*             "a+b"  Open a binary file for read/write                                           */
+/*             "r"   Open a text file for reading                                                 */
+/*             "w"   Create a text file for writing                                               */
+/*             "a"   Append to a text file                                                        */
+/*             "rb"  Open a binary file for reading                                               */
+/*             "wb"  Create a binary file for writing                                             */
+/*             "ab"  Append to a binary file                                                      */
 /*                                                                                                */
 /* Returns:                                                                                       */
 /*    a pointer to the stream associated with the open file, or NULL on failure.                  */
@@ -402,18 +444,21 @@ FILE * fopen(const char * filespec, const char * access)
 /*    3.  The maximum number of 800-byte blocks in a file is 16060.                               */
 /*    4.  When writing a text file, a newline character signals the end of the current record.    */
 /*    5.  When reading a text file, a newline character is inserted at the end of each record.    */
-/*    6.  When writing a fixed-length file, the buffer will be padded with blanks if needed.      */
+/*    6.  When writing a fixed-length text file the buffer will be padded with blanks if needed.  */
+/*    7.  When writing a fixed-length binary file the buffer will be padded with NULLs if needed. */
+/*    8.  Opening a file for writing causes the existing file of that name to be erased, if it    */
+/*        exists.                                                                                 */
 /**************************************************************************************************/
 {
 char * oops;
 char * s;
-char devices[NUM_DEVICES][5] = {"CON:", "DSK:", "PRT:", "PUN:", "RDR:"};
+#define ND_DEVICES NUM_DEVICES - 1
+char devices[ND_DEVICES][8] = {"CONSOLE", "PRINTER", "PUNCH", "READER"};
 char errmsg[80];
 char fileid[19];
 char fileinfo[40];
 char filename[19];
 char recfm;
-CMSCRAB * theCRAB;
 FILE * theFile;
 int i;
 int accessMode;
@@ -421,13 +466,11 @@ int devtype;
 int lrecl;
 int rc;
 
-__asm__("L %0,72(13)" : "=d" (theCRAB));                                      // get address of CRAB
-
 // First check the access mode argument.
 for (i = 0; i < NUM_MODES; i++) if (strcmp(access, modes[i]) == 0) break;
 if (i == NUM_MODES) {                                                                // invalid mode
-   sprintf(errmsg, "fopen error: invalid access mode '%s' specified.\n", access);
-   ConsoleWrite(errmsg);// should really use PERROR for all of these error messages!!!
+   sprintf(errmsg, "fopen error: invalid access mode '%s' specified.", access);
+   CMSconsoleWrite(errmsg, CMS_EDIT); // should really use PERROR for all of these error messages!!!
    return NULL;
    }
 accessMode = modeVals[i];                                                // remember the access mode
@@ -435,67 +478,67 @@ accessMode = modeVals[i];                                                // reme
 // Now check the file specification.
 strncpy(fileinfo, filespec, sizeof(fileinfo));             // because strtok modifies the string :-(
 s = strtok(fileinfo, " ");
-for (i = 0; i < NUM_DEVICES; i++) if (strcmp(s, devices[i]) == 0) break;
-if (i == NUM_DEVICES) {
-   sprintf(errmsg, "fopen error: invalid device '%s' specified.\n", s);
-   ConsoleWrite(errmsg);
+if (s == NULL) {
+   CMSconsoleWrite("fopen error: no file specified.", CMS_EDIT);
    return NULL;
    }
-else devtype = i;                                                        // remember the device type
+for (devtype = 0; devtype < ND_DEVICES; devtype++) if (strcmp(s, devices[devtype]) == 0) break;
+if (strlen(s) < strlen(filespec))                       // now check to see if their are more tokens
+   devtype = DEVICE_DSK;                               // there are... therefore must be a disk file
 
 // For a file, we must check the record format and lrecl parameters as well.
 if (devtype == DEVICE_DSK) {                          // examine the rest of the disk file arguments
    recfm = 'V';                                                             // default record format
-
    // we should open the file, get the lrecl, then allocate the buffer!!!!!!!!
-
    lrecl = 65535;                                      // assume the worst for variable format files
    memset(fileid, ' ', sizeof(fileid));                               // initialize fileid to blanks
-   s = strtok(NULL, " ");                                                            // get filename
-   if (s == NULL || strlen(s) > 8) {
-      sprintf(errmsg, "fopen error: missing/invalid filename '%s' specified.\n", s);
-      ConsoleWrite(errmsg);
+   if (strlen(s) > 8) {                                                              // get filename
+      sprintf(errmsg, "fopen error: invalid filename '%s' specified.", s);
+      CMSconsoleWrite(errmsg, CMS_EDIT);
       return NULL;
       }
    else {memcpy(fileid, s, strlen(s)); strcpy(filename, s); strcat(filename, " ");}
    s = strtok(NULL, " ");                                                            // get filetype
    if (s == NULL || strlen(s) > 8) {
-      sprintf(errmsg, "fopen error: missing/invalid filetype '%s' specified.\n", s);
-      ConsoleWrite(errmsg);
+      sprintf(errmsg, "fopen error: missing/invalid filetype '%s' specified.", s);
+      CMSconsoleWrite(errmsg, CMS_EDIT);
       return NULL;
       }
    else {memcpy(fileid + 8, s, strlen(s)); strcat(filename, s); strcat(filename, " ");}
    s = strtok(NULL, " ");                                                            // get filemode
-   if (s == NULL || strlen(s) > 2) {
-      sprintf(errmsg, "fopen error: missing/invalid filemode '%s' specified.\n", s);
-      ConsoleWrite(errmsg);
+   if (s == NULL) strcpy(s, "A");                    // if no filemode specified, "A" is the default
+   if (strlen(s) > 2) {
+      sprintf(errmsg, "fopen error: invalid filemode '%s' specified.", s);
+      CMSconsoleWrite(errmsg, CMS_EDIT);
       return NULL;
       }
    else {memcpy(fileid + 16, s, strlen(s)); strcat(filename, s);}
    fileid[18] = 0;                                                               // terminate fileid
 
-   if (accessMode & ACCESS_WRITING) {                    // are we writing or appending to the file?
+   if (accessMode & ACCESS_WRITING && s != NULL) {       // more parameters and writing to the file?
       s = strtok(NULL, " ");                                                    // get record format
-      s[0] = toupper(s[0]);
-      if (s == NULL || strlen(s) > 1 || (s[0] != 'F' && s[0] != 'V')) {
-         sprintf(errmsg, "fopen error: missing/invalid record format '%s' specified.\n", s);
-         ConsoleWrite(errmsg);
-         return NULL;
-         }
-      else recfm = s[0];
-      s = strtok(NULL, " ");                                             // get record length string
       if (s != NULL) {
-         lrecl = strtoul(s, &oops, 10);                                         // get record length
-         if (lrecl == 0 || lrecl > 65535) {
-            sprintf(errmsg, "fopen error: invalid record length '%s' specified.\n", s);
-            ConsoleWrite(errmsg);
+         s[0] = toupper(s[0]);
+         if (strlen(s) > 1 || (s[0] != 'F' && s[0] != 'V')) {
+            sprintf(errmsg, "fopen error: missing/invalid record format '%s' specified.", s);
+            CMSconsoleWrite(errmsg, CMS_EDIT);
             return NULL;
             }
-         }
-      else if (recfm == 'F') {
-         sprintf(errmsg, "fopen error: missing record length.\n", s);
-         ConsoleWrite(errmsg);
-         return NULL;
+         else recfm = s[0];
+         s = strtok(NULL, " ");                                          // get record length string
+         if (s != NULL) {
+            lrecl = strtoul(s, &oops, 10);                                      // get record length
+            if (lrecl == 0 || lrecl > 65535) {
+               sprintf(errmsg, "fopen error: invalid record length '%s' specified.", s);
+               CMSconsoleWrite(errmsg, CMS_EDIT);
+               return NULL;
+               }
+            }
+         else if (recfm == 'F') {
+            sprintf(errmsg, "fopen error: missing record length.", s);
+            CMSconsoleWrite(errmsg, CMS_EDIT);
+            return NULL;
+            }
          }
       }
    }
@@ -505,14 +548,16 @@ switch (devtype) {
    case DEVICE_CON:
       switch (accessMode) {                                    // return the appropriate file handle
          case ACCESS_READ_TXT:                                           // reading from the console
-            theFile = theCRAB->consoleInputFile;        // return pointer to file handle in the CRAB
+            if (stdin == GCCSTDIN) theFile = checkStream(stdin);             // get pointer to stdin
+            else theFile = stdin;
             break;
          case ACCESS_WRITE_TXT:                                            // writing to the console
-            theFile = theCRAB->consoleOutputFile;       // return pointer to file handle in the CRAB
+            if (stdout == GCCSTDOUT) theFile = checkStream(stdout);         // get pointer to stdout
+            else theFile = stdout;
             break;
          default:    // can't do binary I/O from/to the console yet, must support this eventually!!!
-            sprintf(errmsg, "fopen error: access '%s' for console not yet supported.\n", access);
-            ConsoleWrite(errmsg);
+            sprintf(errmsg, "fopen error: access '%s' for console not yet supported.", access);
+            CMSconsoleWrite(errmsg, CMS_EDIT);
             theFile = NULL;
             }
       break;
@@ -527,26 +572,31 @@ switch (devtype) {
          theFile->next = theFile->last = theFile->buffer + lrecl;      // empty buffer at this point
       theFile->eof = 0;                                                            // not yet at EOF
       theFile->error = 0;                                                       // and no errors yet
+      theFile->readPos = 0;                                            // have not read anything yet
       theFile->access = accessMode;
       theFile->device = devtype;
       theFile->ungetChar = -2;                              // nothing read, so ungetc not yet valid
-      if (accessMode & ACCESS_APPENDING) i = 0;                // appending, so start at next record
-      else i = 1;                                         // not appending, so start at first record
+      if (accessMode & ACCESS_APPENDING)
+         i = 0;                                                // appending, so start at next record
+      else {                                                            // not appending to the file
+         i = 1;                                                          // so start at first record
+         if (accessMode & ACCESS_WRITING) CMSfileErase(fileid);                    // erase the file
+         }
       strcpy(theFile->name, filename);       // copy in the filename that will be used in error msgs
       rc = CMSfileOpen(fileid, theFile->buffer, lrecl, recfm, 1, i, &theFile->fscb);
       switch (rc) {                                                        // handle the return code
          case 0:                                                                         // success!
             break;
          case 20:                                             // the fileid is syntactically invalid
-            sprintf(errmsg, "fopen error: invalid fileid '%s'.\n", theFile->name);
-            ConsoleWrite(errmsg);
+            sprintf(errmsg, "fopen error: invalid fileid '%s'.", theFile->name);
+            CMSconsoleWrite(errmsg, CMS_EDIT);
             CMSmemoryFree(theFile);                                      // we won't be needing this
             theFile = NULL;
             break;
          case 28:                                                          // the file was not found
             if (accessMode & ACCESS_WRITING) break;               // file not found is OK if writing
-            sprintf(errmsg, "fopen error: file '%s' not found.\n", theFile->name);
-            ConsoleWrite(errmsg);
+            sprintf(errmsg, "fopen error: file '%s' not found.", theFile->name);
+            CMSconsoleWrite(errmsg, CMS_EDIT);
             CMSmemoryFree(theFile);                                      // we won't be needing this
             theFile = NULL;
             break;
@@ -561,12 +611,13 @@ switch (devtype) {
          theFile->last[1] = 0;                                              // add a null terminator
          theFile->eof = 0;                                                         // not yet at EOF
          theFile->error = 0;                                                    // and no errors yet
+         theFile->readPos = 0;                                                             // unused
          theFile->access = accessMode;
          theFile->device = devtype;
          theFile->ungetChar = -2;                           // nothing read, so ungetc not yet valid
          }
       else {
-         ConsoleWrite("fopen error: cannot read from the printer.\n");
+         CMSconsoleWrite("fopen error: cannot read from the printer.", CMS_EDIT);
          theFile = NULL;
          }
       break;
@@ -578,18 +629,19 @@ switch (devtype) {
          theFile->last = theFile->buffer + 80;                 // point to 'extra' byte after buffer
          theFile->eof = 0;                                                         // not yet at EOF
          theFile->error = 0;                                                    // and no errors yet
+         theFile->readPos = 0;                                                             // unused
          theFile->access = accessMode;
          theFile->device = devtype;
          theFile->ungetChar = -2;                           // nothing read, so ungetc not yet valid
          }
       else {
-         ConsoleWrite("fopen error: cannot read from the card punch.\n");
+         CMSconsoleWrite("fopen error: cannot read from the card punch.", CMS_EDIT);
          theFile = NULL;
          }
       break;
    case DEVICE_RDR:
       if (accessMode & ACCESS_WRITING) {
-         ConsoleWrite("fopen error: cannot write to the card reader.\n");
+         CMSconsoleWrite("fopen error: cannot write to the card reader.", CMS_EDIT);
          theFile = NULL;
          }
       else {
@@ -598,6 +650,7 @@ switch (devtype) {
          theFile->next = theFile->last = theFile->buffer + 151;        // empty buffer at this point
          theFile->eof = 0;                                                         // not yet at EOF
          theFile->error = 0;                                                    // and no errors yet
+         theFile->readPos = 0;                                                             // unused
          theFile->access = accessMode;
          theFile->device = devtype;
          theFile->ungetChar = -2;                           // nothing read, so ungetc not yet valid
@@ -608,7 +661,8 @@ return theFile;
 }                                                                                    // end of fopen
 
 
-int fprintf(FILE * stream, const char *format, ...)
+int
+fprintf(FILE * stream, const char *format, ...)
 /**************************************************************************************************/
 /* int fprintf(FILE * stream, const char * format, ...)                                           */
 /*                                                                                                */
@@ -623,22 +677,25 @@ int fprintf(FILE * stream, const char *format, ...)
 /*    the number of characters written to the stream.                                             */
 /**************************************************************************************************/
 {
+FILE * file;
 int rc;
 va_list arg;
 
-if (stream == NULL) {ConsoleWrite("fprintf error: stream is NULL.\n"); return EOF;}
+if (stream == NULL) {CMSconsoleWrite("fprintf error: stream is NULL.", CMS_EDIT); return EOF;}
+if (stream <= GCCSTDERR) file = checkStream(stream); else file = stream;  // handle stdin and stdout
 va_start(arg, format);
-rc = vvprintf(format, arg, stream, NULL);                          // write the output to the stream
+rc = vvprintf(format, arg, file, NULL);                            // write the output to the stream
 va_end(arg);
 return rc;
 }                                                                                  // end of fprintf
 
 
-int fputc(int c, FILE * stream)
+int
+fputc(int c, FILE * stream)
 /**************************************************************************************************/
 /* int fputc(int c, FILE * stream)                                                                */
 /*                                                                                                */
-/* Write a character to the open output stream. This is the same as putc().                       */
+/* Write a character to the open output stream.  This is the same as putc().                      */
 /*    c        the character to be written.                                                       */
 /*    stream   a pointer to the open output stream.                                               */
 /*                                                                                                */
@@ -647,98 +704,110 @@ int fputc(int c, FILE * stream)
 /**************************************************************************************************/
 {
 char errmsg[80];
-char s[2];
-int rc;
+FILE * file;
 int writeRecord;                                   // true if we should write out the current record
 
-if (stream == NULL) {ConsoleWrite("fputc error: stream is NULL.\n"); return EOF;}
-switch (stream->device) {
+if (stream == NULL) {CMSconsoleWrite("fputc error: stream is NULL.", CMS_EDIT); return EOF;}
+if (stream <= GCCSTDERR) file = checkStream(stream); else file = stream;  // handle stdin and stdout
+switch (file->device) {
    case DEVICE_CON:
-      if (stream->access & ACCESS_WRITE_TXT) {                             // open for writing text?
-         s[0] = c; s[1] = 0;
-         ConsoleWrite(s);
+      if (file->access & ACCESS_WRITE_TXT) {                               // open for writing text?
+         writeRecord = 0;
+         if (c == '\n') writeRecord = 1;                               // newline means write record
+         else {                                                    // not handling newline character
+            file->next[0] = c;
+            file->next = file->next + 1;
+            if (file->next == file->last) writeRecord = 1;
+            }
+         if (writeRecord) {                                       // write the buffer to the console
+            file->next[0] = 0;                           // terminate the line we are going to write
+            CMSconsoleWrite(file->buffer, CMS_EDIT);
+            file->next = file->buffer;                           // reset the next character pointer
+            }
          }
       else {
-         stream->error = 9;
-         ConsoleWrite("fputc error: file not open for text output of character '"); // remove
-         s[0] = c; s[1] = 0; ConsoleWrite(s); ConsoleWrite("'.\n");
+         file->error = 9;
+         sprintf(errmsg,
+            "fputc error: file not open for text output of character    '%c', open for %d at %08X.",
+             c, file->access, file);
+         CMSconsoleWrite(errmsg, CMS_EDIT);
          return EOF;
          }
       break;
    case DEVICE_DSK:
       writeRecord = 0;
-      if (stream->access & ACCESS_WRITING) {                                    // open for writing?
-         if ((c == '\n') && (stream->access & ACCESS_TEXT)) {          // newline means write record
+      if (file->access & ACCESS_WRITING) {                                      // open for writing?
+         if ((c == '\n') && (file->access & ACCESS_TEXT)) {            // newline means write record
             writeRecord = 1;
-            if (stream->fscb.format[0] == 'F')                // pad fixed length record with blanks
-               for (; stream->next < stream->last; stream->next++) stream->next[0] = ' ';
+            if (file->fscb.format[0] == 'F')                  // pad fixed length record with blanks
+               for (; file->next < file->last; file->next++) file->next[0] = ' ';
             }
          else {                                                    // not handling newline character
-            stream->next[0] = c;
-            stream->next = stream->next + 1;
-            if (stream->next == stream->last) writeRecord = 1;
+            file->next[0] = c;
+            file->next = file->next + 1;
+            if (file->next == file->last) writeRecord = 1;
             }
          if (writeRecord) {                                          // write the buffer to the file
-            stream->error = CMSfileWrite(&stream->fscb, -1, stream->next - stream->buffer);
-            if (stream->error != 0) {
-               sprintf(errmsg, "fputc error: return code %u from FSWRITE.\n", rc);    // remove this
-               ConsoleWrite(errmsg);
+            file->error = CMSfileWrite(&file->fscb, -1, file->next - file->buffer);
+            if (file->error != 0) {
+               sprintf(errmsg, "fputc error: return code %u from FSWRITE attempting to write [%c].", file-> error, c);
+               CMSconsoleWrite(errmsg, CMS_EDIT);
                return EOF;
                }
-            stream->fscb.recordNum = 0;
-            stream->next = stream->buffer;                       // reset the next character pointer
+            file->fscb.recordNum = 0;
+            file->next = file->buffer;                           // reset the next character pointer
             }
          }
       else {
-         stream->error = 9;
-         ConsoleWrite("fputc error: file not open for output.\n");   // remove
+         file->error = 9;
+         CMSconsoleWrite("fputc error: file not open for output.", CMS_EDIT);         // remove this
          return EOF;
          }
       break;
    case DEVICE_PRT:
-      if (stream->access & ACCESS_WRITING) {
-         stream->next[0] = c;
-         stream->next = stream->next + 1;
-         if (stream->next == stream->last) {                      // write the buffer to the printer
-            stream->next[0] = 0;                                             // terminate the string
-            stream->error = CMSprintLine(stream->buffer);
-            if (stream->error != 0) {
-               sprintf(errmsg, "fputc error: return code %u from PRINTL.\n", rc);     // remove this
-               ConsoleWrite(errmsg);
+      if (file->access & ACCESS_WRITING) {
+         file->next[0] = c;
+         file->next = file->next + 1;
+         if (file->next == file->last) {                          // write the buffer to the printer
+            file->next[0] = 0;                                               // terminate the string
+            file->error = CMSprintLine(file->buffer);
+            if (file->error != 0) {
+               sprintf(errmsg, "fputc error: return code %u from PRINTL.", file->error);
+               CMSconsoleWrite(errmsg, CMS_EDIT);
                return EOF;
                }
-            stream->next = stream->buffer;                       // reset the next character pointer
+            file->next = file->buffer;                           // reset the next character pointer
             }
          }
       else {
-         stream->error = 9;
-         ConsoleWrite("fputc error: cannot read from the printer.\n"); // remove this
+         file->error = 9;
+         CMSconsoleWrite("fputc error: cannot read from the printer.", CMS_EDIT);     // remove this
          return EOF;
          }
       break;
    case DEVICE_PUN:
-      if (stream->access & ACCESS_WRITING) {
-         stream->next[0] = c;
-         stream->next = stream->next + 1;
-         if (stream->next == stream->last) {                   // write the buffer to the card punch
-            stream->error = CMScardPunch(stream->buffer);
-            if (stream->error != 0) {
-               sprintf(errmsg, "fputc error: return code %u from PUNCHC.\n", rc);     // remove this
-               ConsoleWrite(errmsg);
+      if (file->access & ACCESS_WRITING) {
+         file->next[0] = c;
+         file->next = file->next + 1;
+         if (file->next == file->last) {                       // write the buffer to the card punch
+            file->error = CMScardPunch(file->buffer);
+            if (file->error != 0) {
+               sprintf(errmsg, "fputc error: return code %u from PUNCHC.", file->error);
+               CMSconsoleWrite(errmsg, CMS_EDIT);
                return EOF;
                }
-            stream->next = stream->buffer;                       // reset the next character pointer
+            file->next = file->buffer;                           // reset the next character pointer
             }
          }
       else {
-         stream->error = 9;
-         ConsoleWrite("fputc error: cannot read from the card punch.\n"); // removes
+         file->error = 9;
+         CMSconsoleWrite("fputc error: cannot read from the card punch.", CMS_EDIT);  // remove this
          return EOF;
          }
       break;
    case DEVICE_RDR:
-      stream->error = 9;
-      ConsoleWrite("fputc error: cannot write to the card reader.\n"); // remove this
+      file->error = 9;
+      CMSconsoleWrite("fputc error: cannot write to the card reader.", CMS_EDIT);     // remove this
       return EOF;
       break;
    }
@@ -746,7 +815,8 @@ return c;
 }                                                                                    // end of fputc
 
 
-int fputs(const char * str, FILE * stream)
+int
+fputs(const char * str, FILE * stream)
 /**************************************************************************************************/
 /* int fputs(const char * str, FILE * stream)                                                     */
 /*                                                                                                */
@@ -758,43 +828,24 @@ int fputs(const char * str, FILE * stream)
 /*    non-negative on success, EOF on failure.                                                    */
 /**************************************************************************************************/
 {
-char * finger;
-char c;
+FILE * file;
+int c;
 int i;
 int rc;
 
-if (stream == NULL) {ConsoleWrite("fputs error: stream is NULL.\n"); return EOF;}
-switch (stream->device) {
-   case DEVICE_CON:
-      if (stream->access & ACCESS_WRITE_TXT) {                             // open for writing text?
-         i = strlen(str);
-         finger = str;
-         while (i > 130) {                                                  // write 130-byte chunks
-            c = finger[130];
-            finger[130] = 0;
-            ConsoleWrite(finger);
-            finger = finger + 130;
-            finger[0] = c;
-            i = i + 130;
-            }
-         ConsoleWrite(finger);                              // write out the remaining characters
-         rc = 0;
-         }
-      else {
-         stream->error = 9;
-         ConsoleWrite("fputs error: file not open for text output.\n");            // remove this
-         return EOF;
-         }
-      break;
-   case DEVICE_DSK:                                  // I promise to fix this code to not call fputc
+if (stream == NULL) {CMSconsoleWrite("fputs error: stream is NULL.", CMS_EDIT); return EOF;}
+if (stream <= GCCSTDERR) file = checkStream(stream); else file = stream;  // handle stdin and stdout
+switch (file->device) {
+   case DEVICE_CON:                                  // I promise to fix this code to not call fputc
+   case DEVICE_DSK:
    case DEVICE_PRT:
    case DEVICE_PUN:
       rc = strlen(str);
-      for (i = 0; i < rc; i++) if (fputc(str[i], stream) == EOF) return EOF;
+      for (i = 0; i < rc; i++) if (fputc(str[i], file) == EOF) return EOF;
       break;
    case DEVICE_RDR:
-      stream->error = 9;
-      ConsoleWrite("fputs error: cannot write to the card reader.\n");             // remove this
+      file->error = 9;
+      CMSconsoleWrite("fputs error: cannot write to the card reader.", CMS_EDIT);     // remove this
       return EOF;
       break;
    }
@@ -802,9 +853,12 @@ return rc;
 }                                                                                    // end of fputs
 
 
-int xread(void *buffer, size_t size, size_t count, FILE * stream)
+/* OK, this is really bizzare.  Must use a #define to get around a bug in my resident library     */
+/* loading.  Thus this routine is (temporarily) named xread.                                      */
+int
+xread(void * buffer, size_t size, size_t count, FILE * stream)
 /**************************************************************************************************/
-/* int fread(void *buffer, size_t size, size_t count, FILE * stream)                              */
+/* int fread(void * buffer, size_t size, size_t count, FILE * stream)                             */
 /*                                                                                                */
 /* Read 'num' objects of size 'size' from the open input stream and write them to 'buffer'.       */
 /*    buffer   the array into which the objects are to be read.                                   */
@@ -822,22 +876,24 @@ int xread(void *buffer, size_t size, size_t count, FILE * stream)
 /*        record.  Thus the file is treated as a stream of bytes.                                 */
 /**************************************************************************************************/
 {
-char c;
 char * finger;
+FILE * file;
+int c;
 int i;
 int j;
 
-if (stream == NULL) {ConsoleWrite("fread error: stream is NULL.\n"); return EOF;}
-switch (stream->device) {
+if (stream == NULL) {CMSconsoleWrite("fread error: stream is NULL.", CMS_EDIT); return EOF;}
+if (stream <= GCCSTDERR) file = checkStream(stream); else file = stream;  // handle stdin and stdout
+switch (file->device) {
    case DEVICE_CON:
       break;                                                                    // not yet supported
-   case DEVICE_DSK:                                   // I promise to fix this code to not call getc
+   case DEVICE_DSK:                                  // I promise to fix this code to not call fgetc
    case DEVICE_RDR:
-// check open for reading!!!!!!!!!!!!!!!!!!!!!
+      // check open for reading!!!!!!!!!!!!!!!!!!!!!
       finger = (char *) buffer;
       for (i = 0; i < count; i++) {
          for (j = 0; j < size; j++) {
-            c = getc(stream);                      // some day I will fix this to avoid calling getc
+            c = fgetc(file);                      // some day I will fix this to avoid calling fgetc
             if (c == EOF) return i;                                    // end of file or other error
             finger[0] = c;
             finger++;
@@ -846,12 +902,12 @@ switch (stream->device) {
       break;
    case DEVICE_PRT:
       stream->error = 9;
-      ConsoleWrite("fread error: cannot read from the printer.\n");                // remove this
+      CMSconsoleWrite("fread error: cannot read from the printer.", CMS_EDIT);        // remove this
       return 0;
       break;
    case DEVICE_PUN:
       stream->error = 9;
-      ConsoleWrite("fread error: cannot read from the card punch.\n");             // remove this
+      CMSconsoleWrite("fread error: cannot read from the card punch.", CMS_EDIT);     // remove this
       return 0;
       break;
    }
@@ -859,7 +915,8 @@ return i;
 }                                                                                    // end of fread
 
 
-FILE * freopen(const char * filespec, const char * access, FILE * stream)
+FILE *
+freopen(const char * filespec, const char * access, FILE * stream)
 /**************************************************************************************************/
 /* FILE * freopen(const char * filespec, const char * access, FILE * stream)                      */
 /*                                                                                                */
@@ -873,7 +930,8 @@ return NULL;
 }                                                                                  // end of freopen
 
 
-int fscanf(FILE * stream, const char * format, ...)
+int
+fscanf(FILE * stream, const char * format, ...)
 /**************************************************************************************************/
 /* int fscanf(FILE * stream, const char * format, ...)                                            */
 /*                                                                                                */
@@ -889,18 +947,113 @@ int fscanf(FILE * stream, const char * format, ...)
 /*    the number of variables successfully assigned values.                                       */
 /**************************************************************************************************/
 {
-va_list arg;
+FILE * file;
 int rc;
+va_list arg;
 
-if (stream == NULL) {ConsoleWrite("fscanf error: stream is NULL.\n"); return EOF;}
+if (stream == NULL) {CMSconsoleWrite("fscanf error: stream is NULL.", CMS_EDIT); return EOF;}
+if (stream <= GCCSTDERR) file = checkStream(stream); else file = stream;  // handle stdin and stdout
 va_start(arg, format);
-rc = vvscanf(format, arg, stream, NULL);
+rc = vvscanf(format, arg, file, NULL);
 va_end(arg);
 return rc;
 }                                                                                       // of fscanf
 
 
-long ftell(FILE * stream)
+int
+fseek(FILE * stream, long offset, int origin)
+/**************************************************************************************************/
+/* int fseek(FILE * stream, long offset, int origin)                                              */
+/*                                                                                                */
+/* Moves the file position indicator for the specified stream to the specified position relative  */
+/* to 'origin', which may be:                                                                     */
+/*    SEEK_SET   Seek from the start of the file.                                                 */
+/*    SEEK_CUR   Seek from the current location.                                                  */
+/*    SEEK_END   Seek from the end of the file.                                                   */
+/*                                                                                                */
+/* Returns:                                                                                       */
+/*    0 on success, non-zero on failure.                                                          */
+/*                                                                                                */
+/* Note:                                                                                          */
+/*    1.  fseek is only valid for a disk file that is open for reading.                           */
+/**************************************************************************************************/
+{
+FILE * file;
+int here;
+int i;
+int new;
+
+if (stream == NULL) {CMSconsoleWrite("fseek error: stream is NULL.", CMS_EDIT); return 1;}
+if (stream <= GCCSTDERR) file = checkStream(stream); else file = stream;  // handle stdin and stdout
+if ((file->device == DEVICE_DSK) && !(file->access & ACCESS_WRITING)) {    // reading from disk?
+   file->ungetChar = -2;                                                   // clear the unget flag
+   here = file->readPos;                                                  // remember where we are
+   switch (origin) {
+      case SEEK_SET:
+         new = offset;
+         break;
+      case SEEK_CUR:
+         new = here + offset;
+         break;
+      case SEEK_END:
+         while (1) if (fgetc(file) == EOF) break;                              // get to end of file
+         new = here + offset;
+         break;
+      }
+   if (new < here) {                    // must go back to the beginning of the file & count forward
+      rewind(file);                                             // avoid this call??????????????????
+      here = 0;
+      }
+   for (i = here; i < new; i++) if (fgetc(file) == EOF) break;
+   }
+else {
+   CMSconsoleWrite("fseek error: only valid for a disk stream.", CMS_EDIT);
+   return 1;
+   }
+return 0;
+}                                                                                        // of fseek
+
+
+int
+fsetpos(FILE * stream, const fpos_t * position)
+/**************************************************************************************************/
+/* int fsetpos(FILE * stream, fpos_t * position)                                                  */
+/*                                                                                                */
+/* Moves the file position indicator for the specified stream to the specified position.  A       */
+/* position of 0 moves the indicator to the beginning of the file.                                */
+/*                                                                                                */
+/* Returns:                                                                                       */
+/*    0 on success, non-zero on failure.                                                          */
+/*                                                                                                */
+/* Note:                                                                                          */
+/*    1.  fsetpos is only valid for a disk file that is open for reading.                         */
+/**************************************************************************************************/
+{
+FILE * file;
+int here;
+int i;
+
+if (stream == NULL) {CMSconsoleWrite("fsetpos error: stream is NULL.", CMS_EDIT); return 1;}
+if (stream <= GCCSTDERR) file = checkStream(stream); else file = stream;  // handle stdin and stdout
+if ((file->device == DEVICE_DSK) && !(file->access & ACCESS_WRITING)) {        // reading from disk?
+   file->ungetChar = -2;                                                     // clear the unget flag
+   here = file->readPos;                                                    // remember where we are
+   if (position < here) {               // must go back to the beginning of the file & count forward
+      rewind(file);                                             // avoid this call??????????????????
+      here = 0;
+      }
+   for (i = here; i < position; i++) if (fgetc(file) == EOF) break;
+   }
+else {
+   CMSconsoleWrite("fsetpos error: only valid for a disk file open for reading.", CMS_EDIT);
+   return 1;
+   }
+return 0;
+}                                                                                  // end of fsetpos
+
+
+long
+ftell(FILE * stream)
 /**************************************************************************************************/
 /* long ftell(FILE * stream)                                                                      */
 /*                                                                                                */
@@ -908,14 +1061,28 @@ long ftell(FILE * stream)
 /*    stream   a pointer to the open stream.                                                      */
 /*                                                                                                */
 /* Returns:                                                                                       */
-/*    the position of the next character to be read or written.                                   */
+/*    the position of the next character to be read or written, or -1 if there is an error.       */
+/*                                                                                                */
+/* Notes:                                                                                         */
+/*    1.  ftell is only valid for a disk file that is open for reading.                           */
+/*    2.  Functioally, ftell is equivalent to fgetpos.                                            */
 /**************************************************************************************************/
 {
-return (stream->next - stream->buffer);
+FILE * file;
+
+if (stream == NULL) {CMSconsoleWrite("ftell error: stream is NULL.", CMS_EDIT); return 1;}
+if (stream <= GCCSTDERR) file = checkStream(stream); else file = stream;  // handle stdin and stdout
+if ((file->device == DEVICE_DSK) && !(file->access & ACCESS_WRITING))          // reading from disk?
+   return file->readPos;                                                     // return read position
+else {
+   CMSconsoleWrite("ftell error: only valid for a disk file open for reading.", CMS_EDIT);
+   return -1;
+   }
 }                                                                                    // end of ftell
 
 
-int fwrite(const void * buffer, size_t size, size_t count, FILE * stream)
+int
+fwrite(const void * buffer, size_t size, size_t count, FILE * stream)
 /**************************************************************************************************/
 /* int fwrite(const void * buffer, size_t size, size_t count, FILE * stream)                      */
 /*                                                                                                */
@@ -936,28 +1103,30 @@ int fwrite(const void * buffer, size_t size, size_t count, FILE * stream)
 /**************************************************************************************************/
 {
 char * finger;
+FILE * file;
 int i;
 int j;
 
-if (stream == NULL) {ConsoleWrite("fwrite error: stream is NULL.\n"); return EOF;}
-switch (stream->device) {
+if (stream == NULL) {CMSconsoleWrite("fwrite error: stream is NULL.", CMS_EDIT); return EOF;}
+if (stream <= GCCSTDERR) file = checkStream(stream); else file = stream;  // handle stdin and stdout
+switch (file->device) {
    case DEVICE_CON:
       break;                                                                    // not yet supported
-   case DEVICE_DSK:                                   // I promise to fix this code to not call putc
+   case DEVICE_DSK:                                  // I promise to fix this code to not call fputc
    case DEVICE_PRT:
    case DEVICE_PUN:
 // check for writing!!!!!!!!!!!!!!!!!!!
       finger = (char *) buffer;
       for (i = 0; i < count; i++) {
          for (j = 0; j < size; j++) {
-            if (putc(finger[0], stream) == EOF) return i;
+            if (fputc(finger[0], file) == EOF) return i;
             finger++;
             }
          }
       break;
    case DEVICE_RDR:
-      stream->error = 9;
-      ConsoleWrite("fwwrite error: cannot write to the card reader.\n");           // remove this
+      file->error = 9;
+      CMSconsoleWrite("fwwrite error: cannot write to the card reader.", CMS_EDIT);   // remove this
       return 0;
       break;
    }
@@ -965,22 +1134,28 @@ return i;
 }                                                                                   // end of fwrite
 
 
-int getc(FILE * stream)
+int
+getc(FILE * stream)
 /**************************************************************************************************/
 /* int getc(FILE * stream)                                                                        */
 /*                                                                                                */
-/* Read the next character from the specified output stream. This is identical to fgetc().        */
+/* Read the next character from the specified output stream.  This is identical to fgetc().       */
 /*    stream   a pointer to the open output stream.                                               */
 /*                                                                                                */
 /* Returns:                                                                                       */
 /*    the character, or EOF if there is an error.                                                 */
+/*                                                                                                */
+/* Notes:                                                                                         */
+/*    1.  A newline character is added at the end of each physical line read when reading TEXT    */
+/*        files.                                                                                  */
 /**************************************************************************************************/
 {
 return fgetc(stream);
 }                                                                                     // end of getc
 
 
-int getchar(void)
+int
+getchar(void)
 /**************************************************************************************************/
 /* int getchar(void)                                                                              */
 /*                                                                                                */
@@ -990,41 +1165,37 @@ int getchar(void)
 /*    the character, or EOF if there is an error.                                                 */
 /*                                                                                                */
 /* Notes:                                                                                         */
-/*    1.  If there is no open FILE for console input, we open it and store the handle in the GCC  */
-/*        stack.  This memory will be freed in CSTART ASSEMBLE.                                   */
+/*    1.  A newline character is added at the end of each physical line read when reading TEXT    */
+/*        files.                                                                                  */
 /**************************************************************************************************/
 {
-CMSCRAB * theCRAB;
-
-__asm__(LOADCRAB : "=d" (theCRAB));                                           // get address of CRAB
-return getc(theCRAB->consoleInputFile);                           // get the character and return it
+return fgetc(stdin);                                              // get the character and return it
 }                                                                                  // end of getchar
 
 
-char * gets(char * str)
+char *
+gets(char * str)
 /**************************************************************************************************/
 /* char * gets(char * str)                                                                        */
 /*                                                                                                */
 /* Read characters from the console and place them into 'str', terminating them with a NULL.      */
-/* gets() stops when it reaches the end of a line, in which case 'str' will contain a newline     */
-/* character.  fgets() stops when it encounters the EOF character.                                */
+/* gets() stops when it reaches the end of a line.                                                */
 /*                                                                                                */
 /* Returns:                                                                                       */
 /*    a pointer to 'str', or EOF if there is an error.                                            */
 /*                                                                                                */
 /* Notes:                                                                                         */
-/*    1.  If there is no open FILE for console input, we open it and store the handle in the GCC  */
-/*        stack.  This memory will be freed in CSTART ASSEMBLE.                                   */
+/*    1.  The buffer to which 'str' points must be 131 bytes long.                                */
 /**************************************************************************************************/
 {
-CMSCRAB * theCRAB;
-
-__asm__(LOADCRAB : "=d" (theCRAB));                                           // get address of CRAB
-return fgets(str, 131, theCRAB->consoleInputFile);                   // get the string and return it
+fgets(str, 131, stdin);                                                            // get the string
+if ((str != NULL) && (str != EOF)) str[strlen(str) - 1] = NULL;         // replace newline with NULL
+return str;
 }                                                                                     // end of gets
 
 
-int printf(const char * format, ...)
+int
+printf(const char * format, ...)
 /**************************************************************************************************/
 /* int printf(const char * format, ...)                                                           */
 /*                                                                                                */
@@ -1037,34 +1208,27 @@ int printf(const char * format, ...)
 /*                                                                                                */
 /* Returns:                                                                                       */
 /*    the number of characters printed.                                                           */
-/*                                                                                                */
-/* Notes:                                                                                         */
-/*    1.  If there is no open FILE for console output, we open it and store the handle in the GCC */
-/*        stack.  This memory will be freed in CSTART ASSEMBLE.                                   */
 /**************************************************************************************************/
 {
-CMSCRAB * theCRAB;
 int rc;
+FILE * file;
 va_list arg;
 
-__asm__(LOADCRAB : "=d" (theCRAB));                                           // get address of CRAB
-if (theCRAB->consoleOutputFile == NULL) {
-   __debug(33);
-   ConsoleWrite("NULL console file handle in printf!\n");
-   return 0;
-   }
+if (stdout == GCCSTDOUT) file = checkStream(stdout);                        // get pointer to stdout
+else file = stdout;
 va_start(arg, format);
-rc = vvprintf(format, arg, theCRAB->consoleOutputFile, NULL);
+rc = vvprintf(format, arg, file, NULL);
 va_end(arg);
 return rc;
 }                                                                                   // end of printf
 
 
-int putc(int c, FILE * stream)
+int
+putc(int c, FILE * stream)
 /**************************************************************************************************/
 /* int putc(int c, FILE * stream)                                                                 */
 /*                                                                                                */
-/* Write a character to the specified output stream.                                              */
+/* Write a character to the specified output stream.  This is the same as fputc().                */
 /*    c        the character to be written.                                                       */
 /*    stream   a pointer to the open output stream.                                               */
 /*                                                                                                */
@@ -1076,7 +1240,8 @@ return fputc(c, stream);
 }                                                                                     // end of putc
 
 
-int putchar(int c)
+int
+putchar(int c)
 /**************************************************************************************************/
 /* int putchar(int c)                                                                             */
 /*                                                                                                */
@@ -1087,45 +1252,28 @@ int putchar(int c)
 /*    the character, or EOF if there is an error.                                                 */
 /**************************************************************************************************/
 {
-char s[2];
-
-s[0] = c; s[1] = 0;
-ConsoleWrite(s);                                                      // write it to the terminal
+return fputc(c, stdout);
 }                                                                                  // end of putchar
 
 
-int puts(char * s)
+int
+puts(char * str)
 /**************************************************************************************************/
-/* int fputs(const char * s)                                                                      */
+/* int fputs(const char * str)                                                                    */
 /*                                                                                                */
 /* write a string to the console.                                                                 */
-/*    s        the string to be written.                                                          */
+/*    str      the string to be written.                                                          */
 /*                                                                                                */
 /* Returns:                                                                                       */
 /*    non-negative on success, EOF on failure.                                                    */
 /**************************************************************************************************/
 {
-char * finger;
-char c;
-int i;
-int rc;
-
-i = strlen(s);
-finger = s;
-while (i > 130) {                                                           // write 130-byte chunks
-   c = finger[130];
-   finger[130] = 0;
-   ConsoleWrite(finger);
-   finger = finger + 130;
-   finger[0] = c;
-   i = i + 130;
-   }
-ConsoleWrite(finger);
-return 0;
+return fputs(str, stdout);
 }                                                                                     // end of puts
 
 
-int remove(const char * fname)
+int
+remove(const char * fname)
 /**************************************************************************************************/
 /* int remove(const char * fname)                                                                 */
 /*                                                                                                */
@@ -1144,15 +1292,16 @@ char errmsg[80];
 char fileid[19];
 
 if (GetFileid(fname, fileid) == 0) {                       // parse the filename, filetype, filemode
-   sprintf(errmsg, "remove error: missing/invalid fileid '%s' specified.\n", fname);
-   ConsoleWrite(errmsg);
+   sprintf(errmsg, "remove error: missing/invalid fileid '%s' specified.", fname);
+   CMSconsoleWrite(errmsg, CMS_EDIT);
    return NULL;
    }
 return CMSfileErase(fileid);
 }                                                                                   // end of remove
 
 
-int rename(const char * oldfname, const char * newfname)
+int
+rename(const char * oldfname, const char * newfname)
 /**************************************************************************************************/
 /* int rename(const char * oldfname, const char * newfname)                                       */
 /*                                                                                                */
@@ -1172,22 +1321,87 @@ char newfileid[19];
 char oldfileid[19];
 
 if (GetFileid(oldfname, oldfileid) == 0) {                 // parse the filename, filetype, filemode
-   sprintf(errmsg, "rename error: missing/invalid fileid '%s' specified for 'oldfname'.\n",
+   sprintf(errmsg, "rename error: missing/invalid fileid '%s' specified for 'oldfname'.",
       oldfname);
-   ConsoleWrite(errmsg);
+   CMSconsoleWrite(errmsg, CMS_EDIT);
    return NULL;
    }
 if (GetFileid(newfname, newfileid) == 0) {                 // parse the filename, filetype, filemode
-   sprintf(errmsg, "rename error: missing/invalid fileid '%s' specified for 'newfname'.\n",
+   sprintf(errmsg, "rename error: missing/invalid fileid '%s' specified for 'newfname'.",
       newfname);
-   ConsoleWrite(errmsg);
+   CMSconsoleWrite(errmsg, CMS_EDIT);
    return NULL;
    }
 return CMSfileRename(oldfileid, newfileid);
 }                                                                                   // end of rename
 
 
-int scanf(const char * format, ...)
+void
+rewind(FILE * stream)
+/**************************************************************************************************/
+/* void rewind(FILE * stream)                                                                     */
+/*                                                                                                */
+/* Move the file position indicator to the beginning of the specified stream, and clears the      */
+/* error and EOF flags associated with that stream.                                               */
+/*    stream   a pointer to the open stream.                                                      */
+/**************************************************************************************************/
+{
+FILE * file;
+int rw;
+
+if (stream == NULL) {CMSconsoleWrite("rewind error: stream is NULL.", CMS_EDIT); return EOF;}
+if (stream <= GCCSTDERR) file = checkStream(stream); else file = stream;  // handle stdin and stdout
+switch (file->device) {
+   case DEVICE_CON:
+      break;
+   case DEVICE_DSK:
+      if (file->access & ACCESS_WRITING) {                            // are we writing to the file?
+         file->next = file->buffer;                           // nothing in the buffer at this point
+         file->last = file->buffer + file->fscb.bufferSize;       // point to 'extra' byte after buf
+         rw = CMS_POINTWRITE;
+         }
+      else {                                                         // we are reading from the file
+         file->next = file->last = file->buffer + file->fscb.bufferSize;          // buffer is empty
+         rw = CMS_POINTREAD;
+         }
+      if (CMSfilePoint(&file->fscb, 1, rw) !=0)                // point to the beginning of the file
+         CMSconsoleWrite("rewind error: bad RC from CMSfilePOint.", CMS_EDIT);
+      file->eof = 0;                                                               // not yet at EOF
+      file->error = 0;                                                          // and no errors yet
+      file->readPos = 0;                                               // have not read anything yet
+      file->ungetChar = -2;                                 // nothing read, so ungetc not yet valid
+      break;
+   case DEVICE_PRT:
+      file->next = file->buffer;                              // nothing in the buffer at this point
+      file->last = file->buffer + 132;                         // point to 'extra' byte after buffer
+      file->last[1] = 0;                                                    // add a null terminator
+      file->eof = 0;                                                               // not yet at EOF
+      file->error = 0;                                                          // and no errors yet
+      file->readPos = 0;                                                                   // unused
+      file->ungetChar = -2;                                 // nothing read, so ungetc not yet valid
+      break;
+   case DEVICE_PUN:
+      file->next = file->buffer;                              // nothing in the buffer at this point
+      file->last = file->buffer + 80;                          // point to 'extra' byte after buffer
+      file->eof = 0;                                                               // not yet at EOF
+      file->error = 0;                                                          // and no errors yet
+      file->readPos = 0;                                                                   // unused
+      file->ungetChar = -2;                                 // nothing read, so ungetc not yet valid
+      break;
+   case DEVICE_RDR:
+      file->next = file->last = file->buffer + 151;                    // empty buffer at this point
+      file->eof = 0;                                                               // not yet at EOF
+      file->error = 0;                                                          // and no errors yet
+      file->readPos = 0;                                                                   // unused
+      file->ungetChar = -2;                                 // nothing read, so ungetc not yet valid
+      break;
+   }
+return;
+}                                                                                   // end of rewind
+
+
+int
+scanf(const char * format, ...)
 /**************************************************************************************************/
 /* int scanf(const char * format, ...)                                                            */
 /*                                                                                                */
@@ -1200,27 +1414,24 @@ int scanf(const char * format, ...)
 /*                                                                                                */
 /* Returns:                                                                                       */
 /*    the number of variables successfully assigned values.                                       */
-/*                                                                                                */
-/* Notes:                                                                                         */
-/*    1.  If there is no open FILE for console input, we open it and store the handle in the GCC  */
-/*        stack.  This memory will be freed in CSTART ASSEMBLE.                                   */
 /**************************************************************************************************/
 {
-CMSCRAB * theCRAB;
+FILE * file;
 int rc;
 va_list arg;
 
-__asm__(LOADCRAB : "=d" (theCRAB));                                           // get address of CRAB
+if (stdin == GCCSTDIN) file = checkStream(stdin); else file = stdin;         // get pointer to stdin
 va_start(arg, format);
-rc = vvscanf(format, arg, theCRAB->consoleInputFile, NULL);
+rc = vvscanf(format, arg, file, NULL);
 va_end(arg);
 return rc;
 }                                                                                    // end of scanf
 
 
-void setbuf(FILE * stream, char * buffer)
+void
+setbuf(FILE * file, char * buffer)
 /**************************************************************************************************/
-/* void setbuf(FILE * stream, char *buffer)                                                       */
+/* void setbuf(FILE * file, char *buffer)                                                       */
 /*                                                                                                */
 /* This function does nothing.                                                                    */
 /**************************************************************************************************/
@@ -1229,9 +1440,10 @@ return;
 }                                                                                   // end of setbuf
 
 
-int setvbuf(FILE * stream, char * buffer, int mode, size_t size)
+int
+setvbuf(FILE * file, char * buffer, int mode, size_t size)
 /**************************************************************************************************/
-/* int setvbuf(FILE * stream, char * buffer, int mode, size_t size)                               */
+/* int setvbuf(FILE * file, char * buffer, int mode, size_t size)                               */
 /*                                                                                                */
 /* This function does nothing.                                                                    */
 /*                                                                                                */
@@ -1243,7 +1455,8 @@ return 1;
 }                                                                                  // end of setvbuf
 
 
-int sprintf(char * buffer, const char * format, ...)
+int
+sprintf(char * buffer, const char * format, ...)
 /**************************************************************************************************/
 /* int sprintf(char * buffer, const char *format, ...)                                            */
 /*                                                                                                */
@@ -1269,7 +1482,8 @@ return (rc);
 }                                                                                  // end of sprintf
 
 
-int sscanf(const char * buffer, const char * format, ...)
+int
+sscanf(const char * buffer, const char * format, ...)
 /**************************************************************************************************/
 /* int sscanf(const char * buffer, const char * format, ...)                                      */
 /*                                                                                                */
@@ -1294,7 +1508,8 @@ return rc;
 }                                                                                   // end of sscanf
 
 
-FILE * tmpfile(void)
+FILE *
+tmpfile(void)
 /**************************************************************************************************/
 /* FILE * tmpfile(void)                                                                           */
 /*                                                                                                */
@@ -1308,7 +1523,8 @@ return NULL;
 }                                                                                  // end of tmpfile
 
 
-char * tmpnam(char * name)
+char *
+tmpnam(char * name)
 /**************************************************************************************************/
 /* char * tmpnam(char * name)                                                                     */
 /*                                                                                                */
@@ -1329,7 +1545,8 @@ return name;
 }                                                                                   // end of tmpnam
 
 
-int ungetc(int c, FILE * stream)
+int
+ungetc(int c, FILE * stream)
 /**************************************************************************************************/
 /* int ungetc(int c, FILE * stream)                                                               */
 /*                                                                                                */
@@ -1346,15 +1563,20 @@ int ungetc(int c, FILE * stream)
 /*        the previous character is read, it is not placed in the buffer and EOF is returned.     */
 /**************************************************************************************************/
 {
-if (stream->ungetChar == -1) {                                       // OK to push back a character?
-   stream->ungetChar = c;
+FILE * file;
+
+if (stream == NULL) {CMSconsoleWrite("ungetc error: file is NULL.", CMS_EDIT); return EOF;}
+if (stream <= GCCSTDERR) file = checkStream(stream); else file = stream;  // handle stdin and stdout
+if (file->ungetChar == -1) {                                         // OK to push back a character?
+   file->ungetChar = c;
    return c;
    }
 else return EOF;
 }                                                                                   // end of ungetc
 
 
-int vfprintf(FILE * stream, const char *format, va_list arg)
+int
+vfprintf(FILE * stream, const char * format, va_list arg)
 /**************************************************************************************************/
 /* int vfprintf(FILE * stream, const char * format, va_list arg)                                  */
 /*                                                                                                */
@@ -1368,14 +1590,18 @@ int vfprintf(FILE * stream, const char *format, va_list arg)
 /*    the number of characters written to the stream.                                             */
 /**************************************************************************************************/
 {
+FILE * file;
 int ret;
 
-ret = vvprintf(format, arg, stream, NULL);
+if (file == NULL) {CMSconsoleWrite("vfprintf error: file is NULL.", CMS_EDIT); return EOF;}
+if (stream <= GCCSTDERR) file = checkStream(stream); else file = stream;  // handle stdin and stdout
+ret = vvprintf(format, arg, file, NULL);
 return ret;
 }                                                                                 // end of vfprintf
 
 
-int vsprintf(char * buffer, const char * format, va_list arg)
+int
+vsprintf(char * buffer, const char * format, va_list arg)
 /**************************************************************************************************/
 /* int vsprintf(char * buffer, const char * format, va_list arg)                                  */
 /*                                                                                                */
@@ -1397,7 +1623,8 @@ return ret;
 }                                                                                 // end of vsprintf
 
 
-int notyet(void)
+int
+notyet(void)
 /**************************************************************************************************/
 /* Emit a message when runtime routines not yet implemented are called.                           */
 /*                                                                                                */
@@ -1405,7 +1632,7 @@ int notyet(void)
 /*    -1                                                                                          */
 /**************************************************************************************************/
 {
-ConsoleWrite("This routine is not yet implemented...\n");
+CMSconsoleWrite("This routine is not yet implemented...", CMS_EDIT);
 return -1;
 }                                                                                   // end of notyet
 
@@ -1417,7 +1644,59 @@ return -1;
 /*------------------------------------------------------------------------------------------------*/
 
 
-static void dblcvt(double num, char cnvtype, size_t nwidth, size_t nprecision, char *result)
+static FILE *
+checkStream(FILE * stream)
+/**************************************************************************************************/
+/* Return the actual FILE pointer for stdin, stdout and stderr streams.  For all other streams    */
+/* just return their FILE pointer.                                                                */
+/*    stream   a pointer to the open input stream.                                                */
+/*                                                                                                */
+/* Returns:                                                                                       */
+/*    a pointer to the stream.                                                                    */
+/**************************************************************************************************/
+{
+// We execute this in-line assembly instruction to get the address of the CMSCRAB.  We need to do
+// this in any routine that does console I/O without having been passed a FILE pointer.
+#define LOADCRAB "L %0,72(13)"
+
+// The CMSCRAB macro maps the GCC stack.  In the first stack frame are pointers to useful global
+// variables used by routines in CMSSTDIO.  Eventually I'll fill in more of the structure below.
+typedef struct {                                                   // map the start of the GCC stack
+   void * savearea[18];                             // register save area and save area chaining +00
+   void * crab; // pointer to the GCC C Runtime Anchor Block (CRAB) [don't change this offset!!] +72
+   void * stackNext;                                         // next available byte in the stack +76
+   void * numconv;                                                  // numeric conversion buffer +80
+   void * funcrslt;                                                    // function result buffer +84
+   FILE * consoleOutputFile;                      // address of FILE structure for console ouput +88
+   FILE * consoleInputFile;                       // address of FILE structure for console input +92
+   FILE actualConsoleOutputFileHandle;
+   char consoleOutputBuffer[132];
+   FILE actualConsoleInputFileHandle;
+   char consoleInputBuffer[132];
+   } CMSCRAB;                                                          // CMS C Runtime Anchor Block
+CMSCRAB * theCRAB;
+
+__asm__("L %0,72(13)" : "=d" (theCRAB));                                      // get address of CRAB
+switch ((int) stream) {
+   case GCCSTDIN:
+      return stdin = theCRAB->consoleInputFile;
+      break;
+   case GCCSTDOUT:
+      return stdout = theCRAB->consoleOutputFile;
+      break;
+   case GCCSTDERR:
+      return stderr = theCRAB->consoleOutputFile;
+      break;
+   default:
+      CMSconsoleWrite("Unexpected call to checkStream with valid file pointer!", CMS_EDIT);
+      return stream;
+      break;
+   }
+}                                                                              // end of checkStream
+
+
+static void
+dblcvt(double num, char cnvtype, size_t nwidth, size_t nprecision, char * result)
 /**************************************************************************************************/
 /* This truly cludged piece of code was concocted by Dave Wade.  His erstwhile tutors are         */
 /* probably turning in their graves.  It is however placed in the Public Domain so that any one   */
@@ -1571,7 +1850,8 @@ return;
 }                                                                                   // end of dblcvt
 
 
-static int examine(const char **formt, FILE *fq, char *s, va_list *arg, int chcount)
+static int
+examine(const char **formt, FILE *fq, char *s, va_list *arg, int chcount)
 /**************************************************************************************************/
 /* Part of vvprintf... could be inline, really.                                                   */
 /**************************************************************************************************/
@@ -1764,7 +2044,8 @@ else if (specifier == 's') {
 return (extraCh);
 }                                                                                  // end of examine
 
-int GetFileid(const char * fname, char * fileid)
+static int
+GetFileid(const char * fname, char * fileid)
 /**************************************************************************************************/
 /* int GetFileid(const char * fname, char * fileid)                                               */
 /*                                                                                                */
@@ -1782,22 +2063,22 @@ strncpy(fileinfo, fname, sizeof(fileinfo));                // because strtok mod
 memset(fileid, ' ', 18);                                              // initialize fileid to blanks
 s = strtok(fileinfo, " ");                                                           // get filename
 if (s == NULL || strlen(s) > 8) {
-   sprintf(errmsg, "GetFileid error: missing/invalid filename '%s' specified.\n", s);
-   ConsoleWrite(errmsg);
+   sprintf(errmsg, "GetFileid error: missing/invalid filename '%s' specified.", s);
+   CMSconsoleWrite(errmsg, CMS_EDIT);
    return 0;
    }
 else memcpy(fileid, s, strlen(s));
 s = strtok(NULL, " ");                                                               // get filetype
 if (s == NULL || strlen(s) > 8) {
-   sprintf(errmsg, "GetFileid error: missing/invalid filetype '%s' specified.\n", s);
-   ConsoleWrite(errmsg);
+   sprintf(errmsg, "GetFileid error: missing/invalid filetype '%s' specified.", s);
+   CMSconsoleWrite(errmsg, CMS_EDIT);
    return 0;
    }
 else memcpy(fileid + 8, s, strlen(s));
 s = strtok(NULL, " ");                                                               // get filemode
 if (s == NULL || strlen(s) > 2) {
-   sprintf(errmsg, "GetFileid error: missing/invalid filemode '%s' specified.\n", s);
-   ConsoleWrite(errmsg);
+   sprintf(errmsg, "GetFileid error: missing/invalid filemode '%s' specified.", s);
+   CMSconsoleWrite(errmsg, CMS_EDIT);
    return 0;
    }
 else memcpy(fileid + 16, s, strlen(s));
@@ -1806,10 +2087,11 @@ return 1;                                                                       
 }                                                                                // end of GetFileid
 
 
-static int vvprintf(const char *format, va_list arg, FILE *fq, char *s)
+static int
+vvprintf(const char * format, va_list arg, FILE * fq, char * s)
 /**************************************************************************************************/
-/* static int vvprintf(const char *format, va_list arg, FILE *fq, char *s)                        */
-/*
+/* static int vvprintf(const char * format, va_list arg, FILE * fq, char * s)                     */
+/*                                                                                                */
 /* Do the real work of printf.                                                                    */
 /*    format   a string containing characters to be printed and formatting specifications for the */
 /*             the variables that follow, if any.                                                 */
@@ -1907,7 +2189,8 @@ return (chcount);
 }                                                                                 // end of vvprintf
 
 
-static int vvscanf(const char *format, va_list arg, FILE *fp, const char *s)
+static int
+vvscanf(const char * format, va_list arg, FILE * fp, const char * s)
 /**************************************************************************************************/
 /* vvscanf - the guts of the input scanning                                                       */
 /* several mods by Dave Edwards                                                                   */
