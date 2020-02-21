@@ -1,0 +1,7 @@
+GCCLIB Change LOG
+=================
+
+1.2.1 - 21 Feb 2020
+F0001 - Automated Build and Install
+
+1.2.0 - Prehistory Versions
