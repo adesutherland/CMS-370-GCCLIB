@@ -637,7 +637,7 @@ DONEREAD DS    0H
 * Determine whether a file exists.                                    *
 *                                                                     *
 * Syntax is:                                                          *
-*    int __FSSTAT(char * fileid, FST * fst)                           *
+*    int __FSSTAT(char * fileid, FST ** fst)                          *
 * where:                                                              *
 *    fileid    is a pointer to the CMS fileid, an 18 character field. *
 *              The first 8 characters are the filename, the next 8    *
@@ -646,7 +646,7 @@ DONEREAD DS    0H
 *              specified as *, in which case the first file           *
 *              satisfying the rest of the fileid is used.  This       *
 *              string is not NULL terminated.                         *
-*    fst       is a pointer to a copy of the CMS file state table     *
+*    fst       is a handle to a copy of the CMS file state table      *
 *              (FST) for this file.  It provides details of the       *
 *              specified file.                                        *
 * returns:                                                            *

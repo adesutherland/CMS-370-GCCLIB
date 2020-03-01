@@ -330,7 +330,7 @@ typedef struct {
 #define CMSfileRename(s1, s2) (__rename((s1),(s2)))
 
 /**************************************************************************************************/
-/* int CMSfileState(char * fileid, * CMSFILEINFO fileInfo)                                        */
+/* int CMSfileState(char * fileid, ** CMSFILEINFO fileInfo)                                       */
 /*                                                                                                */
 /* Determine whether or not a file exists.                                                        */
 /*    fileid     is a pointer to the CMS fileid, an 18 character field.  It may be specified in   */
@@ -339,7 +339,7 @@ typedef struct {
 /*               filename, filetype, and filemode may each be specified as *, in which case the   */
 /*               first file satisfying the rest of the fileid is used.  This string does not need */
 /*               to be NULL terminated.                                                           */
-/*    fileinfo   is a pointer to a copy of the CMS file state table (FST) for this file.  The FST */
+/*    fileinfo   is a handle to a copy of the CMS file state table (FST) for this file.  The FST  */
 /*               provides details of the specified file.                                          */
 /*                                                                                                */
 /* Returns:                                                                                       */
