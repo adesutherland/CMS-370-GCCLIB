@@ -9,12 +9,16 @@
          GBLA    &OFFSET
 &OFFSET  SETA    0
 ***********************************************************************
-* Entry points in CMSSYS ASSEMBLE / CMSSYS H                          *
+* Entry points in CMSSYSC C / CMSSYS H                                *
+***********************************************************************
+         VTENTRY @@CMSCMD,VTCMSCMD,&CODE
+***********************************************************************
+* Entry points in CMSSYS ASSEMBLE                                     *
 ***********************************************************************
          VTENTRY @@DEBUG,VTDEBUG,&CODE
          VTENTRY @@ARGSTR,VTARGSTR,&CODE
          VTENTRY @@ATTN,VTATTN,&CODE
-         VTENTRY @@CMSCMD,VTCMSCMD,&CODE
+         VTENTRY @@SVC202,VTSVC202,&CODE
          VTENTRY @@DMSFRE,VTDMSFRE,&CODE
          VTENTRY @@DMSFRT,VTDMSFRT,&CODE
          VTENTRY @@FSCLOS,VTFSCLOS,&CODE

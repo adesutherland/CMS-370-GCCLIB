@@ -1,6 +1,10 @@
 GCCLIB Change LOG
 =================
 
+0.7.3 - 11 Mar 2020
+F0003 - (Issue 8) Call Parameter (CMSCommmand) Fixes
+        Restore Registers at program end (CMSEntry)
+
 0.7.2 - 1 Mar 2020
 F0002 - (issue 5) __FSTAT signature update in Headers (comments only)
         (issue 6) Fix arguments getting mangled from previous runs

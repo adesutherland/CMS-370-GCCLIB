@@ -325,6 +325,7 @@ THATSALL DS    0H
          LR    R15,R9         set return code
 RETURN   DS    0H
          L     14,12(R2)      restore return address
+         LM    0,12,20(R2)    restore our caller's registers
          BR    14             return to CMS
          EJECT
          LTORG

@@ -3,7 +3,7 @@
 *    @@DEBUG  A dummy routine callable from C (set breakpoint here).  *
 *    @@ATTN   Place a line on the CMS console stack.                  *
 *    @@ARGSTR Return the program argument string.                     *
-*    @@CMSCMD Invoke a CMS system service or command.                 *
+*    @@SVC202 Invoke a CMS system service or command.                 *
 *    @@DMSFRE Allocate free memory.                                   *
 *    @@DMSFRT Release allocated memory.                               *
 *    @@FSCLOS Close an open file and save it to disk.                 *
@@ -141,19 +141,19 @@ ATTNOD   DC    CL4'XXXX'      'FIFO' or 'LIFO'
 ATTNLN   DC    AL1(0)         length of line to be stacked
 ATTNAD   DC    AL3(0)         address of line to be stacked
          EJECT
-         ENTRY @@CMSCMD
+         ENTRY @@SVC202
 ***********************************************************************
-* @@CMSCMD  Entry Point                                               *
+* @@SVC202  Entry Point                                               *
 * Invoke a CMS system service or command.  Both a standard and        *
 * extended parameter list are passed to the command.                  *
 *                                                                     *
 * Syntax is:                                                          *
-*    int __CMSCMD(char * cmdline, int calltype)                       *
+*    int __SVC202(void *plist , void* eplist, int calltype)           *
 * where:                                                              *
-*    cmdline   is a pointer to the command line to be executed.       *
+*    plistr, eplist pointers to the parameters in both formats        *
 *    calltype  specifies the type of call:                            *
 *               0   indicates the command is to be invoked as a       *
-*                   function.                                         *
+*                   function. (REALLY? CHECK!)                        *
 *               1   indicates the command is invoked as if from a CMS *
 *                   EXEC.  For example, if you want to invoke ABC     *
 *                   EXEC you must                                     *
@@ -163,103 +163,19 @@ ATTNAD   DC    AL3(0)         address of line to be stacked
 * returns:                                                            *
 *    (int)     Return code from the invoked service or command.       *
 ***********************************************************************
-@@CMSCMD DS    0H
+@@SVC202 DS    0H
          STM   R14,R12,12(R13)
          LR    R12,R15
-         USING @@CMSCMD,R12   establish addressability
-         L     R4,0(R1)       get the command line string
-         LA    R3,LINELEN(R4) max possible length of command line
-         LA    R2,1           loop increment
-CMD1     DS    0H             find end of command line string
-         CLI   0(R4),X'00'    look for C terminator
-         BE    CMD2           found it
-         BXLE  R4,R2,CMD1     keep looping if not
-CMD2     DS    0H
-         ST    R4,EPARGE      store end of argument list in eplist
-         SR    R3,R3
-         ST    R3,EPARGB      zero out this field
-         LR    R3,R4          end of argument list
-         BCTR  R3,0           point to last character of arg list
-         L     R4,0(R1)       start scanning arguments here
-         LA    R5,TOKPL       tokens go here
-         MVI   TOKPL,C' '     set TOKPL to blanks
-         MVC   TOKPL+1(255),TOKPL
-         ST    R5,EPCMD       this will be the command name
-* ---------------------------------------------------------------------
-* Loop through the words in ARGSTRNG, copy them into ARGVARGS, while
-* building up the array of pointers.  In this section:
-*    R5  is the where in TOKPL next token goes
-*    R4  is the next byte in cmdline to scan
-*    R3  is the last character of cmdline
-*    R2  is the scan increment
-* At this point we are at the beginning of the next argument.
-* ---------------------------------------------------------------------
-TOKSCAN  DS    0H
-         LR    R6,R4          save start of this token
-TOKSCAN1 DS    0H
-         CLI   0(R4),C' '     look for end of this argument
-         BE    TOKSCAN2       found it
-         CLI   0(R4),C'('     a paren could end it too
-         BE    TOKSCAN2       found it
-         CLI   0(R4),C')'     so could a close paren
-         BE    TOKSCAN2       found it
-         BXLE  R4,R2,TOKSCAN1 keep looping if not
-TOKSCAN2 DS    0H             we are at the end of the argument
-         LR    R7,R4          point to 1st byte after argument
-         SR    R7,R6          get length of this argument
-         BNZ   TOKSCAN3       if len > 0, copy it
-         LA    R4,1(R4)       this arg is a paren, must bump scan ptr
-         B     TOKSCAN4
-TOKSCAN3 DS    0H
-         BCTR  R7,0           less 1 for EX of MVC
-TOKSCAN4 DS    0H
-         EX    R7,COPYTOK     copy argument to TOKPL
-         EX    R7,XLATTOK     translate argument to uppercase
-         LA    R5,8(R5)       bump token pointer
-NEXTTOK  DS    0H             scan past any blanks before next arg
-         CLI   0(R4),C' '     look for start of next argument
-         BNE   NEXTTOK2       found start of arg or end of list
-         BXLE  R4,R2,NEXTTOK  keep looping if not
-NEXTTOK2 DS    0H
-         CLI   0(R4),X'00'    have we reached the end?
-         BE    TOKFENCE       yes, next add the fence
-         CLI   0(R4),C'('     but wait, we could be at a paren
-         BE    NEXTTOK3
-         CLI   0(R4),C')'     or a close paren
-         BE    NEXTTOK3
-         L     R7,EPARGB
-         LTR   R7,R7
-         BNZ   TOKSCAN        we've already found first argument
-         ST    R6,EPARGB      store start of first argument
-         B     TOKSCAN        no, go process next argument
-NEXTTOK3 DS    0H
-         LR    R6,R4          save start of this argument
-         LA    R4,1(R4)       point to character after paren
-         B     TOKSCAN2       process the paren as an argument
-COPYTOK  MVC   0(0,R5),0(R6)
-XLATTOK  TR    0(0,R5),UPPER
-TOKFENCE DS    0H
-         MVC   0(8,R5),=X'FFFFFFFFFFFFFFFF'
-* ---------------------------------------------------------------------
-* At last we issue the CMS command and return to our caller.
-* ---------------------------------------------------------------------
+         USING @@SVC202,R12   establish addressability
          LR    R2,R1          save C parameter list
-         LA    R1,TOKPL       set the tokenized plist
-         LA    R0,EPL         set the extended plist
-         ICM   R1,8,7(R2)     get the CALLTYPE flag byte
+         L     R1,0(R2)       plist
+         L     R0,4(R2)       eplist
+         ICM   R1,8,11(R2)    CALLTYPE flag byte
          SVC   202            call the command
          DC    AL4(*+4)       error address
          L     R14,12(R13)    restore our return address
          LM    R0,R12,20(R13) restore the registers
          BR    R14            return to our caller
-*
-TOKPL    DS    32D            CMS tokenized plist
-EPL      DS    0F             CMS extended parameter list
-EPCMD    DS    A
-EPARGB   DS    A
-EPARGE   DS    A
-EPUWORD  DC    F'0'
-EPARGS   DS    CL130          256 in VM/SP & later
          LTORG
          EJECT
          ENTRY @@DMSFRE
