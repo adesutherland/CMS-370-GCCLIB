@@ -76,7 +76,8 @@ CMSSYS   CSECT
          L     R2,GCCCRAB
          DROP  R13
          USING CMSCRAB,R2     map the CRAB
-         LA    R15,ARGSTRNG   get the argument string address
+         SR    R15,R15        * TODO RETURN ZERO for the moment *
+*         LA    R15,ARGSTRNG   get the argument string address
          DROP  R2
          L     R14,12(R13)    restore our return address
          LM    R0,R12,20(R13) restore the registers

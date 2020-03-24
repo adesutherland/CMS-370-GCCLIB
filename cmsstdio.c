@@ -13,11 +13,16 @@
 /* Based on code written by Paul Edwards and Dave Wade.                                           */
 /* Released to the public domain.                                                                 */
 /**************************************************************************************************/
-// #define STDIO_DEFINED
+#define STDIO_DEFINED
+#include <cmsruntm.h>
 #include <stdio.h>
 #include <ctype.h>
 #include <float.h>
 #include <time.h>
+FILE * stdin;                /* predefined stream for standard input: we map it to console */
+FILE * stdout;              /* predefined stream for standard output: we map it to console */
+FILE * stderr;                 /* predefined stream for error output: we map it to console */
+
 
 static FILE * checkStream(FILE * stream);
 static void dblcvt(double num, char cnvtype, size_t nwidth, size_t nprecision, char *result);
@@ -1655,29 +1660,9 @@ checkStream(FILE * stream)
 /*    a pointer to the stream.                                                                    */
 /**************************************************************************************************/
 {
-// We execute this in-line assembly instruction to get the address of the CMSCRAB.  We need to do
-// this in any routine that does console I/O without having been passed a FILE pointer.
-#define LOADCRAB "L %0,72(13)"
+ GCCCRAB *theCRAB = GETGCCCRAB();
 
-// The CMSCRAB macro maps the GCC stack.  In the first stack frame are pointers to useful global
-// variables used by routines in CMSSTDIO.  Eventually I'll fill in more of the structure below.
-typedef struct {                                                   // map the start of the GCC stack
-   void * savearea[18];                             // register save area and save area chaining +00
-   void * crab; // pointer to the GCC C Runtime Anchor Block (CRAB) [don't change this offset!!] +72
-   void * stackNext;                                         // next available byte in the stack +76
-   void * numconv;                                                  // numeric conversion buffer +80
-   void * funcrslt;                                                    // function result buffer +84
-   FILE * consoleOutputFile;                      // address of FILE structure for console ouput +88
-   FILE * consoleInputFile;                       // address of FILE structure for console input +92
-   FILE actualConsoleOutputFileHandle;
-   char consoleOutputBuffer[132];
-   FILE actualConsoleInputFileHandle;
-   char consoleInputBuffer[132];
-   } CMSCRAB;                                                          // CMS C Runtime Anchor Block
-CMSCRAB * theCRAB;
-
-__asm__("L %0,72(13)" : "=d" (theCRAB));                                      // get address of CRAB
-switch ((int) stream) {
+ switch ((int) stream) {
    case GCCSTDIN:
       return stdin = theCRAB->consoleInputFile;
       break;

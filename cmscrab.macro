@@ -12,11 +12,8 @@
 * 1.  The structure defined here is used in the PDPPRLG macro, so     *
 *     don't make changes here without corresponding changes there.    *
 *                                                                     *
-* 2.  The offset of GCCCRAB is hard-coded in CMSSTDIO.C.  So if this  *
-*     changes, that code must also be changed.                        *
+* 2.  The offset of GCCCRAB is hard-coded in CMSRUNTM.H               *
 *                                                                     *
-* 4.  CONBUFIN *must* be directly after CONIFILE, and CONBUFOU *must* *
-*     be directly after CONOFILE.                                     *
 ***********************************************************************
          MACRO
          CMSCRAB
@@ -33,28 +30,6 @@ STACKNXT DS    F              +76 next available byte on the stack
 NUMCONV  DS    F              +80 numeric conversion buffer
 FUNCRSLT DS    F              +84 function result buffer
          SPACE
-* ---------------------------------------------------------------------
-* We predefine FILE structures for console input and output so that no
-* memory allocation is required later on.  These are global static
-* variables to the rest of the runtime library.
-* ---------------------------------------------------------------------
-CONFILOU DS    F              +88 pointer to console output FILE struct
-CONFILIN DS    F              +92 pointer to console input FILE struct
-CONOFILE DS    23F            FILE structure for console output
-CONBUFOU DS    CL132          console output buf (must follow CONOFILE)
-CONIFILE DS    23F            FILE structure for console input
-CONBUFIN DS    CL132          console input buf (must follow CONIFILE)
-         SPACE
-* ---------------------------------------------------------------------
-* Here are declared the local variables of CMSENTRY.
-* ---------------------------------------------------------------------
-PARMLIST DS    0F             parameter list to main program
-ARGC     DS    F              count of arguments
-ARGV     DS    F              pointer to argument pointer array
-ARGSTR   DS    F              pointer to CMS eplist argument string
-ARGVLIST DS    32F            array of pointers for main program args
-ARGVARGS DS    CL257          arguments to main program
-ARGSTRNG DS    CL257          copy of CMS argument string
 * ---------------------------------------------------------------------
 * Here begins the GCC stack:  local variables of the GCC routines.
 * ---------------------------------------------------------------------

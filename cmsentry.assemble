@@ -26,22 +26,9 @@ CMSENTRY CSECT
 ***********************************************************************
 * @@CRT0 Entry Point                                                  *
 * We enter here from CMS.  This is the main entry point for a module  *
-* compiled by GCC.  Allocate the GCC stack, build the parameter list  *
-* and call the user's main program.  When the user program returns,   *
-* free the stack and return to CMS.                                   *
-*                                                                     *
-* Notes:                                                              *
-* 1.  The parameter list passed to the user's main program is created *
-*     according to CMS syntax.  That is, '(' and ')' are treated as   *
-*     argument separators.  Thus:                                     *
-*        progname one(two)                                            *
-*     will receive these arguments:                                   *
-*        argc = 5                                                     *
-*        argv[0] = "progname"                                         *
-*        argv[1] = "one"                                              *
-*        argv[2] = "("                                                *
-*        argv[3] = "two"                                              *
-*        argv[4] = ")"                                                *
+* compiled by GCC.  Allocate the GCC stack, and call __cstart which   *
+* sets up the strucures & parameters, and calls main().               *
+* On return it frees the stack and returns to CMS.                    *
 ***********************************************************************
 @@CRT0   DS    0H
          STM   14,12,12(13)
@@ -49,10 +36,11 @@ CMSENTRY CSECT
          USING @@CRT0,R12     establish addressability
          LR    R4,R1          save R1 so we can get the PLIST
          LR    R5,R0          save R0 so we can get the EPLIST
+         LA    R6,PARMLIST    address of parameters for __cstart
 * --------------------------------------------------------------------
 * HLA: GET THE ANCHOR TO THE RESIDENT GCCLIB
 * --------------------------------------------------------------------
-         LA    R1,GGCCCMD     INVOKE: RESLIB LIST GCCLIB ( NOTYPE
+         LA    R1,GETRES      INVOKE: RESLIB LIST GCCLIB ( NOTYPE
          SVC   202            WHICH WILL PUT THE ADDRESS INTO R1
          DC    AL4(*+4)
          N     R1,=X'00FFFFFF' remove spurious data in high byte
@@ -69,216 +57,19 @@ CMSENTRY CSECT
          USING CMSCRAB,R13
          LA    R2,MAINSTK     where the GCC stack begins
          ST    R2,STACKNXT    next available spot in stack
-         ST    R13,GCCCRAB    address of CRAB
-* --------------------------------------------------------------------
-* Fill in the FILE structures for console input.
-* --------------------------------------------------------------------
-         LA    R2,CONIFILE    address of console input FILE structure
-         ST    R2,CONFILIN    and store it here
-         USING FILE,R2
-         LA    R3,1           set access to ACCESS_READ_TXT
-         ST    R3,FACCESS     access is read text
-         SR    R3,R3
-         ST    R3,FDEVICE     device is console
-         ST    R3,FEOF        not at EOF
-         ST    R3,FERROR      no errors yet
-         ST    R3,FREADPTR    unsed for a console file
-         ST    R3,FWRITPTR    unsed for a console file
-         LA    R3,FBUFFER     address of input buffer
-         ST    R3,FBUFPTR     save the address of the input buffer
-         ST    R3,FNEXT       and here
-         ST    R3,FLAST       and here
-         L     R3,=F'-2'      'unget' not yet valid
-         ST    R3,FUNGETC     save it as ungetChar
-* --------------------------------------------------------------------
-* Fill in the FILE structures for console output.
-* --------------------------------------------------------------------
-         LA    R2,CONOFILE    address of console output FILE structure
-         ST    R2,CONFILOU    and store it here
-         ST    R3,FUNGETC     save it as ungetChar
-         LA    R3,3           set access to ACCESS_WRITE_TXT
-         ST    R3,FACCESS     access is write text
-         SR    R3,R3
-         ST    R3,FDEVICE     device is console
-         ST    R3,FEOF        not at EOF
-         ST    R3,FERROR      no errors yet
-         ST    R3,FNEXT
-         ST    R3,FLAST
-         ST    R3,FREADPTR    unsed for a console file
-         ST    R3,FWRITPTR    unsed for a console file
-         LA    R3,FBUFFER     address of output buffer
-         ST    R3,FBUFPTR     save the address of the output buffer
-         ST    R3,FNEXT       and here
-         LA    R3,130(R3)     point to end of buffer
-         ST    R3,FLAST       save it
-         DROP  R2
-* --------------------------------------------------------------------
-* Call CMSinit to initialize the runtime global variables.  We pass
-* the console input and output file handles as parameters, and use
-* the console input buffer (CONBUFIN) briefly as a place to build the
-* parameter list.
-* --------------------------------------------------------------------
-         LA    R2,CONIFILE    get the console input FILE pointer
-         ST    R2,CONBUFIN    store in parameter list
-         LA    R2,CONOFILE    get the console output FILE pointer
-         ST    R2,CONBUFIN+4  store in parameter list
-         LA    R1,CONBUFIN    address of parameter list
-         L     R15,=V(CMSINIT)
-         BALR  R14,R15        call CMSINIT to initialize stuff
-* ---------------------------------------------------------------------
-* Next get the program name and parameter list from CMS.
-* ---------------------------------------------------------------------
-* First clear the ARGVARGS BUFFER (set to spaces)
-         MVI  ARGVARGS,C' '                 Space at start
-         MVC  ARGVARGS+1(256),ARGVARGS      Propagate to the rest
-* Now we can build the program / params
-         SR    R11,R11        count of arguments
-         LA    R10,ARGVLIST
-         MVI   ARGVARGS,X'0'  assume no program name
-         CLI   0(R4),X'FF'    is there a program name?
-         BE    LAUNCH         no (happens with LOAD followed by START)
-         MVC   ARGVARGS(8),0(R4) copy pgam name from tokenized PLIST
-         LA    R3,ARGVARGS
-         ST    R3,0(R10)      store as first argument
-         LA    R10,4(R10)     bump argument index
-         LA    R11,1(R11)     bump argument count
-         LA    R3,8(R3)       last possible character of program name
-         LA    R2,1           loop increment
-         LA    R9,ARGVARGS    point to program name
-CSTART1  DS    0H             strip trailing blanks from program name
-         CLI   0(R9),C' '
-         BE    CSTART2        found it
-         BXLE  R9,R2,CSTART1  keep looping if not
-CSTART2  DS    0H
-         MVI   0(R9),X'0'     terminate program name for C
-         LA    R9,1(R9)       next spot in argument string buffer
-         CLI   8(R4),X'FF'    are their any parameters?
-         BE    LAUNCH         no, so we are done
-* ---------------------------------------------------------------------
-* At this point, the high order byte of R4 contains the
-* traditional CMS R1 flag byte.  A x'0B' or x'01' indicates the
-* presence of an extended parameter accessable via R0 (copied to R5).
-* ---------------------------------------------------------------------
-         CLM   R4,8,=X'01'    called from EXEC, EXEC 2 or REXX?
-         BE    GOTEPLST       yes, use the eplist
-         CLM   R4,8,=X'0B'    called from command line?
-         BE    GOTEPLST       yes, use the eplist
-         MVI   ARGSTRNG,X'0'  signal with 0 length string
-         B     NOEPLIST
-         USING EPLIST,R5
-COPYARGS MVC   ARGSTRNG(0),0(R2)
-COPYARG  MVC   0(0,R9),0(R7)
-GOTEPLST DS    0H
-         L     R2,EPLARGBG    start of argument list
-         L     R3,EPLARGND    first byte after argument list
-         SR    R3,R2          get length of argument string
-         BZ    NOCOPY         no arguments (should never happen)
-         BCTR  R3,0           less 1 for EX of MVC
-         EX    R3,COPYARGS    copy CMS eplist arg string to ARGSTRNG
-         LA    R3,1(R3)       restore length of string
-         DROP  R5
-NOCOPY   DS    0H
-         LA    R3,ARGSTRNG(R3) point to byte after string
-         MVI   0(R3),X'0'     terminate string for C
-         LA    R2,1           loop increment
-         LA    R8,ARGSTRNG    start scanning arguments here
-         BCTR  R3,0           point to last byte of ARGSTRNG
-* ---------------------------------------------------------------------
-* Loop through the words in ARGSTRNG, copy them into ARGVARGS, while
-* building up the array of pointers.  In this section:
-*    R11 is the count of arguments (ARGC)
-*    R10 is the next argument pointer in ARGVLIST
-*    R9  is the where in ARGVARGS next argument goes
-*    R8  is the next byte in ARGSTRNG to scan
-*    R3  is the last character in ARGSTRNG
-*    R2  is the scan increment
-* At this point we are at the beginning of the next argument.
-* ---------------------------------------------------------------------
-ARGSCAN  DS    0H
-         LR    R7,R8          save start of this argument
-ARGSCAN1 DS    0H
-         CLI   0(R8),C' '     look for end of this argument
-         BE    ARGSCAN2       found it
-         CLI   0(R8),C'('     a paren could end it too
-         BE    ARGSCAN2       found it
-         CLI   0(R8),C')'     so could a close paren
-         BE    ARGSCAN2       found it
-         BXLE  R8,R2,ARGSCAN1 keep looping if not
-ARGSCAN2 DS    0H             we are at the end of the argument
-         LR    R6,R8          point to 1st byte after argument
-         SR    R6,R7          get length of this argument
-         BNZ   ARGSCAN3       if len > 0, copy it
-         LA    R8,1(R8)       this arg is a paren, must bump scan ptr
-         B     ARGSCAN4
-ARGSCAN3 DS    0H
-         BCTR  R6,0           less 1 for EX of MVC
-ARGSCAN4 DS    0H
-         EX    R6,COPYARG     copy from R7 to R9 for length in R6
-         ST    R9,0(R10)      store in ARGVLIST
-         LA    R9,1(R6,R9)    point to byte after argument
-         MVI   0(R9),X'0'     terminate string for C
-         LA    R9,1(R9)       where next argument goes
-         LA    R10,4(R10)     bump ARGVLIST pointer
-         LA    R11,1(R11)     bump argument count (ARGC)
-NEXTARG  DS    0H             find the start of the next argument
-         CLI   0(R8),C' '     look for start of next argument
-         BNE   NEXTARG2       found start of arg or end of list
-         BXLE  R8,R2,NEXTARG  keep looping if not
-NEXTARG2 DS    0H
-         CLI   0(R8),X'00'    have we reached the end?
-         BE    LAUNCH         yes, go do it!
-         CLI   0(R8),C'('     but wait, we could be at a paren
-         BE    NEXTARG3
-         CLI   0(R8),C')'     or a close paren
-         BE    NEXTARG3
-         B     ARGSCAN        no, go process next argument
-NEXTARG3 DS    0H
-         LR    R7,R8          save start of this argument
-         LA    R8,1(R8)       point to character after paren
-         B     ARGSCAN2       process the paren as an argument
-NOEPLIST DS    0H
-         LA    R8,8(R4)       point to first argument token
-* ---------------------------------------------------------------------
-* Here we loop through the tokens, strip trailing blanks, and copy
-* them into ARGVARGS, while building up the array of pointers.  In
-* this section:
-*    R11 is the count of arguments (ARGC)
-*    R10 is the next argument pointer in ARGVLIST
-*    R9  is the where in ARGVARGS next argument goes
-*    R8  is the next token in the standard CMS plist to process
-*    R2  is the scan increment
-* At this point we are at the beginning of the next token.
-* ---------------------------------------------------------------------
-TOKLOOP  DS    0H
-         MVC   0(8,R9),0(R8)  copy the token to ARGVARGS
-         ST    R9,0(R10)      store in ARGVLIST
-         LA    R10,4(R10)     bump ARGVLIST pointer
-         LA    R11,1(R11)     bump argument count (ARGC)
-         LA    R3,8(R9)       last possible character of program name
-TOKLOOP2 DS    0H             strip trailing blanks from this token
-         CLI   0(R9),C' '
-         BE    TOKLOOP3       found it
-         BXLE  R9,R2,TOKLOOP2 keep looping if not
-TOKLOOP3 DS    0H
-         MVI   0(R9),X'0'     terminate program name for C
-         LA    R9,1(R9)       next spot in argument string buffer
-         LA    R8,8(R8)       bump to next token
-         CLI   0(R8),X'FF'    end of token list?
-         BNE   TOKLOOP        no, go process the next token
 * ---------------------------------------------------------------------
 * Now we build the parameters for the user's main program.
 * ---------------------------------------------------------------------
 LAUNCH   DS    0H
-         ST    R11,ARGC       store count of arguments
-         LA    R11,ARGVLIST
-         ST    R11,ARGV       store argument vector address
-         LA    R11,ARGSTRNG
-         ST    R11,ARGSTR     store eplist argument address
-         LA    R1,PARMLIST
+         L     R3,=V(MAIN)    address of main()
+         ST    R3,MAINFUNC
+         ST    R4,PLIST       store plist
+         ST    R5,EPLIST      store eplist
+         LR    R1,R6
 * ---------------------------------------------------------------------
 * At last we call the user's C main program.
 * ---------------------------------------------------------------------
-         L     R15,=V(MAIN)
+         L     R15,=V(@@CSTART)
          BALR  R14,R15
 * ---------------------------------------------------------------------
 * Normal return from the user's program.  Clean up and return to CMS.
@@ -289,16 +80,32 @@ LAUNCH   DS    0H
          SPACE
 NOMEM    DS    0H             memory allocation failed
          LA    R15,57         perhaps should issue an error message
+         LR    R2,R13
          B     RETURN
          LTORG
-GGCCCMD  DC CL8'RESLIB  '     HLA: PLIST TO GET THE GCCLIB-ANCHOR
+GETRES   DC CL8'RESLIB  '     HLA: PLIST TO GET THE GCCLIB-ANCHOR
          DC CL8'LIST    '
          DC CL8'GCCLIB  '
          DC CL8'(       '
          DC CL8'NOTYPE  '
          DC 8X'FFFFFFFFFFFFFFFF'
+         SPACE
+PARMLIST DS    0F             parameter list to premain program
+MAINFUNC DS    F              address of nain function
+PLIST    DS    F              plist location
+EPLIST   DS    F              eplist location
+         SPACE
+***********************************************************************
+* Global Variable that need to be linked statically                   *
+***********************************************************************
 GCCANCHR DC F'0'              HLA: ANCHOR FOR RESIDENT GCCLIB
          ENTRY GCCANCHR       HLA: MAKE THIS ANCHOR PUBLIC
+*STDERR   DC F'0'
+*         ENTRY STDERR
+*STDOUT   DC F'0'
+*         ENTRY STDOUT
+*STDIN    DC F'0'
+*         ENTRY STDIN
 *
          EJECT
          ENTRY @@EXIT
@@ -315,9 +122,9 @@ THATSALL DS    0H
          LR    R12,R15
          USING @@EXIT,R12     establish addressiblity
          USING CMSCRAB,R13    save area is also start of CMSCRAB
-         L     R13,GCCCRAB    reset our save area
-         L     R2,4(R13)      get save area address
-         LR    R1,R13         free the GCC stack
+         L     R5,GCCCRAB     get the GCCCRAB
+         L     R1,0(R5)       get the rootcmscrab
+         L     R2,4(R1)       get save area address
          DROP  R13
          L     R0,=A(STACKLEN)
          SRL   R0,3           divide by 8 to get doublewords
@@ -329,28 +136,8 @@ RETURN   DS    0H
          BR    14             return to CMS
          EJECT
          LTORG
-MAXARGS  EQU   32             maximum number of CMS arguments we allow
-         SPACE
-FILE     DSECT                maps the C FILE structure in STDIO H
-***********************************************************************
-* Map the FILE structure defined in STDIO H.
-***********************************************************************
-FACCESS  DS    F              type of access (read, write, etc.)
-FDEVICE  DS    F              type of device (console, disk, etc.)
-FUNGETC  DS    F              character pushed back to the stream
-FEOF     DS    F              1 if we have reached EOF, 0 otherwise
-FERROR   DS    F              return code from last I/O operation
-FCMSFILE DS    11F            CMS File System Control Block
-FNEXT    DS    F              next byte to read or current end of line
-FLAST    DS    F              1st unused byte or 1st after buf end
-FREADPTR DS    F              read pointer (disk files only)
-FWRITPTR DS    F              write pointer (disk files only)
-FNAME    DS    CL24           fileid as a string, for error messages
-FBUFPTR  DS    F              address of input or output buffer
-FBUFFER  DS    0F             start of the buffer
          SPACE
          REGEQU
          CMSCRAB
-         EPLIST DSECT
          NUCON
          END

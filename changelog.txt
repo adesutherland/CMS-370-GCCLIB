@@ -1,6 +1,10 @@
 GCCLIB Change LOG
 =================
 
+0.7.5 - 23 Mar 2020
+F0004 - Refactor CMSEntry - moving complex logic to C
+        Fix Parameter passing (Added Magic EPLIST Marker)
+
 0.7.4 - 11 Mar 2020
 F0003 - (Issue 8) Call Parameter (CMSCommmand) Fixes
         Restore Registers at program end (CMSEntry)
