@@ -61,15 +61,13 @@ CMSENTRY CSECT
 * Now we build the parameters for the user's main program.
 * ---------------------------------------------------------------------
 LAUNCH   DS    0H
-         L     R3,=V(MAIN)    address of main()
-         ST    R3,MAINFUNC
          ST    R4,PLIST       store plist
          ST    R5,EPLIST      store eplist
          LR    R1,R6
 * ---------------------------------------------------------------------
 * At last we call the user's C main program.
 * ---------------------------------------------------------------------
-         L     R15,=V(@@CSTART)
+         L     R15,=V(@@CSTUB)
          BALR  R14,R15
 * ---------------------------------------------------------------------
 * Normal return from the user's program.  Clean up and return to CMS.
@@ -91,7 +89,6 @@ GETRES   DC CL8'RESLIB  '     HLA: PLIST TO GET THE GCCLIB-ANCHOR
          DC 8X'FFFFFFFFFFFFFFFF'
          SPACE
 PARMLIST DS    0F             parameter list to premain program
-MAINFUNC DS    F              address of nain function
 PLIST    DS    F              plist location
 EPLIST   DS    F              eplist location
          SPACE
@@ -100,12 +97,6 @@ EPLIST   DS    F              eplist location
 ***********************************************************************
 GCCANCHR DC F'0'              HLA: ANCHOR FOR RESIDENT GCCLIB
          ENTRY GCCANCHR       HLA: MAKE THIS ANCHOR PUBLIC
-*STDERR   DC F'0'
-*         ENTRY STDERR
-*STDOUT   DC F'0'
-*         ENTRY STDOUT
-*STDIN    DC F'0'
-*         ENTRY STDIN
 *
          EJECT
          ENTRY @@EXIT

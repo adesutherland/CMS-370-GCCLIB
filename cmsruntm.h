@@ -30,12 +30,9 @@ struct CMSCRAB {
 
 struct GCCCRAB {
    CMSCRAB *rootcmscrab;
-   FILE *consoleOutputFile;                     /* address of FILE structure for console ouput */
-   FILE *consoleInputFile;                      /* address of FILE structure for console input */
-   FILE actualConsoleOutputFileHandle;
-   char consoleOutputBuffer[132];
-   FILE actualConsoleInputFileHandle;
-   char consoleInputBuffer[132];
+   FILE **stdin;
+   FILE **stdout;
+   FILE **stderr;
 };
 
 /* To get the addresses of the crabs */
@@ -83,5 +80,10 @@ typedef struct GCCLIBPLIST {
   char marker[8];
   EPLIST eplist;
 } GCCLIBPLIST;
+
+/* Startup Functions */
+typedef int (MAINFUNC)(int argc, char *argv[]); /* declare a main() function pointer */
+int __cstub(PLIST *plist , EPLIST *eplist);
+int __cstart(MAINFUNC* mainfunc, PLIST *plist , EPLIST *eplist);
 
 #endif

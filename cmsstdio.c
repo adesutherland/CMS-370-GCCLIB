@@ -14,17 +14,18 @@
 /* Released to the public domain.                                                                 */
 /**************************************************************************************************/
 #define STDIO_DEFINED
+
 #include <cmsruntm.h>
 #include <stdio.h>
 #include <ctype.h>
 #include <float.h>
 #include <time.h>
-FILE * stdin;                /* predefined stream for standard input: we map it to console */
-FILE * stdout;              /* predefined stream for standard output: we map it to console */
-FILE * stderr;                 /* predefined stream for error output: we map it to console */
 
+/* In RESLIB code we get globals from GCCCRAB */
+#define stdin (*(GETGCCCRAB()->stdin))
+#define stdout (*(GETGCCCRAB()->stdout))
+#define stderr (*(GETGCCCRAB()->stderr))
 
-static FILE * checkStream(FILE * stream);
 static void dblcvt(double num, char cnvtype, size_t nwidth, size_t nprecision, char *result);
 static int examine(const char **formt, FILE *fq, char *s, va_list *arg, int chcount);
 static int GetFileid(const char * fname, char * fileid);
@@ -65,11 +66,6 @@ static const int modeVals[NUM_MODES] = {ACCESS_READ_TXT, ACCESS_WRITE_TXT, ACCES
 #define DEVICE_RDR  3
 #define DEVICE_DSK  4
 
-// Here we define the default values of the three predefined I/O streams.
-#define GCCSTDIN 1
-#define GCCSTDOUT 2
-#define GCCSTDERR 3
-
 void
 clearerr(FILE * stream)
 /**************************************************************************************************/
@@ -79,13 +75,9 @@ clearerr(FILE * stream)
 /*    stream   a pointer to the open input stream.                                                */
 /**************************************************************************************************/
 {
-FILE * file;
-
-if (stream == NULL) {CMSconsoleWrite("clearerr error: stream is NULL.", CMS_EDIT); return EOF;}
-if (stream <= GCCSTDERR) file = checkStream(stream); else file = stream;  // handle stdin and stdout
-file->error = 0;
+  if (stream == NULL) {CMSconsoleWrite("clearerr error: stream is NULL.", CMS_EDIT); return EOF;}
+  stream->error = 0;
 }                                                                                 // end of clearerr
-
 
 int
 fclose(FILE * stream)
@@ -99,28 +91,28 @@ fclose(FILE * stream)
 /*    0 if all is well, EOF if there is an error.                                                 */
 /**************************************************************************************************/
 {
-FILE * file;
-int rc;
+  int rc;
 
-if (stream == NULL) {CMSconsoleWrite("fclose error: stream is NULL.", CMS_EDIT); return EOF;}
-if (stream <= GCCSTDERR) file = checkStream(stream); else file = stream;  // handle stdin and stdout
-if (fflush(file) != 0) return EOF;                                      // error flushing the stream
-switch (file->device) {
-   case DEVICE_DSK:
-      rc = CMSfileClose(&file->fscb);                                              // close the file
+  if (stream == NULL) {CMSconsoleWrite("fclose error: stream is NULL.", CMS_EDIT); return EOF;}
+  if (fflush(stream) != 0) return EOF;                                      // error flushing the stream
+  switch (stream->device) {
+    case DEVICE_DSK:
+      rc = CMSfileClose(&stream->fscb);                                              // close the file
       break;
-   case DEVICE_PRT:
+    case DEVICE_PRT:
       CMScommand("CP CLOSE PRINTER", CMS_COMMAND);                              // close the printer
       break;
-   case DEVICE_PUN:
+    case DEVICE_PUN:
       CMScommand("CP CLOSE PUNCH", CMS_COMMAND);                             // close the card punch
       break;
-   case DEVICE_RDR:
+    case DEVICE_RDR:
       CMScommand("CP CLOSE READER", CMS_COMMAND);                           // close the card reader
       break;
-   }
-if (CMSmemoryFree(file) == 0) return 0;
-else return EOF;
+    default:
+      return EOF;
+  }
+  if (CMSmemoryFree(stream) == 0) return 0;
+  else return EOF;
 }                                                                                   // end of fclose
 
 
@@ -136,11 +128,8 @@ feof(FILE * stream)
 /*    1 if EOF has been reached, 0 otherwise.                                                     */
 /**************************************************************************************************/
 {
-FILE * file;
-
-if (stream == NULL) {CMSconsoleWrite("feof error: stream is NULL.", CMS_EDIT); return EOF;}
-if (stream <= GCCSTDERR) file = checkStream(stream); else file = stream;  // handle stdin and stdout
-return file->eof;
+  if (stream == NULL) {CMSconsoleWrite("feof error: stream is NULL.", CMS_EDIT); return EOF;}
+  return stream->eof;
 }                                                                                     // end of feof
 
 
@@ -156,16 +145,13 @@ ferror(FILE * stream)
 /*    the error status, or 0 if there is no error.                                                */
 /**************************************************************************************************/
 {
-FILE * file;
-
-if (stream == NULL) {CMSconsoleWrite("ferror error: stream is NULL.", CMS_EDIT); return EOF;}
-if (stream <= GCCSTDERR) file = checkStream(stream); else file = stream;  // handle stdin and stdout
-return file->error;
+  if (stream == NULL) {CMSconsoleWrite("ferror error: stream is NULL.", CMS_EDIT); return EOF;}
+  return stream->error;
 }                                                                                   // end of ferror
 
 
 int
-fflush(FILE * stream)
+fflush(FILE * file)
 /**************************************************************************************************/
 /* int fflush(FILE * stream)                                                                      */
 /*                                                                                                */
@@ -178,11 +164,9 @@ fflush(FILE * stream)
 /*    1.  If the stream is not open for output, fflush is a NOP.                                  */
 /**************************************************************************************************/
 {
-FILE * file;
 int pad;
 
-if (stream == NULL) {CMSconsoleWrite("fflush error: stream is NULL.", CMS_EDIT); return EOF;}
-if (stream <= GCCSTDERR) file = checkStream(stream); else file = stream;  // handle stdin and stdout
+if (file == NULL) {CMSconsoleWrite("fflush error: stream is NULL.", CMS_EDIT); return EOF;}
 if (!(file->access & ACCESS_WRITING)) return 0;           // nothing to do if not open for writing
 if (file->next == file->buffer) return 0;                      // nothing to do if no unwritten data
 switch (file->device) {
@@ -224,7 +208,7 @@ return 0;
 
 
 int
-fgetc(FILE * stream)
+fgetc(FILE * file)
 /**************************************************************************************************/
 /* int fgetc(FILE * stream)                                                                       */
 /*                                                                                                */
@@ -240,12 +224,10 @@ fgetc(FILE * stream)
 /**************************************************************************************************/
 {
 char errmsg[80];
-FILE * file;
 int c;
 int num;
 
-if (stream == NULL) {CMSconsoleWrite("fgetc error: stream is NULL.", CMS_EDIT); return EOF;}
-if (stream <= GCCSTDERR) file = checkStream(stream); else file = stream;  // handle stdin and stdout
+if (file == NULL) {CMSconsoleWrite("fgetc error: stream is NULL.", CMS_EDIT); return EOF;}
 switch (file->device) {
    case DEVICE_CON:
       if (file->access & ACCESS_READ_TXT) {                                // open for reading text?
@@ -343,7 +325,7 @@ return c;
 
 
 int
-fgetpos(FILE * stream, fpos_t * position)
+fgetpos(FILE * file, fpos_t * position)
 /**************************************************************************************************/
 /* int fgetpos(FILE * stream, fpos_t * position)                                                  */
 /*                                                                                                */
@@ -359,10 +341,8 @@ fgetpos(FILE * stream, fpos_t * position)
 /*    2.  Functioally, fgetpos is equivalent to ftell.                                            */
 /**************************************************************************************************/
 {
-FILE * file;
 
-if (stream == NULL) {CMSconsoleWrite("fgetpos error: stream is NULL.", CMS_EDIT); return 1;}
-if (stream <= GCCSTDERR) file = checkStream(stream); else file = stream;  // handle stdin and stdout
+if (file == NULL) {CMSconsoleWrite("fgetpos error: stream is NULL.", CMS_EDIT); return 1;}
 if ((file->device == DEVICE_DSK) && (file->access & !ACCESS_WRITING))          // reading from disk?
    *position = file->readPos;                                                // return read position
 else {
@@ -374,7 +354,7 @@ return 0;
 
 
 char *
-fgets(char * str, int num, FILE * stream)
+fgets(char * str, int num, FILE * file)
 /**************************************************************************************************/
 /* char * fgets(char * str, int num, FILE * stream)                                               */
 /*                                                                                                */
@@ -390,12 +370,10 @@ fgets(char * str, int num, FILE * stream)
 /*    1.  fgets is only appropriate for a text file.                                              */
 /**************************************************************************************************/
 {
-FILE * file;
-int c;
-int i;
+  int c;
+  int i;
 
-if (stream == NULL) {CMSconsoleWrite("fgets error: stream is NULL.", CMS_EDIT); return (char *) EOF;}
-if (stream <= GCCSTDERR) file = checkStream(stream); else file = stream;  // handle stdin and stdout
+if (file == NULL) {CMSconsoleWrite("fgets error: stream is NULL.", CMS_EDIT); return (char *) EOF;}
 for (i = 0; i < num - 1; i++) {
    c = fgetc(file);                               // some day I will fix this to avoid calling fgetc
    if (c == EOF) {                                                     // end of file or other error
@@ -553,12 +531,10 @@ switch (devtype) {
    case DEVICE_CON:
       switch (accessMode) {                                    // return the appropriate file handle
          case ACCESS_READ_TXT:                                           // reading from the console
-            if (stdin == GCCSTDIN) theFile = checkStream(stdin);             // get pointer to stdin
-            else theFile = stdin;
+            theFile = stdin;
             break;
          case ACCESS_WRITE_TXT:                                            // writing to the console
-            if (stdout == GCCSTDOUT) theFile = checkStream(stdout);         // get pointer to stdout
-            else theFile = stdout;
+            theFile = stdout;
             break;
          default:    // can't do binary I/O from/to the console yet, must support this eventually!!!
             sprintf(errmsg, "fopen error: access '%s' for console not yet supported.", access);
@@ -667,7 +643,7 @@ return theFile;
 
 
 int
-fprintf(FILE * stream, const char *format, ...)
+fprintf(FILE * file, const char *format, ...)
 /**************************************************************************************************/
 /* int fprintf(FILE * stream, const char * format, ...)                                           */
 /*                                                                                                */
@@ -682,21 +658,19 @@ fprintf(FILE * stream, const char *format, ...)
 /*    the number of characters written to the stream.                                             */
 /**************************************************************************************************/
 {
-FILE * file;
-int rc;
-va_list arg;
+  int rc;
+  va_list arg;
 
-if (stream == NULL) {CMSconsoleWrite("fprintf error: stream is NULL.", CMS_EDIT); return EOF;}
-if (stream <= GCCSTDERR) file = checkStream(stream); else file = stream;  // handle stdin and stdout
-va_start(arg, format);
-rc = vvprintf(format, arg, file, NULL);                            // write the output to the stream
-va_end(arg);
-return rc;
+  if (file == NULL) {CMSconsoleWrite("fprintf error: stream is NULL.", CMS_EDIT); return EOF;}
+  va_start(arg, format);
+  rc = vvprintf(format, arg, file, NULL);                            // write the output to the stream
+  va_end(arg);
+  return rc;
 }                                                                                  // end of fprintf
 
 
 int
-fputc(int c, FILE * stream)
+fputc(int c, FILE * file)
 /**************************************************************************************************/
 /* int fputc(int c, FILE * stream)                                                                */
 /*                                                                                                */
@@ -709,11 +683,9 @@ fputc(int c, FILE * stream)
 /**************************************************************************************************/
 {
 char errmsg[80];
-FILE * file;
 int writeRecord;                                   // true if we should write out the current record
 
-if (stream == NULL) {CMSconsoleWrite("fputc error: stream is NULL.", CMS_EDIT); return EOF;}
-if (stream <= GCCSTDERR) file = checkStream(stream); else file = stream;  // handle stdin and stdout
+if (file == NULL) {CMSconsoleWrite("fputc error: stream is NULL.", CMS_EDIT); return EOF;}
 switch (file->device) {
    case DEVICE_CON:
       if (file->access & ACCESS_WRITE_TXT) {                               // open for writing text?
@@ -821,7 +793,7 @@ return c;
 
 
 int
-fputs(const char * str, FILE * stream)
+fputs(const char * str, FILE * file)
 /**************************************************************************************************/
 /* int fputs(const char * str, FILE * stream)                                                     */
 /*                                                                                                */
@@ -833,13 +805,11 @@ fputs(const char * str, FILE * stream)
 /*    non-negative on success, EOF on failure.                                                    */
 /**************************************************************************************************/
 {
-FILE * file;
 int c;
 int i;
 int rc;
 
-if (stream == NULL) {CMSconsoleWrite("fputs error: stream is NULL.", CMS_EDIT); return EOF;}
-if (stream <= GCCSTDERR) file = checkStream(stream); else file = stream;  // handle stdin and stdout
+if (file == NULL) {CMSconsoleWrite("fputs error: stream is NULL.", CMS_EDIT); return EOF;}
 switch (file->device) {
    case DEVICE_CON:                                  // I promise to fix this code to not call fputc
    case DEVICE_DSK:
@@ -857,11 +827,8 @@ switch (file->device) {
 return rc;
 }                                                                                    // end of fputs
 
-
-/* OK, this is really bizzare.  Must use a #define to get around a bug in my resident library     */
-/* loading.  Thus this routine is (temporarily) named xread.                                      */
 int
-xread(void * buffer, size_t size, size_t count, FILE * stream)
+fread(void * buffer, size_t size, size_t count, FILE * file)
 /**************************************************************************************************/
 /* int fread(void * buffer, size_t size, size_t count, FILE * stream)                             */
 /*                                                                                                */
@@ -882,13 +849,11 @@ xread(void * buffer, size_t size, size_t count, FILE * stream)
 /**************************************************************************************************/
 {
 char * finger;
-FILE * file;
 int c;
 int i;
 int j;
 
-if (stream == NULL) {CMSconsoleWrite("fread error: stream is NULL.", CMS_EDIT); return EOF;}
-if (stream <= GCCSTDERR) file = checkStream(stream); else file = stream;  // handle stdin and stdout
+if (file == NULL) {CMSconsoleWrite("fread error: stream is NULL.", CMS_EDIT); return EOF;}
 switch (file->device) {
    case DEVICE_CON:
       break;                                                                    // not yet supported
@@ -906,12 +871,12 @@ switch (file->device) {
          }
       break;
    case DEVICE_PRT:
-      stream->error = 9;
+      file->error = 9;
       CMSconsoleWrite("fread error: cannot read from the printer.", CMS_EDIT);        // remove this
       return 0;
       break;
    case DEVICE_PUN:
-      stream->error = 9;
+      file->error = 9;
       CMSconsoleWrite("fread error: cannot read from the card punch.", CMS_EDIT);     // remove this
       return 0;
       break;
@@ -931,12 +896,12 @@ freopen(const char * filespec, const char * access, FILE * stream)
 /*    NULL, indicating the request could not be satisfied.                                        */
 /**************************************************************************************************/
 {
-return NULL;
+  return NULL;
 }                                                                                  // end of freopen
 
 
 int
-fscanf(FILE * stream, const char * format, ...)
+fscanf(FILE * file, const char * format, ...)
 /**************************************************************************************************/
 /* int fscanf(FILE * stream, const char * format, ...)                                            */
 /*                                                                                                */
@@ -952,21 +917,19 @@ fscanf(FILE * stream, const char * format, ...)
 /*    the number of variables successfully assigned values.                                       */
 /**************************************************************************************************/
 {
-FILE * file;
-int rc;
-va_list arg;
+  int rc;
+  va_list arg;
 
-if (stream == NULL) {CMSconsoleWrite("fscanf error: stream is NULL.", CMS_EDIT); return EOF;}
-if (stream <= GCCSTDERR) file = checkStream(stream); else file = stream;  // handle stdin and stdout
-va_start(arg, format);
-rc = vvscanf(format, arg, file, NULL);
-va_end(arg);
-return rc;
+  if (file == NULL) {CMSconsoleWrite("fscanf error: stream is NULL.", CMS_EDIT); return EOF;}
+  va_start(arg, format);
+  rc = vvscanf(format, arg, file, NULL);
+  va_end(arg);
+  return rc;
 }                                                                                       // of fscanf
 
 
 int
-fseek(FILE * stream, long offset, int origin)
+fseek(FILE * file, long offset, int origin)
 /**************************************************************************************************/
 /* int fseek(FILE * stream, long offset, int origin)                                              */
 /*                                                                                                */
@@ -983,13 +946,11 @@ fseek(FILE * stream, long offset, int origin)
 /*    1.  fseek is only valid for a disk file that is open for reading.                           */
 /**************************************************************************************************/
 {
-FILE * file;
 int here;
 int i;
 int new;
 
-if (stream == NULL) {CMSconsoleWrite("fseek error: stream is NULL.", CMS_EDIT); return 1;}
-if (stream <= GCCSTDERR) file = checkStream(stream); else file = stream;  // handle stdin and stdout
+if (file == NULL) {CMSconsoleWrite("fseek error: stream is NULL.", CMS_EDIT); return 1;}
 if ((file->device == DEVICE_DSK) && !(file->access & ACCESS_WRITING)) {    // reading from disk?
    file->ungetChar = -2;                                                   // clear the unget flag
    here = file->readPos;                                                  // remember where we are
@@ -1020,7 +981,7 @@ return 0;
 
 
 int
-fsetpos(FILE * stream, const fpos_t * position)
+fsetpos(FILE * file, const fpos_t * position)
 /**************************************************************************************************/
 /* int fsetpos(FILE * stream, fpos_t * position)                                                  */
 /*                                                                                                */
@@ -1034,31 +995,29 @@ fsetpos(FILE * stream, const fpos_t * position)
 /*    1.  fsetpos is only valid for a disk file that is open for reading.                         */
 /**************************************************************************************************/
 {
-FILE * file;
 int here;
 int i;
 
-if (stream == NULL) {CMSconsoleWrite("fsetpos error: stream is NULL.", CMS_EDIT); return 1;}
-if (stream <= GCCSTDERR) file = checkStream(stream); else file = stream;  // handle stdin and stdout
-if ((file->device == DEVICE_DSK) && !(file->access & ACCESS_WRITING)) {        // reading from disk?
-   file->ungetChar = -2;                                                     // clear the unget flag
-   here = file->readPos;                                                    // remember where we are
-   if (position < here) {               // must go back to the beginning of the file & count forward
+  if (file == NULL) {CMSconsoleWrite("fsetpos error: stream is NULL.", CMS_EDIT); return 1;}
+  if ((file->device == DEVICE_DSK) && !(file->access & ACCESS_WRITING)) {        // reading from disk?
+    file->ungetChar = -2;                                                     // clear the unget flag
+    here = file->readPos;                                                    // remember where we are
+    if (position < here) {               // must go back to the beginning of the file & count forward
       rewind(file);                                             // avoid this call??????????????????
       here = 0;
-      }
-   for (i = here; i < position; i++) if (fgetc(file) == EOF) break;
-   }
-else {
+    }
+    for (i = here; i < position; i++) if (fgetc(file) == EOF) break;
+  }
+  else {
    CMSconsoleWrite("fsetpos error: only valid for a disk file open for reading.", CMS_EDIT);
    return 1;
-   }
-return 0;
+  }
+  return 0;
 }                                                                                  // end of fsetpos
 
 
 long
-ftell(FILE * stream)
+ftell(FILE * file)
 /**************************************************************************************************/
 /* long ftell(FILE * stream)                                                                      */
 /*                                                                                                */
@@ -1073,21 +1032,18 @@ ftell(FILE * stream)
 /*    2.  Functioally, ftell is equivalent to fgetpos.                                            */
 /**************************************************************************************************/
 {
-FILE * file;
-
-if (stream == NULL) {CMSconsoleWrite("ftell error: stream is NULL.", CMS_EDIT); return 1;}
-if (stream <= GCCSTDERR) file = checkStream(stream); else file = stream;  // handle stdin and stdout
-if ((file->device == DEVICE_DSK) && !(file->access & ACCESS_WRITING))          // reading from disk?
-   return file->readPos;                                                     // return read position
-else {
-   CMSconsoleWrite("ftell error: only valid for a disk file open for reading.", CMS_EDIT);
-   return -1;
-   }
+  if (file == NULL) {CMSconsoleWrite("ftell error: stream is NULL.", CMS_EDIT); return 1;}
+  if ((file->device == DEVICE_DSK) && !(file->access & ACCESS_WRITING))          // reading from disk?
+    return file->readPos;                                                     // return read position
+  else {
+    CMSconsoleWrite("ftell error: only valid for a disk file open for reading.", CMS_EDIT);
+    return -1;
+  }
 }                                                                                    // end of ftell
 
 
 int
-fwrite(const void * buffer, size_t size, size_t count, FILE * stream)
+fwrite(const void * buffer, size_t size, size_t count, FILE * file)
 /**************************************************************************************************/
 /* int fwrite(const void * buffer, size_t size, size_t count, FILE * stream)                      */
 /*                                                                                                */
@@ -1107,14 +1063,12 @@ fwrite(const void * buffer, size_t size, size_t count, FILE * stream)
 /*        new record is started.  Thus the file is treated as a stream of bytes.                  */
 /**************************************************************************************************/
 {
-char * finger;
-FILE * file;
-int i;
-int j;
+ char * finger;
+ int i;
+ int j;
 
-if (stream == NULL) {CMSconsoleWrite("fwrite error: stream is NULL.", CMS_EDIT); return EOF;}
-if (stream <= GCCSTDERR) file = checkStream(stream); else file = stream;  // handle stdin and stdout
-switch (file->device) {
+ if (file == NULL) {CMSconsoleWrite("fwrite error: stream is NULL.", CMS_EDIT); return EOF;}
+ switch (file->device) {
    case DEVICE_CON:
       break;                                                                    // not yet supported
    case DEVICE_DSK:                                  // I promise to fix this code to not call fputc
@@ -1135,7 +1089,7 @@ switch (file->device) {
       return 0;
       break;
    }
-return i;
+ return i;
 }                                                                                   // end of fwrite
 
 
@@ -1155,7 +1109,7 @@ getc(FILE * stream)
 /*        files.                                                                                  */
 /**************************************************************************************************/
 {
-return fgetc(stream);
+  return fgetc(stream);
 }                                                                                     // end of getc
 
 
@@ -1174,7 +1128,7 @@ getchar(void)
 /*        files.                                                                                  */
 /**************************************************************************************************/
 {
-return fgetc(stdin);                                              // get the character and return it
+  return fgetc(stdin);                                              // get the character and return it
 }                                                                                  // end of getchar
 
 
@@ -1193,9 +1147,9 @@ gets(char * str)
 /*    1.  The buffer to which 'str' points must be 131 bytes long.                                */
 /**************************************************************************************************/
 {
-fgets(str, 131, stdin);                                                            // get the string
-if ((str != NULL) && (str != EOF)) str[strlen(str) - 1] = NULL;         // replace newline with NULL
-return str;
+  fgets(str, 131, stdin);                                                            // get the string
+  if ((str != NULL) && (str != EOF)) str[strlen(str) - 1] = NULL;         // replace newline with NULL
+  return str;
 }                                                                                     // end of gets
 
 
@@ -1215,16 +1169,13 @@ printf(const char * format, ...)
 /*    the number of characters printed.                                                           */
 /**************************************************************************************************/
 {
-int rc;
-FILE * file;
-va_list arg;
+  int rc;
+  va_list arg;
 
-if (stdout == GCCSTDOUT) file = checkStream(stdout);                        // get pointer to stdout
-else file = stdout;
-va_start(arg, format);
-rc = vvprintf(format, arg, file, NULL);
-va_end(arg);
-return rc;
+  va_start(arg, format);
+  rc = vvprintf(format, arg, stdout, NULL);
+  va_end(arg);
+  return rc;
 }                                                                                   // end of printf
 
 
@@ -1241,7 +1192,7 @@ putc(int c, FILE * stream)
 /*    the character, or EOF if there is an error.                                                 */
 /**************************************************************************************************/
 {
-return fputc(c, stream);
+  return fputc(c, stream);
 }                                                                                     // end of putc
 
 
@@ -1257,7 +1208,7 @@ putchar(int c)
 /*    the character, or EOF if there is an error.                                                 */
 /**************************************************************************************************/
 {
-return fputc(c, stdout);
+  return fputc(c, stdout);
 }                                                                                  // end of putchar
 
 
@@ -1273,7 +1224,7 @@ puts(char * str)
 /*    non-negative on success, EOF on failure.                                                    */
 /**************************************************************************************************/
 {
-return fputs(str, stdout);
+  return fputs(str, stdout);
 }                                                                                     // end of puts
 
 
@@ -1342,7 +1293,7 @@ return CMSfileRename(oldfileid, newfileid);
 
 
 void
-rewind(FILE * stream)
+rewind(FILE * file)
 /**************************************************************************************************/
 /* void rewind(FILE * stream)                                                                     */
 /*                                                                                                */
@@ -1351,11 +1302,9 @@ rewind(FILE * stream)
 /*    stream   a pointer to the open stream.                                                      */
 /**************************************************************************************************/
 {
-FILE * file;
 int rw;
 
-if (stream == NULL) {CMSconsoleWrite("rewind error: stream is NULL.", CMS_EDIT); return EOF;}
-if (stream <= GCCSTDERR) file = checkStream(stream); else file = stream;  // handle stdin and stdout
+if (file == NULL) {CMSconsoleWrite("rewind error: stream is NULL.", CMS_EDIT); return EOF;}
 switch (file->device) {
    case DEVICE_CON:
       break;
@@ -1421,13 +1370,11 @@ scanf(const char * format, ...)
 /*    the number of variables successfully assigned values.                                       */
 /**************************************************************************************************/
 {
-FILE * file;
 int rc;
 va_list arg;
 
-if (stdin == GCCSTDIN) file = checkStream(stdin); else file = stdin;         // get pointer to stdin
 va_start(arg, format);
-rc = vvscanf(format, arg, file, NULL);
+rc = vvscanf(format, arg, stdin, NULL);
 va_end(arg);
 return rc;
 }                                                                                    // end of scanf
@@ -1441,7 +1388,7 @@ setbuf(FILE * file, char * buffer)
 /* This function does nothing.                                                                    */
 /**************************************************************************************************/
 {
-return;
+  return;
 }                                                                                   // end of setbuf
 
 
@@ -1551,7 +1498,7 @@ return name;
 
 
 int
-ungetc(int c, FILE * stream)
+ungetc(int c, FILE * file)
 /**************************************************************************************************/
 /* int ungetc(int c, FILE * stream)                                                               */
 /*                                                                                                */
@@ -1568,10 +1515,8 @@ ungetc(int c, FILE * stream)
 /*        the previous character is read, it is not placed in the buffer and EOF is returned.     */
 /**************************************************************************************************/
 {
-FILE * file;
 
-if (stream == NULL) {CMSconsoleWrite("ungetc error: file is NULL.", CMS_EDIT); return EOF;}
-if (stream <= GCCSTDERR) file = checkStream(stream); else file = stream;  // handle stdin and stdout
+if (file == NULL) {CMSconsoleWrite("ungetc error: file is NULL.", CMS_EDIT); return EOF;}
 if (file->ungetChar == -1) {                                         // OK to push back a character?
    file->ungetChar = c;
    return c;
@@ -1581,7 +1526,7 @@ else return EOF;
 
 
 int
-vfprintf(FILE * stream, const char * format, va_list arg)
+vfprintf(FILE * file, const char * format, va_list arg)
 /**************************************************************************************************/
 /* int vfprintf(FILE * stream, const char * format, va_list arg)                                  */
 /*                                                                                                */
@@ -1595,11 +1540,9 @@ vfprintf(FILE * stream, const char * format, va_list arg)
 /*    the number of characters written to the stream.                                             */
 /**************************************************************************************************/
 {
-FILE * file;
 int ret;
 
 if (file == NULL) {CMSconsoleWrite("vfprintf error: file is NULL.", CMS_EDIT); return EOF;}
-if (stream <= GCCSTDERR) file = checkStream(stream); else file = stream;  // handle stdin and stdout
 ret = vvprintf(format, arg, file, NULL);
 return ret;
 }                                                                                 // end of vfprintf
@@ -1647,37 +1590,6 @@ return -1;
 /* Internal routines.                                                                             */
 /*------------------------------------------------------------------------------------------------*/
 /*------------------------------------------------------------------------------------------------*/
-
-
-static FILE *
-checkStream(FILE * stream)
-/**************************************************************************************************/
-/* Return the actual FILE pointer for stdin, stdout and stderr streams.  For all other streams    */
-/* just return their FILE pointer.                                                                */
-/*    stream   a pointer to the open input stream.                                                */
-/*                                                                                                */
-/* Returns:                                                                                       */
-/*    a pointer to the stream.                                                                    */
-/**************************************************************************************************/
-{
- GCCCRAB *theCRAB = GETGCCCRAB();
-
- switch ((int) stream) {
-   case GCCSTDIN:
-      return stdin = theCRAB->consoleInputFile;
-      break;
-   case GCCSTDOUT:
-      return stdout = theCRAB->consoleOutputFile;
-      break;
-   case GCCSTDERR:
-      return stderr = theCRAB->consoleOutputFile;
-      break;
-   default:
-      CMSconsoleWrite("Unexpected call to checkStream with valid file pointer!", CMS_EDIT);
-      return stream;
-      break;
-   }
-}                                                                              // end of checkStream
 
 
 static void

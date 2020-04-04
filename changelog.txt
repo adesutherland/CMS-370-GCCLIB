@@ -1,7 +1,9 @@
 GCCLIB Change LOG
 =================
 
-0.7.5 - 23 Mar 2020
+F0005 - Refactor STDIO Logic
+
+0.7.5 - 24 Mar 2020
 F0004 - Refactor CMSEntry - moving complex logic to C
         Fix Parameter passing (Added Magic EPLIST Marker)
 

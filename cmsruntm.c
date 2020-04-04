@@ -1,5 +1,5 @@
 /**************************************************************************************************/
-/* CMSRUNTM.C - CMS Runtime Logic                                                                 */
+/* CMSRUNTM.C - CMS Runtime Logic (RESLIB)                                                        */
 /*                                                                                                */
 /* Part of GCCLIB - VM/370 CMS Native Std C Library; A Historic Computing Toy                     */
 /*                                                                                                */
@@ -13,16 +13,9 @@
 #include "string.h"
 #include "cmsruntm.h"
 
-#define GCCSTDIN 1
-#define GCCSTDOUT 2
-#define GCCSTDERR 3
-
-typedef int (MAINFUNC)(int argc, char *argv[]); /* declare a main() function pointer */
-
-int __cstart(MAINFUNC* mainfunc, PLIST *plist , EPLIST *eplist)
+int __cstart(MAINFUNC* mainfunc, PLIST *plist, EPLIST *eplist)
 {
-  GCCCRAB gcccrab;
-  CMSCRAB *cmscrab;
+  GCCCRAB *gcccrab;
   int calltype;
   char *argv[MAXEPLISTARGS];
   char argbuffer[ARGBUFFERLEN];
@@ -31,49 +24,42 @@ int __cstart(MAINFUNC* mainfunc, PLIST *plist , EPLIST *eplist)
   char ch;
   GCCLIBPLIST *gcclibplist = 0;
   EPLIST *magic_eplist = 0;
+  FILE actualConsoleOutputFileHandle;
+  char consoleOutputBuffer[132];
+  FILE actualConsoleInputFileHandle;
+  char consoleInputBuffer[132];
 
-  /* Fixup the GCCCRAB */
-  cmscrab = GETCMSCRAB();
-  cmscrab->gcccrab = &gcccrab;
-  /* And add it to my parent (the root) CMSCRAB */
-  cmscrab = cmscrab->backchain;
-  cmscrab->gcccrab = &gcccrab;
-  gcccrab.rootcmscrab = cmscrab;
+  /* Get the GCCCRAB */
+  gcccrab = GETGCCCRAB();
 
   /* Setup stdout and stderr */
-  gcccrab.consoleOutputFile = &(gcccrab.actualConsoleOutputFileHandle);
-  gcccrab.actualConsoleOutputFileHandle.access = 3; /* set access to ACCESS_WRITE_TXT */
-  gcccrab.actualConsoleOutputFileHandle.device = 0; /* Console */
-  gcccrab.actualConsoleOutputFileHandle.ungetChar = -2; /* 'unget' not yet valid */
-  gcccrab.actualConsoleOutputFileHandle.eof = 0;
-  gcccrab.actualConsoleOutputFileHandle.error = 0;
-  gcccrab.actualConsoleOutputFileHandle.next = gcccrab.consoleOutputBuffer;
-  gcccrab.actualConsoleOutputFileHandle.last = gcccrab.consoleOutputBuffer + 130;
-  gcccrab.actualConsoleOutputFileHandle.readPos = 0;
-  gcccrab.actualConsoleOutputFileHandle.writePos = 0;
-  gcccrab.actualConsoleOutputFileHandle.name[0] = 0;
-  gcccrab.actualConsoleOutputFileHandle.buffer = gcccrab.consoleOutputBuffer;
+  *(gcccrab->stdout) = &actualConsoleOutputFileHandle;
+  *(gcccrab->stderr) = &actualConsoleOutputFileHandle;
+  actualConsoleOutputFileHandle.access = 3; /* set access to ACCESS_WRITE_TXT */
+  actualConsoleOutputFileHandle.device = 0; /* Console */
+  actualConsoleOutputFileHandle.ungetChar = -2; /* 'unget' not yet valid */
+  actualConsoleOutputFileHandle.eof = 0;
+  actualConsoleOutputFileHandle.next = consoleOutputBuffer;
+  actualConsoleOutputFileHandle.error = 0;
+  actualConsoleOutputFileHandle.last = consoleOutputBuffer + 130;
+  actualConsoleOutputFileHandle.readPos = 0;
+  actualConsoleOutputFileHandle.writePos = 0;
+  actualConsoleOutputFileHandle.name[0] = 0;
+  actualConsoleOutputFileHandle.buffer = consoleOutputBuffer;
 
   /* Setup stdin */
-  gcccrab.consoleInputFile = &(gcccrab.actualConsoleInputFileHandle);
-  gcccrab.actualConsoleInputFileHandle.access = 1;
-  gcccrab.actualConsoleInputFileHandle.device = 0; /* Console */
-  gcccrab.actualConsoleInputFileHandle.ungetChar = -2; /* 'unget' not yet valid */
-  gcccrab.actualConsoleInputFileHandle.eof = 0;
-  gcccrab.actualConsoleInputFileHandle.error = 0;
-  gcccrab.actualConsoleInputFileHandle.next = gcccrab.consoleInputBuffer;
-  gcccrab.actualConsoleInputFileHandle.last = gcccrab.consoleInputBuffer;
-  gcccrab.actualConsoleInputFileHandle.readPos = 0;
-  gcccrab.actualConsoleInputFileHandle.writePos = 0;
-  gcccrab.actualConsoleInputFileHandle.name[0] = 0;
-  gcccrab.actualConsoleInputFileHandle.buffer = gcccrab.consoleInputBuffer;
-
-/*  FILE * stderr = GCCSTDERR;   predefined stream for error output: we map it to the console */
-/*  FILE * stdin = GCCSTDIN;     predefined stream for standard input: we map it to the console */
-/*  FILE * stdout = GCCSTDOUT;   predefined stream for standard output: we map it to the console */
-
-  stdin = gcccrab.consoleInputFile; /* initialize the stdin file handle */
-  stdout = stderr = gcccrab.consoleOutputFile;  /* initialize the stderr and stdout file handles */
+  *(gcccrab->stdin) = &actualConsoleInputFileHandle;
+  actualConsoleInputFileHandle.access = 1;
+  actualConsoleInputFileHandle.device = 0; /* Console */
+  actualConsoleInputFileHandle.eof = 0;
+  actualConsoleInputFileHandle.ungetChar = -2; /* 'unget' not yet valid */
+  actualConsoleInputFileHandle.error = 0;
+  actualConsoleInputFileHandle.next = consoleInputBuffer;
+  actualConsoleInputFileHandle.last = consoleInputBuffer;
+  actualConsoleInputFileHandle.readPos = 0;
+  actualConsoleInputFileHandle.writePos = 0;
+  actualConsoleInputFileHandle.name[0] = 0;
+  actualConsoleInputFileHandle.buffer = consoleInputBuffer;
 
   /* The high order byte contains the
      traditional CMS R1 flag byte.  A x'0B' or x'01' indicates the

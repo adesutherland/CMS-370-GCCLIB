@@ -250,12 +250,8 @@ fputs(const char * str, FILE * stream);
 /*    non-negative on success, EOF on failure.                                                    */
 /**************************************************************************************************/
 
-/* OK, this is really bizzare.  The following #define is required to get around a bug in my       */
-/* resident library loading.  Have not yet figured out the problem.                               */
-#define fread xread
-
 int
-xread(void * buffer, size_t size, size_t count, FILE * stream);
+fread(void * buffer, size_t size, size_t count, FILE * stream);
 /**************************************************************************************************/
 /* int fread(void * buffer, size_t size, size_t count, FILE * stream)                             */
 /*                                                                                                */
