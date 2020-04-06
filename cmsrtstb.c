@@ -8,12 +8,14 @@
 /*                                                                                                */
 /* Released to the public domain.                                                                 */
 /**************************************************************************************************/
-#define STDIO_DEFINED
 #include <cmsruntm.h>
 #include <stdio.h>
-FILE *stdin;                /* predefined stream for standard input: we map it to console */
+
+/* Stdlib Public Global Variables */
+FILE *stdin;               /* predefined stream for standard input: we map it to console */
 FILE *stdout;              /* predefined stream for standard output: we map it to console */
-FILE *stderr;                 /* predefined stream for error output: we map it to console */
+FILE *stderr;              /* predefined stream for error output: we map it to console */
+int errno = 0;             /* Std error number */
 
 int main(int argc, char *argv[]);
 
@@ -34,6 +36,7 @@ int __cstub(PLIST *plist , EPLIST *eplist)
   gcccrab.stdin = &stdin;
   gcccrab.stdout = &stdout;
   gcccrab.stderr = &stderr;
+  gcccrab.errno = &errno;
 
   return(__cstart(main, plist, eplist));
 }

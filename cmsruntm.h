@@ -33,6 +33,7 @@ struct GCCCRAB {
    FILE **stdin;
    FILE **stdout;
    FILE **stderr;
+   int *errno;
 };
 
 /* To get the addresses of the crabs */
@@ -85,5 +86,13 @@ typedef struct GCCLIBPLIST {
 typedef int (MAINFUNC)(int argc, char *argv[]); /* declare a main() function pointer */
 int __cstub(PLIST *plist , EPLIST *eplist);
 int __cstart(MAINFUNC* mainfunc, PLIST *plist , EPLIST *eplist);
+
+/* Stdlib Public Global Variables - RESLIB Defines */
+#ifdef IN_RESLIB
+#define stdin (*(GETGCCCRAB()->stdin))
+#define stdout (*(GETGCCCRAB()->stdout))
+#define stderr (*(GETGCCCRAB()->stderr))
+#define errno (*(GETGCCCRAB()->errno))
+#endif
 
 #endif

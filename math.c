@@ -41,6 +41,8 @@
 /*  math.c - implementation of stuff in math.h                       */
 /*                                                                   */
 /*********************************************************************/
+#define IN_RESLIB
+#include <cmsruntm.h>
 
 #include "math.h"
 #include "float.h"

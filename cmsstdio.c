@@ -2,29 +2,20 @@
 /* CMSSTDIO.C: Native CMS implementation of STDIO.H.                                              */
 /*                                                                                                */
 /* Not implemented:                                                                               */
-/*     void perror(const char * str)                                                              */
 /*     int snprintf(char * buffer, int buff_size, const char * format, ...)                       */
-/*                                                                                                */
-/* Note also that we depend on the offset of the GCC CRAB pointer in the save area, currently 72  */
-/* (decimal) bytes.  If the CMSCRAB macro is changed, this code must change!!!!!!!!!!!!!!!!!!!!!  */
 /*                                                                                                */
 /* Robert O'Hara, Redmond Washington, July 2010.                                                  */
 /*                                                                                                */
 /* Based on code written by Paul Edwards and Dave Wade.                                           */
 /* Released to the public domain.                                                                 */
 /**************************************************************************************************/
-#define STDIO_DEFINED
-
+#define IN_RESLIB
 #include <cmsruntm.h>
 #include <stdio.h>
 #include <ctype.h>
 #include <float.h>
 #include <time.h>
-
-/* In RESLIB code we get globals from GCCCRAB */
-#define stdin (*(GETGCCCRAB()->stdin))
-#define stdout (*(GETGCCCRAB()->stdout))
-#define stderr (*(GETGCCCRAB()->stderr))
+#include <errno.h>
 
 static void dblcvt(double num, char cnvtype, size_t nwidth, size_t nprecision, char *result);
 static int examine(const char **formt, FILE *fq, char *s, va_list *arg, int chcount);
@@ -66,6 +57,19 @@ static const int modeVals[NUM_MODES] = {ACCESS_READ_TXT, ACCESS_WRITE_TXT, ACCES
 #define DEVICE_RDR  3
 #define DEVICE_DSK  4
 
+/**************************************************************************************************/
+/* void perror( const char *str )                                                                 */
+/**************************************************************************************************/
+void perror( const char *str )
+{
+  if ( ( str != NULL ) && ( str[0] != '\n' ) )
+  {
+      fprintf( stderr, "%s: ", str );
+  }
+  fprintf( stderr, "%s\n", strerror(errno) );
+  return;
+}
+
 void
 clearerr(FILE * stream)
 /**************************************************************************************************/
@@ -75,8 +79,8 @@ clearerr(FILE * stream)
 /*    stream   a pointer to the open input stream.                                                */
 /**************************************************************************************************/
 {
-  if (stream == NULL) {CMSconsoleWrite("clearerr error: stream is NULL.", CMS_EDIT); return EOF;}
-  stream->error = 0;
+  if (stream == NULL) errno = EINVAL;
+  else stream->error = 0;
 }                                                                                 // end of clearerr
 
 int
@@ -93,7 +97,7 @@ fclose(FILE * stream)
 {
   int rc;
 
-  if (stream == NULL) {CMSconsoleWrite("fclose error: stream is NULL.", CMS_EDIT); return EOF;}
+  if (stream == NULL) {errno = EINVAL; return EOF;}
   if (fflush(stream) != 0) return EOF;                                      // error flushing the stream
   switch (stream->device) {
     case DEVICE_DSK:
@@ -128,7 +132,7 @@ feof(FILE * stream)
 /*    1 if EOF has been reached, 0 otherwise.                                                     */
 /**************************************************************************************************/
 {
-  if (stream == NULL) {CMSconsoleWrite("feof error: stream is NULL.", CMS_EDIT); return EOF;}
+  if (stream == NULL) {errno = EINVAL; return EOF;}
   return stream->eof;
 }                                                                                     // end of feof
 
@@ -145,7 +149,7 @@ ferror(FILE * stream)
 /*    the error status, or 0 if there is no error.                                                */
 /**************************************************************************************************/
 {
-  if (stream == NULL) {CMSconsoleWrite("ferror error: stream is NULL.", CMS_EDIT); return EOF;}
+  if (stream == NULL) {errno = EINVAL; return EOF;}
   return stream->error;
 }                                                                                   // end of ferror
 
@@ -166,7 +170,7 @@ fflush(FILE * file)
 {
 int pad;
 
-if (file == NULL) {CMSconsoleWrite("fflush error: stream is NULL.", CMS_EDIT); return EOF;}
+if (file == NULL) {errno = EINVAL; return EOF;}
 if (!(file->access & ACCESS_WRITING)) return 0;           // nothing to do if not open for writing
 if (file->next == file->buffer) return 0;                      // nothing to do if no unwritten data
 switch (file->device) {
@@ -182,7 +186,7 @@ switch (file->device) {
          }
       file->error = CMSfileWrite(&file->fscb, -1, file->next - file->buffer);
       if (file->error != 0) {
-         printf("fflush error: return code %u from FSWRITE.\n", file->error);         // remove this
+         errno = EIO;
          return file->error;
          }
       break;
@@ -190,7 +194,7 @@ switch (file->device) {
       file->next = 0;                                                        // terminate the string
       file->error = CMSprintLine(file->buffer);                                          // print it
       if (file->error != 0) {
-         printf("fflush error: return code %u from PRINTL.\n", file->error);          // remove this
+         errno = EIO;
          return file->error;
          }
       break;
@@ -198,7 +202,7 @@ switch (file->device) {
       for (; file->next < file->last; file->next++) file->next[0] = ' ';             // pad the card
       file->error = CMScardPunch(file->buffer);                                          // punch it
       if (file->error != 0) {
-         printf("fflush error: return code %u from PUNCHC.\n", file->error);          // remove this
+         errno = EIO;
          return file->error;
          }
       break;
@@ -227,7 +231,7 @@ char errmsg[80];
 int c;
 int num;
 
-if (file == NULL) {CMSconsoleWrite("fgetc error: stream is NULL.", CMS_EDIT); return EOF;}
+if (file == NULL) {errno = EINVAL; return EOF;}
 switch (file->device) {
    case DEVICE_CON:
       if (file->access & ACCESS_READ_TXT) {                                // open for reading text?
@@ -247,14 +251,14 @@ switch (file->device) {
          }
       else {
          file->error = 9;
-         CMSconsoleWrite("fgetc error: file not open for text input.", CMS_EDIT);     // remove this
+         errno = EBADF;
          return EOF;
          }
       break;
    case DEVICE_DSK:
       if (file->access & ACCESS_WRITING) {                                      // open for writing?
          file->error = 9;
-         CMSconsoleWrite("fgetc error: file not open for input.", CMS_EDIT);          // remove this
+         errno = EBADF;
          return EOF;
          }
       else {
@@ -276,9 +280,8 @@ switch (file->device) {
                   file->eof = 1;                                                    // remember this
                   return EOF;
                   break;
-               default:                                               // error reading from the file
-                  sprintf(errmsg, "fgetc error: return code %d from CMSfileRead.", file->error);
-                  CMSconsoleWrite(errmsg, CMS_EDIT);                                  // remove this
+               default:
+                  errno = EIO;                                         // error reading from the file
                   return EOF;
                   break;
                }
@@ -290,18 +293,18 @@ switch (file->device) {
       break;
    case DEVICE_PRT:
       file->error = 9;
-      CMSconsoleWrite("fgetc error: cannot read from the printer.", CMS_EDIT);        // remove this
+      errno = EBADF;
       return EOF;
       break;
    case DEVICE_PUN:
       file->error = 9;
-      CMSconsoleWrite("fgetc error: cannot read from the card punch.", CMS_EDIT);     // remove this
+      errno = EBADF;
       return EOF;
       break;
    case DEVICE_RDR:
       if (file->access & ACCESS_WRITING) {                                      // open for writing?
          file->error = 9;
-         CMSconsoleWrite("fgetc error: file not open for input.", CMS_EDIT);          // remove this
+         errno = EBADF;
          return EOF;
          }
       else {
@@ -342,11 +345,11 @@ fgetpos(FILE * file, fpos_t * position)
 /**************************************************************************************************/
 {
 
-if (file == NULL) {CMSconsoleWrite("fgetpos error: stream is NULL.", CMS_EDIT); return 1;}
+if (file == NULL) {errno = EINVAL; return 1;}
 if ((file->device == DEVICE_DSK) && (file->access & !ACCESS_WRITING))          // reading from disk?
    *position = file->readPos;                                                // return read position
 else {
-   CMSconsoleWrite("fgetpos error: only valid for a disk file open for reading.", CMS_EDIT);
+   errno = EBADF;
    return -1;
    }
 return 0;
@@ -373,7 +376,7 @@ fgets(char * str, int num, FILE * file)
   int c;
   int i;
 
-if (file == NULL) {CMSconsoleWrite("fgets error: stream is NULL.", CMS_EDIT); return (char *) EOF;}
+if (file == NULL) {errno = EINVAL; return (char *) EOF;}
 for (i = 0; i < num - 1; i++) {
    c = fgetc(file);                               // some day I will fix this to avoid calling fgetc
    if (c == EOF) {                                                     // end of file or other error
@@ -452,8 +455,7 @@ int rc;
 // First check the access mode argument.
 for (i = 0; i < NUM_MODES; i++) if (strcmp(access, modes[i]) == 0) break;
 if (i == NUM_MODES) {                                                                // invalid mode
-   sprintf(errmsg, "fopen error: invalid access mode '%s' specified.", access);
-   CMSconsoleWrite(errmsg, CMS_EDIT); // should really use PERROR for all of these error messages!!!
+   errno = EINVAL;
    return NULL;
    }
 accessMode = modeVals[i];                                                // remember the access mode
@@ -462,7 +464,7 @@ accessMode = modeVals[i];                                                // reme
 strncpy(fileinfo, filespec, sizeof(fileinfo));             // because strtok modifies the string :-(
 s = strtok(fileinfo, " ");
 if (s == NULL) {
-   CMSconsoleWrite("fopen error: no file specified.", CMS_EDIT);
+   errno = EINVAL;
    return NULL;
    }
 for (devtype = 0; devtype < ND_DEVICES; devtype++) if (strcmp(s, devices[devtype]) == 0) break;
@@ -476,23 +478,20 @@ if (devtype == DEVICE_DSK) {                          // examine the rest of the
    lrecl = 65535;                                      // assume the worst for variable format files
    memset(fileid, ' ', sizeof(fileid));                               // initialize fileid to blanks
    if (strlen(s) > 8) {                                                              // get filename
-      sprintf(errmsg, "fopen error: invalid filename '%s' specified.", s);
-      CMSconsoleWrite(errmsg, CMS_EDIT);
+      errno = EINVAL;
       return NULL;
       }
    else {memcpy(fileid, s, strlen(s)); strcpy(filename, s); strcat(filename, " ");}
    s = strtok(NULL, " ");                                                            // get filetype
    if (s == NULL || strlen(s) > 8) {
-      sprintf(errmsg, "fopen error: missing/invalid filetype '%s' specified.", s);
-      CMSconsoleWrite(errmsg, CMS_EDIT);
+      errno = EINVAL;
       return NULL;
       }
    else {memcpy(fileid + 8, s, strlen(s)); strcat(filename, s); strcat(filename, " ");}
    s = strtok(NULL, " ");                                                            // get filemode
    if (s == NULL) strcpy(s, "A");                    // if no filemode specified, "A" is the default
    if (strlen(s) > 2) {
-      sprintf(errmsg, "fopen error: invalid filemode '%s' specified.", s);
-      CMSconsoleWrite(errmsg, CMS_EDIT);
+      errno = EINVAL;
       return NULL;
       }
    else {memcpy(fileid + 16, s, strlen(s)); strcat(filename, s);}
@@ -503,8 +502,7 @@ if (devtype == DEVICE_DSK) {                          // examine the rest of the
       if (s != NULL) {
          s[0] = toupper(s[0]);
          if (strlen(s) > 1 || (s[0] != 'F' && s[0] != 'V')) {
-            sprintf(errmsg, "fopen error: missing/invalid record format '%s' specified.", s);
-            CMSconsoleWrite(errmsg, CMS_EDIT);
+            errno = EINVAL;
             return NULL;
             }
          else recfm = s[0];
@@ -512,14 +510,12 @@ if (devtype == DEVICE_DSK) {                          // examine the rest of the
          if (s != NULL) {
             lrecl = strtoul(s, &oops, 10);                                      // get record length
             if (lrecl == 0 || lrecl > 65535) {
-               sprintf(errmsg, "fopen error: invalid record length '%s' specified.", s);
-               CMSconsoleWrite(errmsg, CMS_EDIT);
+               errno = EINVAL;
                return NULL;
                }
             }
          else if (recfm == 'F') {
-            sprintf(errmsg, "fopen error: missing record length.", s);
-            CMSconsoleWrite(errmsg, CMS_EDIT);
+            errno = EINVAL;
             return NULL;
             }
          }
@@ -537,8 +533,7 @@ switch (devtype) {
             theFile = stdout;
             break;
          default:    // can't do binary I/O from/to the console yet, must support this eventually!!!
-            sprintf(errmsg, "fopen error: access '%s' for console not yet supported.", access);
-            CMSconsoleWrite(errmsg, CMS_EDIT);
+            errno = EINVAL;
             theFile = NULL;
             }
       break;
@@ -569,15 +564,13 @@ switch (devtype) {
          case 0:                                                                         // success!
             break;
          case 20:                                             // the fileid is syntactically invalid
-            sprintf(errmsg, "fopen error: invalid fileid '%s'.", theFile->name);
-            CMSconsoleWrite(errmsg, CMS_EDIT);
+            errno = EINVAL;
             CMSmemoryFree(theFile);                                      // we won't be needing this
             theFile = NULL;
             break;
          case 28:                                                          // the file was not found
             if (accessMode & ACCESS_WRITING) break;               // file not found is OK if writing
-            sprintf(errmsg, "fopen error: file '%s' not found.", theFile->name);
-            CMSconsoleWrite(errmsg, CMS_EDIT);
+            errno = ENOENT;
             CMSmemoryFree(theFile);                                      // we won't be needing this
             theFile = NULL;
             break;
@@ -598,7 +591,7 @@ switch (devtype) {
          theFile->ungetChar = -2;                           // nothing read, so ungetc not yet valid
          }
       else {
-         CMSconsoleWrite("fopen error: cannot read from the printer.", CMS_EDIT);
+         errno = EINVAL;
          theFile = NULL;
          }
       break;
@@ -616,13 +609,13 @@ switch (devtype) {
          theFile->ungetChar = -2;                           // nothing read, so ungetc not yet valid
          }
       else {
-         CMSconsoleWrite("fopen error: cannot read from the card punch.", CMS_EDIT);
+         errno = EINVAL;
          theFile = NULL;
          }
       break;
    case DEVICE_RDR:
       if (accessMode & ACCESS_WRITING) {
-         CMSconsoleWrite("fopen error: cannot write to the card reader.", CMS_EDIT);
+         errno = EINVAL;
          theFile = NULL;
          }
       else {
@@ -661,7 +654,7 @@ fprintf(FILE * file, const char *format, ...)
   int rc;
   va_list arg;
 
-  if (file == NULL) {CMSconsoleWrite("fprintf error: stream is NULL.", CMS_EDIT); return EOF;}
+  if (file == NULL) {errno = EINVAL; return EOF;}
   va_start(arg, format);
   rc = vvprintf(format, arg, file, NULL);                            // write the output to the stream
   va_end(arg);
@@ -685,7 +678,7 @@ fputc(int c, FILE * file)
 char errmsg[80];
 int writeRecord;                                   // true if we should write out the current record
 
-if (file == NULL) {CMSconsoleWrite("fputc error: stream is NULL.", CMS_EDIT); return EOF;}
+if (file == NULL) {errno = EINVAL; return EOF;}
 switch (file->device) {
    case DEVICE_CON:
       if (file->access & ACCESS_WRITE_TXT) {                               // open for writing text?
@@ -704,10 +697,7 @@ switch (file->device) {
          }
       else {
          file->error = 9;
-         sprintf(errmsg,
-            "fputc error: file not open for text output of character    '%c', open for %d at %08X.",
-             c, file->access, file);
-         CMSconsoleWrite(errmsg, CMS_EDIT);
+         errno = EBADF;
          return EOF;
          }
       break;
@@ -727,8 +717,7 @@ switch (file->device) {
          if (writeRecord) {                                          // write the buffer to the file
             file->error = CMSfileWrite(&file->fscb, -1, file->next - file->buffer);
             if (file->error != 0) {
-               sprintf(errmsg, "fputc error: return code %u from FSWRITE attempting to write [%c].", file-> error, c);
-               CMSconsoleWrite(errmsg, CMS_EDIT);
+               errno = EBADF;
                return EOF;
                }
             file->fscb.recordNum = 0;
@@ -737,7 +726,7 @@ switch (file->device) {
          }
       else {
          file->error = 9;
-         CMSconsoleWrite("fputc error: file not open for output.", CMS_EDIT);         // remove this
+         errno = EBADF;
          return EOF;
          }
       break;
@@ -749,8 +738,7 @@ switch (file->device) {
             file->next[0] = 0;                                               // terminate the string
             file->error = CMSprintLine(file->buffer);
             if (file->error != 0) {
-               sprintf(errmsg, "fputc error: return code %u from PRINTL.", file->error);
-               CMSconsoleWrite(errmsg, CMS_EDIT);
+               errno = EIO;
                return EOF;
                }
             file->next = file->buffer;                           // reset the next character pointer
@@ -758,7 +746,7 @@ switch (file->device) {
          }
       else {
          file->error = 9;
-         CMSconsoleWrite("fputc error: cannot read from the printer.", CMS_EDIT);     // remove this
+         errno = EBADF;
          return EOF;
          }
       break;
@@ -769,8 +757,7 @@ switch (file->device) {
          if (file->next == file->last) {                       // write the buffer to the card punch
             file->error = CMScardPunch(file->buffer);
             if (file->error != 0) {
-               sprintf(errmsg, "fputc error: return code %u from PUNCHC.", file->error);
-               CMSconsoleWrite(errmsg, CMS_EDIT);
+               errno = EIO;
                return EOF;
                }
             file->next = file->buffer;                           // reset the next character pointer
@@ -778,13 +765,13 @@ switch (file->device) {
          }
       else {
          file->error = 9;
-         CMSconsoleWrite("fputc error: cannot read from the card punch.", CMS_EDIT);  // remove this
+         errno = EBADF;
          return EOF;
          }
       break;
    case DEVICE_RDR:
       file->error = 9;
-      CMSconsoleWrite("fputc error: cannot write to the card reader.", CMS_EDIT);     // remove this
+      errno = EBADF;
       return EOF;
       break;
    }
@@ -809,7 +796,7 @@ int c;
 int i;
 int rc;
 
-if (file == NULL) {CMSconsoleWrite("fputs error: stream is NULL.", CMS_EDIT); return EOF;}
+if (file == NULL) {errno = EINVAL; return EOF;}
 switch (file->device) {
    case DEVICE_CON:                                  // I promise to fix this code to not call fputc
    case DEVICE_DSK:
@@ -820,7 +807,7 @@ switch (file->device) {
       break;
    case DEVICE_RDR:
       file->error = 9;
-      CMSconsoleWrite("fputs error: cannot write to the card reader.", CMS_EDIT);     // remove this
+      errno = EBADF;
       return EOF;
       break;
    }
@@ -853,7 +840,7 @@ int c;
 int i;
 int j;
 
-if (file == NULL) {CMSconsoleWrite("fread error: stream is NULL.", CMS_EDIT); return EOF;}
+if (file == NULL) {errno = EINVAL; return EOF;}
 switch (file->device) {
    case DEVICE_CON:
       break;                                                                    // not yet supported
@@ -872,12 +859,12 @@ switch (file->device) {
       break;
    case DEVICE_PRT:
       file->error = 9;
-      CMSconsoleWrite("fread error: cannot read from the printer.", CMS_EDIT);        // remove this
+      errno = EBADF;
       return 0;
       break;
    case DEVICE_PUN:
       file->error = 9;
-      CMSconsoleWrite("fread error: cannot read from the card punch.", CMS_EDIT);     // remove this
+      errno = EBADF;
       return 0;
       break;
    }
@@ -896,6 +883,7 @@ freopen(const char * filespec, const char * access, FILE * stream)
 /*    NULL, indicating the request could not be satisfied.                                        */
 /**************************************************************************************************/
 {
+  errno = ENOSYS;
   return NULL;
 }                                                                                  // end of freopen
 
@@ -920,7 +908,7 @@ fscanf(FILE * file, const char * format, ...)
   int rc;
   va_list arg;
 
-  if (file == NULL) {CMSconsoleWrite("fscanf error: stream is NULL.", CMS_EDIT); return EOF;}
+  if (file == NULL) {errno = EINVAL; return EOF;}
   va_start(arg, format);
   rc = vvscanf(format, arg, file, NULL);
   va_end(arg);
@@ -950,7 +938,7 @@ int here;
 int i;
 int new;
 
-if (file == NULL) {CMSconsoleWrite("fseek error: stream is NULL.", CMS_EDIT); return 1;}
+if (file == NULL) {errno = EINVAL; return 1;}
 if ((file->device == DEVICE_DSK) && !(file->access & ACCESS_WRITING)) {    // reading from disk?
    file->ungetChar = -2;                                                   // clear the unget flag
    here = file->readPos;                                                  // remember where we are
@@ -973,7 +961,7 @@ if ((file->device == DEVICE_DSK) && !(file->access & ACCESS_WRITING)) {    // re
    for (i = here; i < new; i++) if (fgetc(file) == EOF) break;
    }
 else {
-   CMSconsoleWrite("fseek error: only valid for a disk stream.", CMS_EDIT);
+   errno = EBADF;
    return 1;
    }
 return 0;
@@ -998,7 +986,7 @@ fsetpos(FILE * file, const fpos_t * position)
 int here;
 int i;
 
-  if (file == NULL) {CMSconsoleWrite("fsetpos error: stream is NULL.", CMS_EDIT); return 1;}
+  if (file == NULL) {errno = EINVAL; return 1;}
   if ((file->device == DEVICE_DSK) && !(file->access & ACCESS_WRITING)) {        // reading from disk?
     file->ungetChar = -2;                                                     // clear the unget flag
     here = file->readPos;                                                    // remember where we are
@@ -1009,7 +997,7 @@ int i;
     for (i = here; i < position; i++) if (fgetc(file) == EOF) break;
   }
   else {
-   CMSconsoleWrite("fsetpos error: only valid for a disk file open for reading.", CMS_EDIT);
+   errno = EBADF;
    return 1;
   }
   return 0;
@@ -1032,11 +1020,11 @@ ftell(FILE * file)
 /*    2.  Functioally, ftell is equivalent to fgetpos.                                            */
 /**************************************************************************************************/
 {
-  if (file == NULL) {CMSconsoleWrite("ftell error: stream is NULL.", CMS_EDIT); return 1;}
+  if (file == NULL) {errno = EINVAL; return 1;}
   if ((file->device == DEVICE_DSK) && !(file->access & ACCESS_WRITING))          // reading from disk?
     return file->readPos;                                                     // return read position
   else {
-    CMSconsoleWrite("ftell error: only valid for a disk file open for reading.", CMS_EDIT);
+    errno = EBADF;
     return -1;
   }
 }                                                                                    // end of ftell
@@ -1067,7 +1055,7 @@ fwrite(const void * buffer, size_t size, size_t count, FILE * file)
  int i;
  int j;
 
- if (file == NULL) {CMSconsoleWrite("fwrite error: stream is NULL.", CMS_EDIT); return EOF;}
+ if (file == NULL) {errno = EINVAL; return EOF;}
  switch (file->device) {
    case DEVICE_CON:
       break;                                                                    // not yet supported
@@ -1085,7 +1073,7 @@ fwrite(const void * buffer, size_t size, size_t count, FILE * file)
       break;
    case DEVICE_RDR:
       file->error = 9;
-      CMSconsoleWrite("fwwrite error: cannot write to the card reader.", CMS_EDIT);   // remove this
+      errno = EBADF;
       return 0;
       break;
    }
@@ -1248,8 +1236,7 @@ char errmsg[80];
 char fileid[19];
 
 if (GetFileid(fname, fileid) == 0) {                       // parse the filename, filetype, filemode
-   sprintf(errmsg, "remove error: missing/invalid fileid '%s' specified.", fname);
-   CMSconsoleWrite(errmsg, CMS_EDIT);
+   errno = ENOENT;
    return NULL;
    }
 return CMSfileErase(fileid);
@@ -1277,15 +1264,11 @@ char newfileid[19];
 char oldfileid[19];
 
 if (GetFileid(oldfname, oldfileid) == 0) {                 // parse the filename, filetype, filemode
-   sprintf(errmsg, "rename error: missing/invalid fileid '%s' specified for 'oldfname'.",
-      oldfname);
-   CMSconsoleWrite(errmsg, CMS_EDIT);
+   errno = ENOENT;
    return NULL;
    }
 if (GetFileid(newfname, newfileid) == 0) {                 // parse the filename, filetype, filemode
-   sprintf(errmsg, "rename error: missing/invalid fileid '%s' specified for 'newfname'.",
-      newfname);
-   CMSconsoleWrite(errmsg, CMS_EDIT);
+   errno = ENOENT;
    return NULL;
    }
 return CMSfileRename(oldfileid, newfileid);
@@ -1304,7 +1287,7 @@ rewind(FILE * file)
 {
 int rw;
 
-if (file == NULL) {CMSconsoleWrite("rewind error: stream is NULL.", CMS_EDIT); return EOF;}
+if (file == NULL) {errno = EINVAL; return EOF;}
 switch (file->device) {
    case DEVICE_CON:
       break;
@@ -1319,7 +1302,7 @@ switch (file->device) {
          rw = CMS_POINTREAD;
          }
       if (CMSfilePoint(&file->fscb, 1, rw) !=0)                // point to the beginning of the file
-         CMSconsoleWrite("rewind error: bad RC from CMSfilePOint.", CMS_EDIT);
+         errno = EIO;
       file->eof = 0;                                                               // not yet at EOF
       file->error = 0;                                                          // and no errors yet
       file->readPos = 0;                                               // have not read anything yet
@@ -1388,6 +1371,7 @@ setbuf(FILE * file, char * buffer)
 /* This function does nothing.                                                                    */
 /**************************************************************************************************/
 {
+  errno = ENOSYS;
   return;
 }                                                                                   // end of setbuf
 
@@ -1403,6 +1387,7 @@ setvbuf(FILE * file, char * buffer, int mode, size_t size)
 /*    1, indicating that the request cannot be satistifed.                                        */
 /**************************************************************************************************/
 {
+errno = ENOSYS;
 return 1;
 }                                                                                  // end of setvbuf
 
@@ -1471,7 +1456,8 @@ tmpfile(void)
 /*    NULL, indicating that the request cannot be satistifed.                                     */
 /**************************************************************************************************/
 {
-return NULL;
+  errno = ENOSYS;
+  return NULL;
 }                                                                                  // end of tmpfile
 
 
@@ -1516,7 +1502,7 @@ ungetc(int c, FILE * file)
 /**************************************************************************************************/
 {
 
-if (file == NULL) {CMSconsoleWrite("ungetc error: file is NULL.", CMS_EDIT); return EOF;}
+if (file == NULL) {errno = EINVAL; return EOF;}
 if (file->ungetChar == -1) {                                         // OK to push back a character?
    file->ungetChar = c;
    return c;
@@ -1542,7 +1528,7 @@ vfprintf(FILE * file, const char * format, va_list arg)
 {
 int ret;
 
-if (file == NULL) {CMSconsoleWrite("vfprintf error: file is NULL.", CMS_EDIT); return EOF;}
+if (file == NULL) {errno = EINVAL; return EOF;}
 ret = vvprintf(format, arg, file, NULL);
 return ret;
 }                                                                                 // end of vfprintf
@@ -1580,8 +1566,8 @@ notyet(void)
 /*    -1                                                                                          */
 /**************************************************************************************************/
 {
-CMSconsoleWrite("This routine is not yet implemented...", CMS_EDIT);
-return -1;
+  errno = ENOSYS;
+  return -1;
 }                                                                                   // end of notyet
 
 
@@ -1960,22 +1946,19 @@ strncpy(fileinfo, fname, sizeof(fileinfo));                // because strtok mod
 memset(fileid, ' ', 18);                                              // initialize fileid to blanks
 s = strtok(fileinfo, " ");                                                           // get filename
 if (s == NULL || strlen(s) > 8) {
-   sprintf(errmsg, "GetFileid error: missing/invalid filename '%s' specified.", s);
-   CMSconsoleWrite(errmsg, CMS_EDIT);
+   errno = EINVAL;
    return 0;
    }
 else memcpy(fileid, s, strlen(s));
 s = strtok(NULL, " ");                                                               // get filetype
 if (s == NULL || strlen(s) > 8) {
-   sprintf(errmsg, "GetFileid error: missing/invalid filetype '%s' specified.", s);
-   CMSconsoleWrite(errmsg, CMS_EDIT);
+   errno = EINVAL;
    return 0;
    }
 else memcpy(fileid + 8, s, strlen(s));
 s = strtok(NULL, " ");                                                               // get filemode
 if (s == NULL || strlen(s) > 2) {
-   sprintf(errmsg, "GetFileid error: missing/invalid filemode '%s' specified.", s);
-   CMSconsoleWrite(errmsg, CMS_EDIT);
+   errno = EINVAL;
    return 0;
    }
 else memcpy(fileid + 16, s, strlen(s));

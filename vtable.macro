@@ -79,7 +79,7 @@
          VTENTRY GETCHAR,VTGETCHA,&CODE
          VTENTRY GETS,VTGETS,&CODE
          VTENTRY NOTYET,VTNOTYET,&CODE
-*        VTENTRY PERROR,VTPERROR,&CODE
+         VTENTRY PERROR,VTPERROR,&CODE
          VTENTRY PRINTF,VTPRINTF,&CODE
          VTENTRY PUTC,VTPUTC,&CODE
          VTENTRY PUTCHAR,VTPUTCHA,&CODE
@@ -152,10 +152,6 @@
          VTENTRY ISXDIGIT,VTISXDIG,&CODE
          VTENTRY TOLOWER,VTTOLOWE,&CODE
          VTENTRY TOUPPER,VTTOUPPE,&CODE
-***********************************************************************
-* Entry points in ERRNO C / ERRNO H                                   *
-***********************************************************************
-         VTENTRY ERRNO,VTERRNO,&CODE
 ***********************************************************************
 * Entry points in LOCALE C / LOCALE H                                 *
 ***********************************************************************

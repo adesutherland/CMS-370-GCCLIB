@@ -12,6 +12,7 @@
 
 #include "ctype.h"                             /* needed for stricmp */
 #include "string.h"
+#include "errno.h"
 
 #ifdef memchr
 #undef memchr
@@ -252,8 +253,52 @@ size_t strcspn(const char *s1, const char *s2)
 #endif
 char *strerror(int errnum)
 {
-    if (errnum == 0) return ("No error has occurred\n");
-    else return ("An error has occurred\n");
+  switch(errnum)
+  {
+    case 0: return ("No error has occurred.");
+    case EPERM: return("Operation not permitted.");
+    case ENOENT: return("No such file or directory.");
+    case EINTR: return("Interrupted system call.");
+    case EIO: return("Input/output error.");
+    case ENXIO: return("No such device or address.");
+    case E2BIG: return("Argument list too long.");
+    case ENOEXEC: return("Exec format error.");
+    case EBADF: return("Bad file descriptor.");
+    case EDEADLK: return("Resource deadlock avoided.");
+    case ENOMEM: return("Cannot allocate memory.");
+    case EACCES: return("Permission denied.");
+    case EFAULT: return("Bad address.");
+    case ENOTBLK: return("Block device required.");
+    case EBUSY: return("Device or resource busy.");
+    case EEXIST: return("File exists.");
+    case ENODEV: return("No such device.");
+    case ENOTDIR: return("Not a directory.");
+    case EISDIR: return("Is a directory.");
+    case EINVAL: return("Invalid argument.");
+    case EMFILE: return("Too many open files.");
+    case ENFILE: return("Too many open files in system.");
+    case EFBIG: return("File too large.");
+    case ENOSPC: return("No space left on device.");
+    case ESPIPE: return("Illegal seek.");
+    case EROFS: return("Read-only file system.");
+    case EDOM: return("Numerical argument out of domain.");
+    case ERANGE: return("Numerical result out of range.");
+    case EAGAIN: return("Resource temporarily unavailable.");
+    case ENAMETOOLONG: return("File name too long.");
+    case ESTALE: return("Stale file handle.");
+    case EFTYPE: return("Inappropriate file type or format.");
+    case EAUTH: return("Authentication error.");
+    case ENOSYS: return("Function not implemented.");
+    case ENOTSUP: return("Not supported.");
+    case EGREGIOUS: return("You really blew it this time.");
+    case EIEIO: return("Computer bought the farm.");
+    case EGRATUITOUS: return("Gratuitous error.");
+    case EBADMSG: return("Bad message.");
+    case EIDRM: return("Identifier removed.");
+    case ENODATA: return("No data available.");
+    case EOVERFLOW: return("Value too large for defined data type.");
+    default: return("Unknown error.");
+  }
 }
 
 #ifdef stricmp

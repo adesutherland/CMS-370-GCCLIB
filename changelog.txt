@@ -1,7 +1,10 @@
 GCCLIB Change LOG
 =================
 
-F0005 - Refactor STDIO Logic
+F0006 - Refactor errno - global variable to anchor struct
+        Implement perror()
+        Update STDIO library to use perror()
+F0005 - Refactor STDIO Logic (global stdin, out and err)
 
 0.7.5 - 24 Mar 2020
 F0004 - Refactor CMSEntry - moving complex logic to C

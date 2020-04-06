@@ -9,9 +9,10 @@
 /* Released to the public domain.                                                                 */
 /**************************************************************************************************/
 /* TODO detect overruns */
+#include "cmsruntm.h"
+#define IN_RESLIB
 #include "stdio.h"
 #include "string.h"
-#include "cmsruntm.h"
 
 int __cstart(MAINFUNC* mainfunc, PLIST *plist, EPLIST *eplist)
 {

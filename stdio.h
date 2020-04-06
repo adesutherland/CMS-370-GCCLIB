@@ -2,7 +2,6 @@
 /* Native CMS implementation of STDIO.H.                                                          */
 /*                                                                                                */
 /* Not implemented:                                                                               */
-/*     void perror(const char * str)                                                              */
 /*     int snprintf(char * buffer, int buff_size, const char * format, ...)                       */
 /*                                                                                                */
 /* Robert O'Hara, Redmond Washington, July 2010.                                                  */
@@ -45,14 +44,11 @@ typedef struct {
    /* note: buffer begins here, immediately after 'buffer'!                                       */
    } FILE;
 
-/* Define STDIO_DEFINED before including stdio.h if you are declaring these three variables in    */
-/* your file.                                                                                     */
-#ifndef STDIO_DEFINED
+#ifndef IN_RESLIB
 extern FILE * stdin;                /* predefined stream for standard input: we map it to console */
 extern FILE * stdout;              /* predefined stream for standard output: we map it to console */
 extern FILE * stderr;                 /* predefined stream for error output: we map it to console */
 #endif
-
 
 void
 clearerr(FILE * stream);
@@ -420,8 +416,9 @@ gets(char * str);
 
 /**************************************************************************************************/
 /* void perror( const char *str )                                                                 */
-/* ...unimplemented                                                                               */
 /**************************************************************************************************/
+void perror( const char *str );
+
 
 int
 printf(const char * format, ...);

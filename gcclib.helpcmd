@@ -105,7 +105,6 @@ Limitations
 
 GCCLIB does not yet implement the complete C runtime library.  The following
 routines are not yet implemented:
-   perror()          stdio.h
    raise()           signal.h
    signal()          signal.h
    snprintf()        stdio.h
