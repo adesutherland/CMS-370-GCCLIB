@@ -1,6 +1,10 @@
 GCCLIB Change LOG
 =================
 
+F0007 - Implement malloc() etc. with DLMALLOC
+        which needed RESLIB fix for exit()
+        which needed RESLIB fix for assert()
+        which needed RESLIB fix for abort()
 F0006 - Refactor errno - global variable to anchor struct
         Implement perror()
         Update STDIO library to use perror()

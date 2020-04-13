@@ -2,15 +2,15 @@
 /* CMSSTDLB.C: Native CMS implementation of STDLIB.H.                                             */
 /*                                                                                                */
 /* Not implemented:                                                                               */
-/*     void abort(void)                                                                           */
 /*     int atexit(void (* func)(void))                                                            */
-/*     void exit(int status)                                   (implemented in CMSENTRY ASSEMBLE) */
 /*                                                                                                */
 /* Robert O'Hara, Redmond Washington, July 2010.                                                  */
 /*                                                                                                */
 /* Based code written by Paul Edwards and Dave Wade.                                              */
 /* Released to the public domain.                                                                 */
 /**************************************************************************************************/
+#define IN_RESLIB
+#include <cmsruntm.h>
 #include <stdio.h>
 #include <stdlib.h>
 // Routines in signal.h not yet implemented...
@@ -21,15 +21,15 @@
 // void (*__userExit[__NATEXIT])(void);                                  // don't know what this is for
 static unsigned long myseed = 1;                                 // seed for random number generator
 
-
-// void abort(void)
-// /**************************************************************************************************/
-// /* void abort(void)                                                                               */
-// /**************************************************************************************************/
-// {
-// raise(SIGABRT);
-// __exit(EXIT_FAILURE);
-// }                                                                                    // end of abort
+void
+abort(void)
+/**************************************************************************************************/
+/* void abort(void)                                                                               */
+/**************************************************************************************************/
+{
+/* TODO  raise(SIGABRT); */
+  exit(EXIT_FAILURE);
+}                                                                                    // end of abort
 
 
 #ifdef abs
@@ -119,31 +119,6 @@ while (nmemb > 0) {
 return NULL;
 }                                                                                  // end of bsearch
 
-
-void *
-calloc(size_t nmemb, size_t size)
-/**************************************************************************************************/
-/* void * calloc(size_t nmemb, size_t size)                                                       */
-/*                                                                                                */
-/* Allocate space for an array of 'nmemb' objects, each of 'size' bytes.  The allocated memory is */
-/* initialized to 0. It is allocated in CMS user free storage.                                    */
-/*                                                                                                */
-/* Returns:                                                                                       */
-/*    a pointer to the memory, or NULL if the memory could not be allocated.                      */
-/**************************************************************************************************/
-{
-void * ptr;
-size_t total;
-
-if (nmemb == 1) total = size;
-else if (size == 1) total = nmemb;
-else total = nmemb * size;
-ptr = CMSmemoryAlloc(total, CMS_USER);
-if (ptr != NULL) memset(ptr, '\0', total);
-return ptr;
-}                                                                                   // end of calloc
-
-
 div_t
 div(int numer, int denom)
 /**************************************************************************************************/
@@ -158,27 +133,15 @@ return x;
 }                                                                                      // end of div
 
 
-// void exit(int status)
-// /**************************************************************************************************/
-// /* void exit(int status)                                                                          */
-// /**************************************************************************************************/
-// {
-// __exit(status);
-// }                                                                                     // end of exit
-
-
 void
-free(void * ptr)
+exit(int status)
 /**************************************************************************************************/
-/* void free(void * ptr)                                                                          */
-/*                                                                                                */
-/* Frees the previously allocated memory pointed to by 'ptr'.                                     */
+/* void exit(int status)                                                                          */
 /**************************************************************************************************/
 {
-if (ptr != NULL) CMSmemoryFree(ptr);
-return;
-}                                                                                     // end of free
-
+  /* TODO call exit functions! */
+  GETGCCCRAB()->exitfunc(status);
+}                                                                                     // end of exit
 
 char * getenv(const char *name)
 /**************************************************************************************************/
@@ -213,22 +176,6 @@ x.quot = numer / denom;
 x.rem = numer % denom;
 return x;
 }                                                                                     // end of ldiv
-
-
-void *
-malloc(size_t size)
-/**************************************************************************************************/
-/* void * malloc(size_t size)                                                                     */
-/*                                                                                                */
-/* Allocate 'size' bytes of memory. The memory is allocated in CMS user free storage.             */
-/*                                                                                                */
-/* Returns:                                                                                       */
-/*    a pointer to the memory, or NULL if the memory could not be allocated.                      */
-/**************************************************************************************************/
-{
-return CMSmemoryAlloc(size, CMS_USER);
-}                                                                                   // end of malloc
-
 
 int
 mblen(const char * s, size_t n)
@@ -336,35 +283,6 @@ ret = (int)((myseed >> 16) & 0x8fff);
 #endif
 return ret;
 }                                                                                     // end of rand
-
-
-void *
-realloc(void * ptr, size_t size)
-/**************************************************************************************************/
-/* void * realloc(void * ptr, size_t size)                                                        */
-/*                                                                                                */
-/* Returns:                                                                                       */
-/*    a pointer to the memory, or NULL if the memory could not be allocated.                      */
-/**************************************************************************************************/
-{
-void * newptr;
-size_t oldsize;
-
-if (size == 0) {
-   free(ptr);
-   return (NULL);
-   }
-newptr = malloc(size);
-if (newptr == NULL) return (NULL);
-if (ptr != NULL) {
-   oldsize = * ((size_t *) ptr - 1);
-   if (oldsize < size)
-      size = oldsize;
-   memcpy(newptr, ptr, size);
-   free(ptr);
-   }
-return (newptr);
-}                                                                                  // end of realloc
 
 
 void

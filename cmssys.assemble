@@ -179,7 +179,69 @@ ATTNAD   DC    AL3(0)         address of line to be stacked
          BR    R14            return to our caller
          LTORG
          EJECT
-         ENTRY @@DMSFRE
+***********************************************************************
+* @DMSFREE                                                            *
+* DMSFREE Stub                                                        *
+* Allocate free memory.                                               *
+*                                                                     *
+* Syntax is:                                                          *
+*    _DMSFREE(int doublewords)                                        *
+* returns:                                                            *
+*    (int)     Address of the allocated memory, or 0 if the memory    *
+*              could not be allocated.                                *
+***********************************************************************
+         ENTRY @DMSFREE
+@DMSFREE DS    0H
+         STM   R14,R12,12(R13)
+         LR    R12,R15
+         USING @DMSFREE,R12   establish addressability
+         L     R0,0(R1)       get number of dounlewords to allocate
+* Use DMSFREE to allocate the memory.
+         DMSFREE DWORDS=(0),TYPE=USER,ERR=DMSFREE2
+         LTR   R15,R15        did we get the memory?
+         BNZ   DMSFREE2       no, quit now
+         LR    R15,R1
+DMSFREE1 DS    0H
+         L     R14,12(R13)    restore our return address
+         LM    R0,R12,20(R13) restore the registers
+         BR    R14            return to our caller
+DMSFREE2 DS    0H             no memory
+         SR    R15,R15        indicate no memory allocated
+         B     DMSFREE1
+         LTORG
+         EJECT
+***********************************************************************
+* @DMSFRET                                                            *
+* DMSFRET Stub                                                        *
+* Release allocated memory.                                           *
+*                                                                     *
+* Syntax is:                                                          *
+*    int _DMSFRET(void *address, int doublewords)                     *
+* where:                                                              *
+*    memory    is a pointer to the memory to be freed.                *
+* returns:                                                            *
+*     0        Success.                                               *
+*     1        Error.                                                 *
+***********************************************************************
+         ENTRY @DMSFRET
+@DMSFRET DS    0H
+         STM   R14,R12,12(R13)
+         LR    R12,R15
+         USING @DMSFRET,R12   establish addressability
+         L     R0,4(R1)       get doublewords to return
+         L     R1,0(R1)       get address of memory to return
+* Use DMSFRET to return the memory.
+         DMSFRET DWORDS=(0),LOC=(1),ERR=DMSFRET2
+         SR    R15,R15        indicate all OK
+DMSFRET1 DS    0H
+         L     R14,12(R13)    restore our return address
+         LM    R0,R12,20(R13) restore the registers
+         BR    R14            return to our caller
+DMSFRET2 DS    0H             no memory
+         LA    R15,1          indicate error
+         B     DMSFRET1
+         LTORG
+         EJECT
 ***********************************************************************
 * @@DMSFRE  Entry Point                                               *
 * Allocate free memory.                                               *
@@ -205,6 +267,7 @@ ATTNAD   DC    AL3(0)         address of line to be stacked
 *    with the SYSTEM option.  Note that if such a program abnormally  *
 *    terminates, CMS does not release this memory.                    *
 ***********************************************************************
+         ENTRY @@DMSFRE
 @@DMSFRE DS    0H
          STM   R14,R12,12(R13)
          LR    R12,R15
@@ -260,7 +323,6 @@ NOMEMORY DS    0H
          B     FREERET
          LTORG
          EJECT
-         ENTRY @@DMSFRT
 ***********************************************************************
 * @@DMSFRT  Entry Point                                               *
 * Release allocated memory.                                           *
@@ -277,6 +339,7 @@ NOMEMORY DS    0H
 *     7        Returned block is not double-word aligned.             *
 *     8        Illegal code or argument.                              *
 ***********************************************************************
+         ENTRY @@DMSFRT
 @@DMSFRT DS    0H
          STM   R14,R12,12(R13)
          LR    R12,R15
@@ -318,7 +381,6 @@ FRTEND   DS    0H
          BR    R14            return to our caller
          LTORG
          EJECT
-         ENTRY @@FSCLOS
 ***********************************************************************
 * @@FSCLOS  Entry Point                                               *
 * Close an open file and save it to disk.                             *
@@ -331,6 +393,7 @@ FRTEND   DS    0H
 *     0        Success.                                               *
 *     6        The file is not open.                                  *
 ***********************************************************************
+         ENTRY @@FSCLOS
 @@FSCLOS DS    0H
          STM   R14,R12,12(R13)
          LR    R12,R15

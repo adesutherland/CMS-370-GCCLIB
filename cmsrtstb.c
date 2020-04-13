@@ -19,6 +19,8 @@ int errno = 0;             /* Std error number */
 
 int main(int argc, char *argv[]);
 
+void __exit(int rc);
+
 int __cstub(PLIST *plist , EPLIST *eplist)
 {
   GCCCRAB gcccrab;
@@ -37,6 +39,7 @@ int __cstub(PLIST *plist , EPLIST *eplist)
   gcccrab.stdout = &stdout;
   gcccrab.stderr = &stderr;
   gcccrab.errno = &errno;
+  gcccrab.exitfunc = __exit;
 
   return(__cstart(main, plist, eplist));
 }

@@ -101,27 +101,23 @@
 ***********************************************************************
 * Entry points in CMSSTDLB C / STDLIB H                               *
 ***********************************************************************
-*        VTENTRY ABORT,VTABORT,&CODE
+         VTENTRY ABORT,VTABORT,&CODE
          VTENTRY ABS,VTABS,&CODE
 *        VTENTRY ATEXIT,VTATEXIT,&CODE
          VTENTRY ATOF,VTATOF,&CODE
          VTENTRY ATOI,VTATOI,&CODE
          VTENTRY ATOL,VTATOL,&CODE
          VTENTRY BSEARCH,VTBSEARC,&CODE
-         VTENTRY CALLOC,VTCALLOC,&CODE
          VTENTRY DIV,VTDIV,&CODE
-*        VTENTRY EXIT,VTEXIT,&CODE
-         VTENTRY FREE,VTFREE,&CODE
+         VTENTRY EXIT,VTEXIT,&CODE
          VTENTRY GETENV,VTGETENV,&CODE
          VTENTRY LABS,VTLABS,&CODE
          VTENTRY LDIV,VTLDIV,&CODE
-         VTENTRY MALLOC,VTMALLOC,&CODE
          VTENTRY MBLEN,VTMBLEN,&CODE
          VTENTRY MBSTOWCS,VTMBSTOW,&CODE
          VTENTRY MBTOWC,VTMBTOWC,&CODE
          VTENTRY QSORT,VTQSORT,&CODE
          VTENTRY RAND,VTRAND,&CODE
-         VTENTRY REALLOC,VTREALLO,&CODE
          VTENTRY SRAND,VTSRAND,&CODE
          VTENTRY STRTOD,VTSTRTOD,&CODE
          VTENTRY STRTOL,VTSTRTOL,&CODE
@@ -130,12 +126,26 @@
          VTENTRY WCSTOMBS,VTWCSTOM,&CODE
          VTENTRY WCTOMB,VTWCTOMB,&CODE
 ***********************************************************************
-* Entry points in ASSERT C / ASSERT H                                 *
-* Note: these are not included here as they fiddle with the call      *
-* stack, so it is easier just to link them directly with the user     *
-* program.                                                            *
+* Entry points in MALLOC C / STDLIB H                                 *
 ***********************************************************************
-*        ASSERT
+         VTENTRY CALLOC,VTCALLOC,&CODE
+         VTENTRY FREE,VTFREE,&CODE
+         VTENTRY MALLOC,VTMALLOC,&CODE
+         VTENTRY REALLOC,VTREALLO,&CODE
+         VTENTRY MEMALIGN,VTMEMALI,&CODE
+         VTENTRY ICALLOC,VTICALLO,&CODE
+         VTENTRY ICOMALLO,VTICOMAL,&CODE
+         VTENTRY FOOTPRIN,VTFOOTPR,&CODE
+         VTENTRY MFOOTPRI,VTMFOOTP,&CODE
+         VTENTRY MALLINFO,VTMALLIN,&CODE
+         VTENTRY MALLOCUS,VTMALCUS,&CODE
+         VTENTRY MALLOCST,VTMALCST,&CODE
+         VTENTRY MTRIM,VTMTRIM,&CODE
+         VTENTRY MALLOPT,VTMALLOP,&CODE
+***********************************************************************
+* Entry points in ASSERT C / ASSERT H                                 *
+***********************************************************************
+         VTENTRY @@ASSERT,VTASSERT,&CODE
 ***********************************************************************
 * Entry points in CTYPE C / CTYPE H                                   *
 ***********************************************************************

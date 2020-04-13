@@ -22,6 +22,7 @@ int __cstart(MAINFUNC* mainfunc, PLIST *plist, EPLIST *eplist)
   char argbuffer[ARGBUFFERLEN];
   int argc = 0;
   int a, b, i, len;
+  int rc;
   char ch;
   GCCLIBPLIST *gcclibplist = 0;
   EPLIST *magic_eplist = 0;
@@ -143,6 +144,9 @@ int __cstart(MAINFUNC* mainfunc, PLIST *plist, EPLIST *eplist)
     }
   }
 
-  /* Call Main */
-  return mainfunc(argc, argv);
+  /* Initialize Heap and Call Main */
+  creat_msp();
+  rc = mainfunc(argc, argv);
+  dest_msp();
+  return rc;
 }

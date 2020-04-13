@@ -12,6 +12,19 @@
 #define CMSRUNTM_INCLUDED
 #include <stdio.h>
 
+#ifndef __SIZE_T_DEFINED
+#define __SIZE_T_DEFINED
+typedef unsigned long size_t;
+#endif
+
+/* mspace is an opaque type representing an independent
+   region of space that supports malloc(), etc. */
+typedef void* mspace;
+
+/* Function Pointers */
+typedef int (MAINFUNC)(int argc, char *argv[]); /* declare a main() function pointer */
+typedef void (EXITFUNC)(int rc); /* declare a exit() function pointer */
+
 /* The CMSCRAB macro maps the GCC stack.  In the first stack frame are pointers to useful global
    variables used by routines in CMSSTDIO. */
 typedef struct CMSCRAB CMSCRAB;
@@ -30,6 +43,8 @@ struct CMSCRAB {
 
 struct GCCCRAB {
    CMSCRAB *rootcmscrab;
+   EXITFUNC *exitfunc;
+   mspace dlmspace; /* For DLMALLOC */
    FILE **stdin;
    FILE **stdout;
    FILE **stderr;
@@ -82,11 +97,6 @@ typedef struct GCCLIBPLIST {
   EPLIST eplist;
 } GCCLIBPLIST;
 
-/* Startup Functions */
-typedef int (MAINFUNC)(int argc, char *argv[]); /* declare a main() function pointer */
-int __cstub(PLIST *plist , EPLIST *eplist);
-int __cstart(MAINFUNC* mainfunc, PLIST *plist , EPLIST *eplist);
-
 /* Stdlib Public Global Variables - RESLIB Defines */
 #ifdef IN_RESLIB
 #define stdin (*(GETGCCCRAB()->stdin))
@@ -94,5 +104,26 @@ int __cstart(MAINFUNC* mainfunc, PLIST *plist , EPLIST *eplist);
 #define stderr (*(GETGCCCRAB()->stderr))
 #define errno (*(GETGCCCRAB()->errno))
 #endif
+
+/* Startup Functions */
+int __cstub(PLIST *plist , EPLIST *eplist);
+int __cstart(MAINFUNC* mainfunc, PLIST *plist , EPLIST *eplist);
+
+/*
+  creat_msp creates, updates GCCCRAB, and returns a new independent space
+  with the given initial capacity of the default granularity size
+  (16kb).  It returns null if there is no system memory available to
+  create the space. Large Chunk Trcking is Enabled.
+*/
+mspace creat_msp();
+
+/*
+  dest_msp destroys the memory space (from GCCCRAB), and attempts
+  to return all of its memory back to the system, returning the total number
+  of bytes freed. After destruction, the results of access to all memory
+  used by the space become undefined.
+*/
+size_t dest_msp();
+
 
 #endif
