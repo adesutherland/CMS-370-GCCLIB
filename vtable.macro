@@ -53,6 +53,8 @@
 * Entry points in CMSRUNTM                                            *
 ***********************************************************************
          VTENTRY @@CSTART,VTCMSCST,&CODE
+         VTENTRY MORESTAK,VTMORESK,&CODE
+         VTENTRY LESSSTAK,VTLESSSK,&CODE
 ***********************************************************************
 * Entry points in CMSSTDIO C / STDIO H                                *
 ***********************************************************************

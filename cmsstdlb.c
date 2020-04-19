@@ -22,14 +22,16 @@
 static unsigned long myseed = 1;                                 // seed for random number generator
 
 void
-abort(void)
+__abort(void)
 /**************************************************************************************************/
-/* void abort(void)                                                                               */
+/* void __abort(void)                                                                             */
 /**************************************************************************************************/
 {
-/* TODO  raise(SIGABRT); */
-  exit(EXIT_FAILURE);
-}                                                                                    // end of abort
+/* TODO  raise(SIGABRT); or CMS ABEND MACRO */
+  perror("ABNORMAL TERMINATION (NO RESOURCE CLEANUP)");
+  GETGCCCRAB()->exitfunc(EXIT_FAILURE); /* Standard specifies no exit processing */
+}
+/* end of abort */
 
 
 #ifdef abs

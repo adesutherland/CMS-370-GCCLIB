@@ -12,6 +12,7 @@
 #include "cmsruntm.h"
 #define IN_RESLIB
 #include "stdio.h"
+#include "stddef.h"
 #include "string.h"
 
 int __cstart(MAINFUNC* mainfunc, PLIST *plist, EPLIST *eplist)
@@ -144,9 +145,91 @@ int __cstart(MAINFUNC* mainfunc, PLIST *plist, EPLIST *eplist)
     }
   }
 
-  /* Initialize Heap and Call Main */
+  /* Initialize Heap */
   creat_msp();
-  rc = mainfunc(argc, argv);
+
+  /* Setup Stacks */
+  CMSCRAB *currentstackframe = GETCMSCRAB();
+
+  /* Dynamic Stack - done first as this work will effect the bootstrap stack */
+  gcccrab->stackfreebin = 0;
+  gcccrab->stackfreebinsize = 0;
+  gcccrab->dynamicstack = morestak(currentstackframe, 0);
+
+  /* Aux Stack (for dymanic stack memory management and aborting)   */
+  /* This just starts at the next stackframe on the bootstrap stack */
+  gcccrab->auxstack = currentstackframe->stackNext;
+  gcccrab->auxstack->dstack = currentstackframe->dstack;
+  gcccrab->auxstack->backchain = currentstackframe;
+  gcccrab->auxstack->forward = 0;
+  gcccrab->auxstack->gcccrab = currentstackframe->gcccrab;
+  gcccrab->auxstack->stackNext = &(gcccrab->auxstack->locals);
+
+  /* Call main() via the dynamic stack                                        */
+  /* __CLVSTK() itself will use the register save area in the current stack   */
+  /* frame but main() uses the register save area in the dynamic stack and    */
+  /* adds a frame from there (hope that makes sense!)                         */
+  rc = __CLVSTK(gcccrab->dynamicstack, mainfunc, argc, argv);
+
+  free(gcccrab->dynamicstack);
+  if (gcccrab->stackfreebin) free(gcccrab->stackfreebin);
   dest_msp();
+
   return rc;
+}
+
+size_t morestak(CMSCRAB* frame, size_t requested) {
+  CMSCRAB *new_frame;
+  int bin_size;
+  GCCCRAB *gcccrab = GETGCCCRAB();
+
+  /* Check min request */
+  if (requested < offsetof(CMSCRAB, locals)) requested = offsetof(CMSCRAB, locals);
+
+  /* Round up bin size to the next page (or min size) */
+  if (requested < _DSK_MINBIN) bin_size = _DSK_MINBIN;
+  else bin_size = (requested && 0xFFF000) + 0x1000;
+
+  /* Is there a free bin of the right size?                                  */
+  /* This logic is just to speedup function calls unlucky eneough to be on a */
+  /* bin boundary - avoiding keeping calling malloc                          */
+  new_frame = gcccrab->stackfreebin;
+  if (new_frame && bin_size<=gcccrab->stackfreebinsize) {
+    bin_size = gcccrab->stackfreebinsize;
+    gcccrab->stackfreebin = 0;
+  }
+  else {
+    new_frame = malloc(bin_size);
+  }
+
+  /* Set it Up */
+  new_frame->dstack = ((int)new_frame+bin_size)
+                    |  (int)(_DSK_FIRSTDYNAMIC << 24);
+  new_frame->backchain = frame;
+  new_frame->forward = 0;
+  frame->forward = new_frame;
+  new_frame->gcccrab = frame->gcccrab;
+  new_frame->stackNext = (void*)new_frame + requested;
+
+  return new_frame;
+}
+
+void lessstak(CMSCRAB* frame) {
+  GCCCRAB *gcccrab = GETGCCCRAB();
+  int framesize = ((int)frame->dstack & 0x00FFFFFF)-(int)frame;
+
+  if (!gcccrab->stackfreebin) {
+    gcccrab->stackfreebin = frame;
+    gcccrab->stackfreebinsize = framesize;
+  }
+  else if (gcccrab->stackfreebinsize<framesize) {
+    /* Keep the biggest */
+    free(gcccrab->stackfreebin);
+    gcccrab->stackfreebin = frame;
+    gcccrab->stackfreebinsize = framesize;
+  }
+  else {
+    /* Throw away this one */
+    free(frame);
+  }
 }

@@ -1,0 +1,39 @@
+******************************************************************
+* GCCCRAB MACRO                                                  *
+* The GCCCRAB (C Runtime Anchor Block) defines the area for      *
+* for global veriables used by the GCCLIB run time library       *
+* These are declared / allocated / linked to the user program    *
+* but are made available to code in RESLIB land by passing the   *
+* address up the stack frame                                     *
+*                                                                *
+* Part of GCCLIB - VM/370 CMS Native Std C Library;              *
+*                  A Historic Computing Toy                      *
+*                                                                *
+* Proud Contributors: See contrib memo                           *
+*                                                                *
+* Released to the public domain.                                 *
+******************************************************************
+*
+***********************************************************************
+***   M U S T   B E   S Y N C E D   W I T H   C M S R U N T M . H   ***
+***********************************************************************
+*
+         MACRO
+         GCCCRAB
+         SPACE
+*
+GCCCRAB  DSECT                GCCCRAB
+ROOTCMSC DS    F              CMSCRAB *rootcmscrab;
+AUXSTCK  DS    F              CMSCRAB *auxstack;
+DYNMSTCK DS    F              CMSCRAB *dynamicstack;
+STKFBIN  DS    F              DSTKBINLIST* stackfreebin;
+STKFBINS DS    F              size_t stackfreebinsize;
+EXITFUNC DS    F              EXITFUNC *exitfunc;
+DLMSPACE DS    F              mspace dlmspace;
+STDIO    DS    F              FILE **stdin;
+STDOUT   DS    F              FILE **stdout;
+STDERR   DS    F              FILE **stderr;
+ERRNO    DS    F              int *errno;
+         SPACE
+GCCGLEN  EQU   *-GCCCRAB      length of the CRAB / Global Area
+         MEND

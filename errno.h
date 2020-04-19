@@ -54,6 +54,7 @@
 #define EIDRM 390
 #define ENODATA 400
 #define EOVERFLOW 410
+#define ESTACKOVERFLOW 420 /* sync with dynstk.assemble */
 
 #ifndef IN_RESLIB
 extern int errno;

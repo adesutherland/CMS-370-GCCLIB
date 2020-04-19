@@ -1,6 +1,10 @@
 GCCLIB Change LOG
 =================
 
+F0008 - Dynamic Stack
+        Added contrib.txt for all contributed code
+        abort() now uses the auxstack to ensure it can always run
+        abort() no longer calls exit() - i.e. no clean-up as per standards
 F0007 - Implement malloc() etc. with DLMALLOC
         which needed RESLIB fix for exit()
         which needed RESLIB fix for assert()

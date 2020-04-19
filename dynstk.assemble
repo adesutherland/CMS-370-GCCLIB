@@ -1,0 +1,170 @@
+******************************************************************
+* DYNSTK ASSEMBLE                                                *
+* Dynamic Stack Controller Stubs                                 *
+*                                                                *
+* Part of GCCLIB - VM/370 CMS Native Std C Library;              *
+*                  A Historic Computing Toy                      *
+*                                                                *
+* Proud Contributors: See contrib memo                           *
+*                                                                *
+* Released to the public domain.                                 *
+******************************************************************
+*                                                                *
+* Assembler stubs for the dynamic stack implemetation            *
+* These routines are called from PDPEPIL and PDPPRLG MACROs      *
+* To maximise performance, as they have not got a save area they *
+* can use to save registers, and because Adrian's lack of        *
+* experience these use a register based linkage:                 *
+*   R5 for the base (called address)                             *
+*   R15 is used by callers - should not be touched               *
+*   R14 Return Address                                           *
+*   R13 Save Area / stack frame being manipulated                *
+*   R12 is the callers base address - should not be touched      *
+*                                                                *
+******************************************************************
+*                                                                *
+DYNSTK   CSECT
+*
+******************************************************************
+* @DSTAKIN - Into a new strack frame                             *
+* The point of this stub is to call MORESTAK when the current    *
+* stack bin is used up                                           *
+******************************************************************
+* Parameters (see also this file's header)
+*   R9 - Stack Space requested
+* Regigster Usage:
+*   R8 - GCCCRAB
+*   R11 - End of STACK BIN
+*   R10 - Dynamic Stack flags
+*   R7 - Next Available byte on the Stack (i.e. the new save area)
+*   R6 - The end of the requested area in current bin (might be
+*        too big). The next free space after the new frame.
+*   R3 - Saved save area
+*   R0 - Work Register
+*   R1 - MORESTAK parameter pointer
+*   R2 - Saved R1 during MORESTAK Call
+*   R4 - Saved R14 during MORESTAK call
+* Output
+*   R13 - New Frame
+******************************************************************
+         ENTRY @DSTAKIN
+@DSTAKIN DS    0H
+         USING @DSTAKIN,R5
+         USING CMSCRAB,R13
+* Get the GCCCRAM in R8
+         L     R8,GCCCRABA      get address of the GCCCRAB
+         USING GCCCRAB,R8
+* Get the dynamic stack information (R11=end address, R10=flags)
+         L     R11,DSTACK       get the dynamic stack control
+         LR    R10,R11
+         SRL   R10,24           DStack flags (high byte)
+         N     R11,=X'00FFFFFF' Stack bin end address
+* Get new save area in R7
+         L     R7,STACKNXT      get next available byte in GCC stack
+* Get the address after the frame of the required size in R6
+         LR    R6,R9
+         AR    R6,R7            calculate end of our stack usage
+* Have we enough space?
+         LTR   R10,R10
+         BZ    OKSTACK          flag is zero - no check
+         CR    R6,R11           Request bigger than available?
+         BNH   OKSTACK
+* MORE STACK NEEDED
+         LA    R0,1             Test if the dynamic stack flag is 1
+         CR    R0,R10           1 means it is a static stack
+         BNE   ISDYNSK          Is dynamic
+         LA    R0,420           Aux Stack Overflow error
+         L     R1,ERRNO         The address of the ERRNO global
+         ST    R0,0(R1)         Set ERRNO
+         L     R15,=V(ABORT)    Is static so we bought a farm
+         BR    R15
+* Calling MORESTAK
+ISDYNSK  DS    0F               OK Need to call MORESTAK
+         LR    R4,R14           Save R14
+         LR    R2,R1            Save R1
+         ST    R13,FRAMEPT      set up parameters
+         ST    R9,FRAMESZ
+         LA    R1,PARMS         address of parameters in R1
+         L     R13,AUXSTCK      switching to the auxstack
+         L     R15,=V(MORESTAK)
+         BALR  R14,R15          call MORESTAK
+         LR    R13,R15          R13 now holds the new stack frame
+         LR    R14,R4           Restore R14 (C func return address)
+         LR    R1,R2            Restore R1 (C func params)
+         B     DONEIN           MORESTAK takes care of chaining etc.
+OKSTACK  DS    0F               Stack space is fine
+* Sort out the chaining
+         ST    R7,FORWARD       chain forwards to our save area
+         DROP  R13
+         USING CMSCRAB,R7       New Save Area
+         ST    R13,BACK         chain backwards to caller's save area
+         LR    R13,R7           R13 now points to our save area
+         DROP  R7
+         USING CMSCRAB,R13      New Save Area
+* Sort out other words of the save area
+         ST    R6,STACKNXT      save next available byte in GCC stack
+         ST    R8,GCCCRABA      save address of GCCCRAB
+* Save Dynamic Stack Information
+         N     R10,=X'000000FB' Unset "first frame" flag (bit 4)
+         SLL   R10,24           Flag back into the high byte
+         OR    R11,R10          OR with End of Stack Address
+         ST    R11,DSTACK       save dynamic stack information
+* Done
+DONEIN   BR    R14
+         DROP  R13
+         DROP  R8
+         DROP  R5
+         EJECT
+******************************************************************
+* @DSTAKOT - Out from a strack frame                             *
+* The point of this stub is to call LESSSTAK when the first frame*
+* in the current stack bin is popped (exited)                    *
+******************************************************************
+* Parameters (see also this file's header)
+*   R13 - Stack Frame
+* Regigster Usage:
+*   R8 - GCCCRAB
+*   R3 - Saved parent / popped stack frame
+*   R1 - Param pointer
+*   R11 - Dynamic stack control
+*   R6 - Saved R15 - during LESSTAK call
+* Output
+*   R13 - Popped Stack Frame
+*   R14 - Address to "return" to
+******************************************************************
+         ENTRY @DSTAKOT
+@DSTAKOT DS    0H
+         USING @DSTAKOT,R5
+         USING CMSCRAB,R13
+         L     R3,BACK          Now R3 is address the popped area
+* Check if this frame is first in the bin
+         L     R11,DSTACK       get the dynamic stack control
+         N     R11,=X'04000000' Mask flag - bit 4 in high byte
+         BZ    NOTFIRST         flag is zero - not first frame
+* First frame of stack bin so we must call LESSSTAK
+         L     R8,GCCCRABA      get address of the GCCCRAB
+         USING GCCCRAB,R8
+         ST    R13,FRAMEPT      set up parameters
+         LA    R1,PARMS         address of parameters in R1
+         LR    R6,R15           Save R15 (return code)
+         L     R15,=V(LESSSTAK)
+         L     R13,AUXSTCK      switching to the auxstack
+         BALR  R14,R15          call LESSSTAK
+         LR    R15,R6           Restore C program's return code
+         DROP  R8
+NOTFIRST LR    R13,R3           Now R13 is address the popped area
+         L     R14,GR14         restore R14, our return address
+         LM    R0,R12,GR0       restore registers
+         BR    R14              return to the caller's caller
+         EJECT
+*
+* Parameters for MORESTAK / LESSSTAK
+PARMS    DS    0F               parameter list
+FRAMEPT  DS    F                current frame
+FRAMESZ  DS    F                requested new frame size
+         SPACE
+*
+         REGEQU
+         CMSCRAB
+         GCCCRAB
+         END

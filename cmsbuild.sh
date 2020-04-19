@@ -26,9 +26,9 @@ herccontrol "/" -w "RDR FILE"
 herccontrol "/read *" -w "^Ready;"
 
 # Build
-herccontrol "/yata -x -d f" -w "^Ready;"
+herccontrol "/yata -x -d f" -w "^Ready;" -t 120
 herccontrol "/erase yata txt a" -w "^Ready;"
-herccontrol "/build" -w "^Ready;"
+herccontrol "/build" -w "^Ready;" -t 120
 herccontrol "/rename * * e = = e2" -w "^Ready;"
 herccontrol "/cleanup" -w "^Ready;"
 

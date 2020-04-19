@@ -73,7 +73,7 @@ CMSSYS   CSECT
          LR    R12,R15
          USING @@ARGSTR,R12   establish addressability
          USING CMSCRAB,R13    map the save area
-         L     R2,GCCCRAB
+         L     R2,GCCCRABA
          DROP  R13
          USING CMSCRAB,R2     map the CRAB
          SR    R15,R15        * TODO RETURN ZERO for the moment *

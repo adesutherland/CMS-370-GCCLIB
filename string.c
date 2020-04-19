@@ -255,7 +255,7 @@ char *strerror(int errnum)
 {
   switch(errnum)
   {
-    case 0: return ("No error has occurred.");
+    case 0: return ("No error code has been recorded.");
     case EPERM: return("Operation not permitted.");
     case ENOENT: return("No such file or directory.");
     case EINTR: return("Interrupted system call.");
@@ -297,6 +297,7 @@ char *strerror(int errnum)
     case EIDRM: return("Identifier removed.");
     case ENODATA: return("No data available.");
     case EOVERFLOW: return("Value too large for defined data type.");
+    case ESTACKOVERFLOW: return("Auxiliary stack overflow.");
     default: return("Unknown error.");
   }
 }

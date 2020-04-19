@@ -1,0 +1,89 @@
+******************************************************************
+* CMSRUNTA ASSEMBLE                                              *
+* CMS GCCLIB runtime library (assembler components)              *
+*                                                                *
+* Part of GCCLIB - VM/370 CMS Native Std C Library;              *
+*                  A Historic Computing Toy                      *
+*                                                                *
+* Proud Contributors: See contrib memo                           *
+*                                                                *
+* Released to the public domain.                                 *
+******************************************************************
+CMSRUNTA CSECT
+         DS    0H
+*
+***********************************************************************
+* @@CLVSTK  Call via a Stack                                          *
+* Call a function using a specific stack                              *
+* This allows the dynamic stack to set up and then used, and allows   *
+* functions to be called using the bootstrap stack (e.g. EXIT and     *
+* MORESTCK)                                                           *
+*                                                                     *
+* Syntax is:                                                          *
+*    int __CLVSTK(void* stack*, func* function, ... )                 *
+* where:                                                              *
+*    stack     is the stack to be used (make sure it it setup!)       *
+*    function  is the function to be called                           *
+*    ...       are the functions arguments                            *
+* returns:                                                            *
+*     0        the called function result                             *
+* notes:                                                              *
+*     This works very simply by manipultaing R13 (save area).         *
+*     The callers save area (R13) is used as per normal.              *
+*     Then R13 is pointed to the new stack which needs to have been   *
+*     setup before hand. Basically the stack needs to look like it    *
+*     would have be if called normally.                               *
+*     R1 is simply moved forward 8 bytes                              *
+***********************************************************************
+         ENTRY @@CLVSTK
+@@CLVSTK DS    0H
+         USING CMSCRAB,R13
+         STM   R14,R12,GR14
+         LR    R12,R15
+         USING @@CLVSTK,R12   establish addressability
+         LR    R3,R13         save R13
+         L     R13,0(R1)      stack to be used
+         L     R15,4(R1)      function to call
+         LA    R1,8(R1)       Add 8 to R1 to skip params
+         BALR  14,15          actually call the function
+         LR    R13,R3         restore R13
+         L     R14,GR14       restore our return address
+         LM    R0,R12,GR0     restore the registers
+         BR    R14            return to our caller
+         DROP  R12            clean up!
+         DROP  R13            clean up!
+         LTORG
+         EJECT
+*
+***********************************************************************
+* ABORT                                                               *
+* Aborts processing. This stub uses the the begining of the           *
+* auxstack to ensure it can run (and as the program is terminating    *
+* anyway. So it can be called anyway and anytime.                     *
+*                                                                     *
+* Syntax is:                                                          *
+*    void abort(void)                                                 *
+* Notes:                                                              *
+* - No need to save registers etc. as the program is buying a farm    *
+***********************************************************************
+         ENTRY ABORT
+ABORT    DS    0H
+         USING CMSCRAB,R13
+         LR    R12,R15
+         USING ABORT,R12       establish addressability
+         L     R11,GCCCRABA    Get the GCC CRAB
+         USING GCCCRAB,R11
+         L     R13,AUXSTCK     R13 / save area is now the auxstack
+         L     R15,=V(@@ABORT) Call __abort()
+         BR    R15             ... never to return
+         DROP  R11            clean up!
+         DROP  R12            clean up!
+         DROP  R13            clean up!
+         LTORG
+         EJECT
+*
+         CMSCRAB
+         GCCCRAB
+         NUCON
+         REGEQU
+         END

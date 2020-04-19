@@ -1,39 +1,58 @@
+******************************************************************
+* CMSCRAB MACRO                                                  *
+* The CMSCRAB (C Runtime Anchor Block) defines the save area /   *
+* stack frame used by GCCCMS                                     *
+*                                                                *
+* Part of GCCLIB - VM/370 CMS Native Std C Library;              *
+*                  A Historic Computing Toy                      *
+*                                                                *
+* Proud Contributors: See contrib memo                           *
+*                                                                *
+* Released to the public domain.                                 *
+******************************************************************
+*
 ***********************************************************************
-* The CMSCRAB (C Runtime Anchor Block) provides memory for the local  *
-* variables of the user program.                                      *
-*                                                                     *
-* Robert O'Hara, Redmond Washington, June 2009.                       *
-*                                                                     *
-* Based on code written by Paul Edwards and modified by Dave Wade.    *
-* Released to the public domain.                                      *
-*                                                                     *
-* Notes:                                                              *
-*                                                                     *
-* 1.  The structure defined here is used in the PDPPRLG macro, so     *
-*     don't make changes here without corresponding changes there.    *
-*                                                                     *
-* 2.  The offset of GCCCRAB is hard-coded in CMSRUNTM.H               *
-*                                                                     *
+***   M U S T   B E   S Y N C E D   W I T H   C M S R U N T M . H   ***
 ***********************************************************************
+*
          MACRO
          CMSCRAB
          SPACE
 * ---------------------------------------------------------------------
-* This first section describes the save area defined by each routine in
-* the runtime library.  The PDPPRLG macro uses the offsets, and the GCC
-* compiler knows that the local variables start at offset 88.
+* This first section describes the save area / stack frame defined by
+* each routine. The GCC compiler knows that the local variables start
+* at offset 88 (MAINSTK) ...
 * ---------------------------------------------------------------------
-CMSCRAB  DSECT                the GCC C Runtime Anchor Block
-SAVEAREA DS    18F            +0  register save area
-GCCCRAB  DS    F              +72 address of GCC C Runtime Anchor Block
-STACKNXT DS    F              +76 next available byte on the stack
-NUMCONV  DS    F              +80 numeric conversion buffer
-FUNCRSLT DS    F              +84 function result buffer
+CMSCRAB  DSECT             the GCC C Runtime Anchor Block
+DSTACK   DS    F           +00 dynamic stack control (see cmsruntm.h)
+BACK     DS    F           +04 backchain to previous save area
+FORWARD  DS    F           +08 forward chain to next save area
+GR14     DS    F           +12 register save area
+GR15     DS    F           +16 register save area
+GR0      DS    F           +20 register save area
+GR1      DS    F           +24 register save area
+GR2      DS    F           +28 register save area
+GR3      DS    F           +32 register save area
+GR4      DS    F           +36 register save area
+GR5      DS    F           +40 register save area
+GR6      DS    F           +44 register save area
+GR7      DS    F           +48 register save area
+GR8      DS    F           +52 register save area
+GR9      DS    F           +56 register save area
+GR10     DS    F           +60 register save area
+GR11     DS    F           +64 register save area
+GR12     DS    F           +68 register save area
+GCCCRABA DS    F           +72 address of GCC C Runtime Anchor Block
+STACKNXT DS    F           +76 next available byte on the stack
+NUMCONV  DS    F           +80 numeric conversion buffer
+FUNCRSLT DS    F           +84 function result buffer
          SPACE
 * ---------------------------------------------------------------------
-* Here begins the GCC stack:  local variables of the GCC routines.
+* The GCC Bootstrap stack space/length
+* Basically the C local variables etc. start from MAINSTK in each
+* stack frame
 * ---------------------------------------------------------------------
-MAINSTK  DS    32000F
+MAINSTK  DS    1024F          Bootstrap Stack (4K)
          SPACE
 MAINLEN  EQU   *-MAINSTK      length of the stack
 STACKLEN EQU   *-CMSCRAB      length of the CRAB

@@ -1,42 +1,34 @@
-***********************************************************************
-* CMSENTRY contains the main entry point for a module produced by     *
-* GCC.  It also contains the routine that implements the exit()       *
-* function.                                                           *
-*                                                                     *
-* This version will run in 24-bit mode only.                          *
-*                                                                     *
-* Based on code written by Paul Edwards and modified by Dave Wade.    *
-* Released to the public domain.                                      *
-*                                                                     *
-* Robert O'Hara, Redmond Washington, July 2010.                       *
-*                                                                     *
-* Notes:                                                              *
-* 1.  The FILE DSECT defined here maps the FILE structure defined in  *
-*     STDIO H, so if that changes, so must this.                      *
-*                                                                     *
-* Future changes:                                                     *
-* 1.  The GCC stack is currently fixed at 128K bytes, with no check   *
-*     for overflow.  It would be nice to instead allocate the stack   *
-*     in smaller chunks and link the chunks in a linked list.         *
-* 2.  Add support for 31-bit addressing.                              *
-* 3.  It would be nice to test this code on VM/SP or newer systems.   *
-***********************************************************************
+******************************************************************
+* CMSENTRY ASSEMBLE                                              *
+* The main entry point for a module produced by GCC and other    *
+* assembler stubs to be linked to the users program (rather than *
+* resident).                                                     *
+*                                                                *
+* Part of GCCLIB - VM/370 CMS Native Std C Library;              *
+*                  A Historic Computing Toy                      *
+*                                                                *
+* Proud Contributors: See contrib memo                           *
+*                                                                *
+* Released to the public domain.                                 *
+******************************************************************
 CMSENTRY CSECT
          ENTRY @@CRT0
 ***********************************************************************
 * @@CRT0 Entry Point                                                  *
 * We enter here from CMS.  This is the main entry point for a module  *
-* compiled by GCC.  Allocate the GCC stack, and call __cstart which   *
-* sets up the strucures & parameters, and calls main().               *
-* On return it frees the stack and returns to CMS.                    *
+* compiled by GCC.  Allocate the bootstrap GCC stack, and call        *
+* __cstub which prepares for the RESLIB hyperjump, which calls __ctart*
+* which sets up the runtime strucures & parameters, which finally     *
+* calls main().                                                       *
+* On return it frees the bootstrap stack and returns to CMS.          *
 ***********************************************************************
 @@CRT0   DS    0H
-         STM   14,12,12(13)
+         USING CMSCRAB,R13
+         STM   R14,R12,GR14
          LR    R12,R15
          USING @@CRT0,R12     establish addressability
          LR    R4,R1          save R1 so we can get the PLIST
          LR    R5,R0          save R0 so we can get the EPLIST
-         LA    R6,PARMLIST    address of parameters for __cstart
 * --------------------------------------------------------------------
 * HLA: GET THE ANCHOR TO THE RESIDENT GCCLIB
 * --------------------------------------------------------------------
@@ -46,24 +38,32 @@ CMSENTRY CSECT
          N     R1,=X'00FFFFFF' remove spurious data in high byte
          ST    R1,GCCANCHR    store the resident GCCLIB base pointer
 * --------------------------------------------------------------------
-* Set up the GCC stack.
+* Set up the bootstrap GCC stack.
 * --------------------------------------------------------------------
          L     R0,=A(STACKLEN)
          SRL   R0,3           divide by 8 to get doublewords
          DMSFREE DWORDS=(0),ERR=NOMEM,TYPCALL=SVC,TYPE=USER
-         ST    R13,4(R1)      chain forward (caller's save area)
-         ST    R1,8(R13)      chain backward (our save area)
+         ST    R1,FORWARD     chain backward (our save area)
+         DROP  R13
+         USING CMSCRAB,R1
+         ST    R13,BACK       chain forward (caller's save area)
          LR    R13,R1         establish our save area
+         DROP  R1
          USING CMSCRAB,R13
          LA    R2,MAINSTK     where the GCC stack begins
          ST    R2,STACKNXT    next available spot in stack
+         L     R2,=A(STACKLEN)
+         AR    R2,R13         this is the address after the stack
+         N     R2,=X'00FFFFFF' clear high byte
+         O     R2,=X'01000000' set high byte to 1=static stack
+         ST    R2,DSTACK       Dynamic Stack Control
 * ---------------------------------------------------------------------
 * Now we build the parameters for the user's main program.
 * ---------------------------------------------------------------------
 LAUNCH   DS    0H
          ST    R4,PLIST       store plist
          ST    R5,EPLIST      store eplist
-         LR    R1,R6
+         LA    R1,PARMLIST    address of parameters for __cstub
 * ---------------------------------------------------------------------
 * At last we call the user's C main program.
 * ---------------------------------------------------------------------
@@ -78,7 +78,6 @@ LAUNCH   DS    0H
          SPACE
 NOMEM    DS    0H             memory allocation failed
          LA    R15,57         perhaps should issue an error message
-         LR    R2,R13
          B     RETURN
          LTORG
 GETRES   DC CL8'RESLIB  '     HLA: PLIST TO GET THE GCCLIB-ANCHOR
@@ -99,36 +98,39 @@ GCCANCHR DC F'0'              HLA: ANCHOR FOR RESIDENT GCCLIB
          ENTRY GCCANCHR       HLA: MAKE THIS ANCHOR PUBLIC
 *
          EJECT
-         ENTRY @@EXIT
 ***********************************************************************
 * @@EXIT Entry Point                                                  *
 * We enter here when the user program calls the exit() function, and  *
 * branch here after a normal return from the user program.  Now we    *
 * free the program stack and return to CMS.                           *
 ***********************************************************************
+         ENTRY @@EXIT
 @@EXIT   DS    0H
          L     R9,0(R1)       get return code from parameter list
 * Join here after normal return from user's program.
 THATSALL DS    0H
          LR    R12,R15
          USING @@EXIT,R12     establish addressiblity
-         USING CMSCRAB,R13    save area is also start of CMSCRAB
-         L     R5,GCCCRAB     get the GCCCRAB
-         L     R1,0(R5)       get the rootcmscrab
-         L     R2,4(R1)       get save area address
-         DROP  R13
+         USING CMSCRAB,R13    save area is a CMSCRAB
+         L     R5,GCCCRABA    get the GCCCRAB
+         USING GCCCRAB,R5
+         L     R13,ROOTCMSC   get the rootcmscrab
+         DROP  R5
          L     R0,=A(STACKLEN)
          SRL   R0,3           divide by 8 to get doublewords
+         LR    R1,R13
+         L     R13,BACK       go back to our save area
          DMSFRET DWORDS=(0),LOC=(1),ERR=*,TYPCALL=SVC
          LR    R15,R9         set return code
 RETURN   DS    0H
-         L     14,12(R2)      restore return address
-         LM    0,12,20(R2)    restore our caller's registers
-         BR    14             return to CMS
+         L     R14,GR14       restore return address
+         LM    R0,R12,GR0     restore our caller's registers
+         BR    R14            return to CMS
          EJECT
          LTORG
          SPACE
          REGEQU
          CMSCRAB
+         GCCCRAB
          NUCON
          END

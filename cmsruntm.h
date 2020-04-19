@@ -3,11 +3,11 @@
 /*                                                                                                */
 /* Part of GCCLIB - VM/370 CMS Native Std C Library; A Historic Computing Toy                     */
 /*                                                                                                */
-/* Proud Contributors:                                                                            */
-/*   Robert O'Hara, Paul Edwards, Dave Wade, with a little hacking by Adrian Sutherland           */
+/* Proud Contributors: See contrib memo                                                           */
 /*                                                                                                */
 /* Released to the public domain.                                                                 */
 /**************************************************************************************************/
+
 #ifndef CMSRUNTM_INCLUDED
 #define CMSRUNTM_INCLUDED
 #include <stdio.h>
@@ -25,13 +25,17 @@ typedef void* mspace;
 typedef int (MAINFUNC)(int argc, char *argv[]); /* declare a main() function pointer */
 typedef void (EXITFUNC)(int rc); /* declare a exit() function pointer */
 
-/* The CMSCRAB macro maps the GCC stack.  In the first stack frame are pointers to useful global
-   variables used by routines in CMSSTDIO. */
+/* The CMSCRAB macro maps the GCC stack. */
 typedef struct CMSCRAB CMSCRAB;
+
+/* The GCCCRAB macro maps the GCC RESLIB Global Area */
 typedef struct GCCCRAB GCCCRAB;
 
+/**************************************************************************************************/
+/* M U S T   B E   S Y N C E D   W I T H   C M S C R A B   M A C R O                              */
+/**************************************************************************************************/
 struct CMSCRAB {
-  void *unused;                                                           /* unused by GCC +00 */
+  void *dstack;                                       /* Dynamic Stack Control (see below) +00 */
   CMSCRAB *backchain;                                  /*  backchain to previous save area +04 */
   CMSCRAB *forward;                                     /* forward chain to next save area +08 */
   void *regsavearea[15];                      /* register save area and save area chaining +12 */
@@ -39,10 +43,18 @@ struct CMSCRAB {
   void *stackNext;                                     /* next available byte in the stack +76 */
   void *numconv;                                              /* numeric conversion buffer +80 */
   void *funcrslt;                                                /* function result buffer +84 */
+  unsigned char locals[];                                           /* Local Variables etc +88 */
 };
 
+/**************************************************************************************************/
+/* M U S T   B E   S Y N C E D   W I T H   G C C C R A B   M A C R O                              */
+/**************************************************************************************************/
 struct GCCCRAB {
    CMSCRAB *rootcmscrab;
+   CMSCRAB *auxstack;
+   CMSCRAB *dynamicstack;
+   CMSCRAB* stackfreebin;
+   size_t stackfreebinsize;
    EXITFUNC *exitfunc;
    mspace dlmspace; /* For DLMALLOC */
    FILE **stdin;
@@ -54,6 +66,26 @@ struct GCCCRAB {
 /* To get the addresses of the crabs */
 #define GETGCCCRAB() ({GCCCRAB *theCRAB; __asm__("L %0,72(13)" : "=d" (theCRAB)); theCRAB;})
 #define GETCMSCRAB() ({CMSCRAB *theCRAB; __asm__("LR %0,13" : "=d" (theCRAB)); theCRAB;})
+
+/**************************************************************************************************/
+/* Dynamic Stack Control                                                                          */
+/* Low 24 bits contain the address of the byte past the current stack bin                         */
+/* The high byte contains the control flags (bits):                                               */
+/*  0 - Stack control not in use - ignore (for backward compatability)                            */
+/*  1 - Static stack - do not extend with new bins                                                */
+/*  2 - Dynamic Stack - can extend                                                                */
+/*  4 - I am the first stackframe in the bin (needed to for popping logic to dealocate bins)      */
+/*      Note 4 is used with 2 e.g. 6 ...                                                          */
+/**************************************************************************************************/
+/* Min bin size */
+#define _DSK_MINBIN  16*1024
+/* Flags */
+#define _DSK_NOTUSED 0
+#define _DSK_STATIC  1
+#define _DSK_DYNAMIC 2
+#define _DSK_FIRST   4
+#define _DSK_FIRSTDYNAMIC 6
+/**************************************************************************************************/
 
 /* Call parameters */
 #define MAXEPLISTARGS 32
@@ -125,5 +157,20 @@ mspace creat_msp();
 */
 size_t dest_msp();
 
+/*
+  Creates a new stack bin and adds and returns the first frame to the bin.
+  The returned frame is of the requested size and is configured and chained to
+  the existing frame
+  Called by the dynst.assemble routines when the current stack bin runs out of
+  space.
+*/
+size_t morestak(CMSCRAB* frame, size_t requested);
+
+/*
+  Removes/cleans up unused stack bins.
+  Called by the dynst.assemble routines when a first frame in the bin is
+  popped / exited.
+*/
+void lessstak(CMSCRAB* frame);
 
 #endif
