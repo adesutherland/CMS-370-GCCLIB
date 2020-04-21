@@ -17,11 +17,11 @@
 *                                                                     *
 ***********************************************************************
          EXTRN GCCANCHR
-LONGJMP  CSECT
-         USING LONGJMP,R15
+SETJMP   CSECT
+         USING SETJMP,R15
          L     R15,=V(GCCANCHR) get anchor ptr
          L     R15,0(R15)       get the anchor
-         LA    R15,VTLNGJMP(R15)
+         LA    R15,VTSETJMP(R15)
          BR    R15            go there
          LTORG
          VTABLE

@@ -43,12 +43,9 @@
          VTENTRY @@WRTERM,VTWRTERM,&CODE
 ***********************************************************************
 * Entry points in CMSJUMP ASSEMBLE / SETJMP H                         *
-* Note: these are not included here as they fiddle with the call      *
-* stack, so it is easier just to link them directly with the user     *
-* program.                                                            *
 ***********************************************************************
-*        LONGJMP
-*        SETJMP
+         VTENTRY SETJMP,VTSETJMP,&CODE
+         VTENTRY LONGJMP,VTLNGJMP,&CODE
 ***********************************************************************
 * Entry points in CMSRUNTM                                            *
 ***********************************************************************

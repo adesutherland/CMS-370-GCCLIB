@@ -12,6 +12,7 @@
 #define IN_RESLIB
 #include <cmsruntm.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <ctype.h>
 #include <float.h>
 #include <time.h>
@@ -115,8 +116,8 @@ fclose(FILE * stream)
     default:
       return EOF;
   }
-  if (CMSmemoryFree(stream) == 0) return 0;
-  else return EOF;
+  free(stream);
+  return 0;
 }                                                                                   // end of fclose
 
 
@@ -538,7 +539,7 @@ switch (devtype) {
             }
       break;
    case DEVICE_DSK:
-      theFile = CMSmemoryAlloc(sizeof(FILE) + lrecl + 1, CMS_USER);                  // + 1 for NULL
+      theFile = malloc(sizeof(FILE) + lrecl + 1);                  // + 1 for NULL
       theFile->buffer = &theFile->buffer + 4;                   // point to first byte of I/O buffer
       if (accessMode & ACCESS_WRITING) {                              // are we writing to the file?
          theFile->next = theFile->buffer;                     // nothing in the buffer at this point
@@ -565,20 +566,20 @@ switch (devtype) {
             break;
          case 20:                                             // the fileid is syntactically invalid
             errno = EINVAL;
-            CMSmemoryFree(theFile);                                      // we won't be needing this
+            free(theFile);                                      // we won't be needing this
             theFile = NULL;
             break;
          case 28:                                                          // the file was not found
             if (accessMode & ACCESS_WRITING) break;               // file not found is OK if writing
             errno = ENOENT;
-            CMSmemoryFree(theFile);                                      // we won't be needing this
+            free(theFile);                                      // we won't be needing this
             theFile = NULL;
             break;
          }
       break;
    case DEVICE_PRT:
       if (accessMode & ACCESS_WRITING) {
-         theFile = CMSmemoryAlloc(sizeof(FILE) + 132 + 1, CMS_USER);                 // + 1 for NULL
+         theFile = malloc(sizeof(FILE) + 132 + 1);                 // + 1 for NULL
          theFile->buffer = &theFile->buffer + 4;                // point to first byte of I/O buffer
          theFile->next = theFile->buffer;                     // nothing in the buffer at this point
          theFile->last = theFile->buffer + 132;                // point to 'extra' byte after buffer
@@ -597,7 +598,7 @@ switch (devtype) {
       break;
    case DEVICE_PUN:
       if (accessMode & ACCESS_WRITING) {
-         theFile = CMSmemoryAlloc(sizeof(FILE) + 80 + 1, CMS_USER);                  // + 1 for NULL
+         theFile = malloc(sizeof(FILE) + 80 + 1);                  // + 1 for NULL
          theFile->buffer = &theFile->buffer + 4;                // point to first byte of I/O buffer
          theFile->next = theFile->buffer;                     // nothing in the buffer at this point
          theFile->last = theFile->buffer + 80;                 // point to 'extra' byte after buffer
@@ -619,7 +620,7 @@ switch (devtype) {
          theFile = NULL;
          }
       else {
-         theFile = CMSmemoryAlloc(sizeof(FILE) + 151 + 1, CMS_USER);    // 3211 printer + 1 for NULL
+         theFile = malloc(sizeof(FILE) + 151 + 1);    // 3211 printer + 1 for NULL
          theFile->buffer = &theFile->buffer + 4;                // point to first byte of I/O buffer
          theFile->next = theFile->last = theFile->buffer + 151;        // empty buffer at this point
          theFile->eof = 0;                                                         // not yet at EOF

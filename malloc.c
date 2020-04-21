@@ -167,7 +167,7 @@ CMS NOTE: As CMS memory goes dowawards checking topmost space will
 #define DIRECT_MMAP(s) cmsmmap((s))
 #define MUNMAP(a, s) cmsmunmap((a),(s))
 
-void *cmsmmap(size_t bytes) {
+static void *cmsmmap(size_t bytes) {
   void *newpage, *additional;
   int pages;
   int rc;
@@ -249,7 +249,7 @@ void *cmsmmap(size_t bytes) {
   return newpage;
 }
 
-int cmsmunmap(void* address, size_t bytes) {
+static int cmsmunmap(void* address, size_t bytes) {
   if (bytes & 0xFFF) {  /* 4k alignment */
     printf("MUNMAP Unaligned request");
   }

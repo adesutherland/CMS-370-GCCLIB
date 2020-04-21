@@ -8,12 +8,15 @@
 /*                                                                                                */
 /* Released to the public domain.                                                                 */
 /**************************************************************************************************/
-/* TODO detect overruns */
+/* TODO Paramter Overruns */
 #include "cmsruntm.h"
 #define IN_RESLIB
 #include "stdio.h"
+#include "stdlib.h"
 #include "stddef.h"
 #include "string.h"
+
+#define CMSINLINE static __inline __attribute__ ((always_inline))
 
 int __cstart(MAINFUNC* mainfunc, PLIST *plist, EPLIST *eplist)
 {
@@ -145,15 +148,16 @@ int __cstart(MAINFUNC* mainfunc, PLIST *plist, EPLIST *eplist)
     }
   }
 
-  /* Initialize Heap */
+  /* Initialize Memory System */
+  struct mallinfo memoryinfo;
   creat_msp();
+  memoryinfo = mallinfo();
+  gcccrab->startmemoryusage = memoryinfo.uordblks;
 
   /* Setup Stacks */
   CMSCRAB *currentstackframe = GETCMSCRAB();
 
   /* Dynamic Stack - done first as this work will effect the bootstrap stack */
-  gcccrab->stackfreebin = 0;
-  gcccrab->stackfreebinsize = 0;
   gcccrab->dynamicstack = morestak(currentstackframe, 0);
 
   /* Aux Stack (for dymanic stack memory management and aborting)   */
@@ -171,40 +175,97 @@ int __cstart(MAINFUNC* mainfunc, PLIST *plist, EPLIST *eplist)
   /* adds a frame from there (hope that makes sense!)                         */
   rc = __CLVSTK(gcccrab->dynamicstack, mainfunc, argc, argv);
 
+  /* Deallocate Stack */
+  lessstak(gcccrab->dynamicstack);
   free(gcccrab->dynamicstack);
-  if (gcccrab->stackfreebin) free(gcccrab->stackfreebin);
+
+  /* Shutdown dlmalloc */
+  memoryinfo = mallinfo();
   dest_msp();
+  size_t leaked = memoryinfo.uordblks - gcccrab->startmemoryusage;
+  if (leaked) fprintf( *(GETGCCCRAB()->stderr), "WARNING: MEMORY FREED (%d BYTES LEAKED)\n", leaked);
 
   return rc;
 }
 
-size_t morestak(CMSCRAB* frame, size_t requested) {
+/*********************************************************************/
+/* The Dynamic Stack Bins are generally _DSK_MINBIN in size (16kb)   */
+/* but can be bigger for large stack frames - in which case they are */
+/* rounded up to the nearest page.                                   */
+/* Each bin starts with a frame - we can get the bin size from that  */
+/* frames dstack member which points to the address after the last   */
+/* usable space - which is the address of a pointer to the next      */
+/* frame (see following)                                             */
+/* The last double word (size_t) of each bin is a pointer to the next*/
+/* bin (or zero). This chaining is used 1/ to allow bins to be reused*/
+/* and reduce mallocs, and 2/ to allow bins "later" than the current */
+/* one to be freed by lessstak(). This means that longjmps do not    */
+/* leak memory.                                                      */
+/*                                                                   */
+/* This also means we have to be careful to add/subtract size_t for  */
+/* dynamic bins to store the "next" double word pointer.             */
+/* This (ugly) code in encapsulated in the 4 helper Functions        */
+/* following.                                                        */
+/*********************************************************************/
+
+CMSINLINE CMSCRAB* getNextBin(CMSCRAB *current) {
+  CMSCRAB **nextbinhandle = (CMSCRAB **)((size_t)current->dstack & 0x00FFFFFF);
+  size_t flags = (size_t)current->dstack >> 24;
+  if (flags & _DSK_DYNAMIC) {
+    return *nextbinhandle;
+  }
+  return 0;
+}
+
+CMSINLINE void setNextBin(CMSCRAB *current, CMSCRAB *next) {
+  CMSCRAB **nextbinhandle = (CMSCRAB **)((size_t)current->dstack & 0x00FFFFFF);
+  size_t flags = (size_t)current->dstack >> 24;
+  if (flags & _DSK_DYNAMIC) {
+    *nextbinhandle = next;
+  }
+}
+
+/* Returns the usable bin size (i.e. excluding the NEXT frame pointer) */
+CMSINLINE size_t getBinSize(CMSCRAB *current) {
+  size_t size = ((size_t)current->dstack & 0x00FFFFFF) - (size_t)current;
+  return size;
+}
+
+CMSINLINE CMSCRAB* makeNewBin(size_t size, CMSCRAB *nextbin) {
+  /* Round up bin size to the next page (or min size) */
+  if ((size + sizeof(size_t)) < _DSK_MINBIN) size = _DSK_MINBIN;
+  else size = ((size + sizeof(size_t)) && 0xFFF000) + 0x1000;
+
+  CMSCRAB* crab = malloc(size);
+  CMSCRAB **nextbinhandle = (CMSCRAB **)((size_t)crab + size - sizeof(size_t));
+  crab->dstack = (void*)((size_t)nextbinhandle | (size_t)(_DSK_FIRSTDYNAMIC << 24));
+  *nextbinhandle = nextbin;
+  return crab;
+}
+
+CMSCRAB* morestak(CMSCRAB* frame, size_t requested) {
   CMSCRAB *new_frame;
-  int bin_size;
-  GCCCRAB *gcccrab = GETGCCCRAB();
+  size_t bin_size;
 
   /* Check min request */
   if (requested < offsetof(CMSCRAB, locals)) requested = offsetof(CMSCRAB, locals);
 
   /* Round up bin size to the next page (or min size) */
-  if (requested < _DSK_MINBIN) bin_size = _DSK_MINBIN;
-  else bin_size = (requested && 0xFFF000) + 0x1000;
+  if ((requested + sizeof(size_t)) < _DSK_MINBIN) bin_size = _DSK_MINBIN;
+  else bin_size = ((requested + sizeof(size_t)) && 0xFFF000) + 0x1000;
 
-  /* Is there a free bin of the right size?                                  */
+  /* Is the next free bin big enough                                         */
   /* This logic is just to speedup function calls unlucky eneough to be on a */
-  /* bin boundary - avoiding keeping calling malloc                          */
-  new_frame = gcccrab->stackfreebin;
-  if (new_frame && bin_size<=gcccrab->stackfreebinsize) {
-    bin_size = gcccrab->stackfreebinsize;
-    gcccrab->stackfreebin = 0;
-  }
-  else {
-    new_frame = malloc(bin_size);
+  /* bin boundary - avoiding keeping calling malloc - and to keep a list of  */
+  /* bins so that lessstak can free then after a longjmp                     */
+  new_frame = getNextBin(frame);
+  if ( !(new_frame && requested<=getBinSize(new_frame)) ) {
+    /* Need to make a new frame a link it in */
+    new_frame = makeNewBin(requested, new_frame);
+    setNextBin(frame, new_frame);
   }
 
   /* Set it Up */
-  new_frame->dstack = ((int)new_frame+bin_size)
-                    |  (int)(_DSK_FIRSTDYNAMIC << 24);
   new_frame->backchain = frame;
   new_frame->forward = 0;
   frame->forward = new_frame;
@@ -215,21 +276,18 @@ size_t morestak(CMSCRAB* frame, size_t requested) {
 }
 
 void lessstak(CMSCRAB* frame) {
-  GCCCRAB *gcccrab = GETGCCCRAB();
-  int framesize = ((int)frame->dstack & 0x00FFFFFF)-(int)frame;
+  /* Keep this frame (for a future morestak)- but free others on the chain.   */
+  /* This means that if a bunch of bins have been left over from a longjmp    */
+  /* then they are all cleared if and only if a function returns that happens */
+  /* to empty a stack bin. Provides expected set/longjmp behavour.            */
+  CMSCRAB* nextbin;
+  CMSCRAB* bin=getNextBin(frame);
 
-  if (!gcccrab->stackfreebin) {
-    gcccrab->stackfreebin = frame;
-    gcccrab->stackfreebinsize = framesize;
-  }
-  else if (gcccrab->stackfreebinsize<framesize) {
-    /* Keep the biggest */
-    free(gcccrab->stackfreebin);
-    gcccrab->stackfreebin = frame;
-    gcccrab->stackfreebinsize = framesize;
-  }
-  else {
-    /* Throw away this one */
-    free(frame);
+  setNextBin(frame,0);
+
+  while (bin) {
+    nextbin = getNextBin(bin); /* Get the next bin before deleting this one - paranoid */
+    free(bin);
+    bin = nextbin;
   }
 }

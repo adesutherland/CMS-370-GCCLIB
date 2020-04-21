@@ -135,15 +135,36 @@ return x;
 }                                                                                      // end of div
 
 
+/**************************************************************************************************/
+/* void exit_stage2(int status)                                                                   */
+/* This is called under the auxstack so that the memory system can be shutdown                    */
+/**************************************************************************************************/
+static void exit_stage2(int status)
+{
+  /* Deallocate Stack */
+  lessstak(GETGCCCRAB()->dynamicstack);
+  free(GETGCCCRAB()->dynamicstack);
+
+  /* Shutdown dlmalloc */
+  struct mallinfo memoryinfo;
+  memoryinfo = mallinfo();
+  dest_msp();
+  size_t leaked = memoryinfo.uordblks - GETGCCCRAB()->startmemoryusage;
+  if (leaked) fprintf(stderr, "WARNING: MEMORY FREED (%d BYTES LEAKED)\n", leaked);
+  GETGCCCRAB()->exitfunc(status);
+}
+
 void
-exit(int status)
 /**************************************************************************************************/
 /* void exit(int status)                                                                          */
 /**************************************************************************************************/
+exit(int status)
 {
   /* TODO call exit functions! */
-  GETGCCCRAB()->exitfunc(status);
-}                                                                                     // end of exit
+
+  /* Call exit_stage2 under the aux stack */
+  __CLVSTK(GETGCCCRAB()->auxstack, exit_stage2, status);
+} // end of exit
 
 char * getenv(const char *name)
 /**************************************************************************************************/

@@ -53,10 +53,9 @@ struct GCCCRAB {
    CMSCRAB *rootcmscrab;
    CMSCRAB *auxstack;
    CMSCRAB *dynamicstack;
-   CMSCRAB* stackfreebin;
-   size_t stackfreebinsize;
    EXITFUNC *exitfunc;
    mspace dlmspace; /* For DLMALLOC */
+   size_t startmemoryusage;
    FILE **stdin;
    FILE **stdout;
    FILE **stderr;
@@ -164,7 +163,7 @@ size_t dest_msp();
   Called by the dynst.assemble routines when the current stack bin runs out of
   space.
 */
-size_t morestak(CMSCRAB* frame, size_t requested);
+CMSCRAB* morestak(CMSCRAB* frame, size_t requested);
 
 /*
   Removes/cleans up unused stack bins.

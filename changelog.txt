@@ -1,10 +1,18 @@
 GCCLIB Change LOG
 =================
 
+F0009 - Dynamic Stack - longjmp friendly, i.e. needs
+        to clear up orphaned allocated stack bins when LESSSTAK
+        is called. This keeps longjmp fast, stops memory leaks
+        and preserves "non-standard" behaviour people depend on.
+        Longjmp and setjmp to RESLIB.
+        Stdio.c now uses malloc/free.
+        Memory leak detection.
+        Memory de-allocation on exit().
 F0008 - Dynamic Stack
         Added contrib.txt for all contributed code
-        abort() now uses the auxstack to ensure it can always run
-        abort() no longer calls exit() - i.e. no clean-up as per standards
+        Abort() now uses the auxstack to ensure it can always run
+        Abort() no longer calls exit() - i.e. no clean-up as per standards
 F0007 - Implement malloc() etc. with DLMALLOC
         which needed RESLIB fix for exit()
         which needed RESLIB fix for assert()
