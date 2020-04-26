@@ -52,108 +52,119 @@ int memcmp(const void *s1, const void *s2, size_t n)
     return (0);
 }
 
-#ifndef USE_ASSEMBLER
 #ifdef memcpy
 #undef memcpy
 #endif
-#ifndef __32BIT__
-void *memcpy(void *s1, const void *s2, size_t n)
+void *memcpy(void *s1, const void *s2, size_t sz)
 {
-    register const unsigned char *f = s2;
-    register const unsigned char *fe;
-    register unsigned char *t = s1;
+  if (!s1) return 0;
+  if (!s2) return s1;
+  if (!sz) return s1;
+  if (s1 == s2) return s1;
 
-    fe = f + n;
-    while (f != fe)
-    {
-        *t++ = *f++;
-    }
-    return (s1);
-}
-#else
-void *memcpy(void *s1, const void *s2, size_t n)
-{
-    register unsigned int *p = (unsigned int *)s1;
-    register unsigned int *cs2 = (unsigned int *)s2;
-    register unsigned int *endi;
+  /* MVCL uses register pairs so we have to force the right register assignment by gcc */
+  register size_t src_addr __asm__("2") = s2;  /* Source Addr */
+  register size_t src_len __asm__("3") = sz & 0x00ffffff; /* Source Length */
+  register size_t dest_addr __asm__("4") = s1; /* Dest Addr */
+  register size_t dest_len __asm__("5") = sz & 0x00ffffff; /* Dest Length */
 
-    endi = (unsigned int *)((char *)p + (n & ~0x03));
-    while (p != endi)
-    {
-        *p++ = *cs2++;
-    }
-    switch (n & 0x03)
-    {
-        case 0:
-            break;
-        case 1:
-            *(char *)p = *(char *)cs2;
-            break;
-        case 2:
-            *(char *)p = *(char *)cs2;
-            p = (unsigned int *)((char *)p + 1);
-            cs2 = (unsigned int *)((char *)cs2 + 1);
-            *(char *)p = *(char *)cs2;
-            break;
-        case 3:
-            *(char *)p = *(char *)cs2;
-            p = (unsigned int *)((char *)p + 1);
-            cs2 = (unsigned int *)((char *)cs2 + 1);
-            *(char *)p = *(char *)cs2;
-            p = (unsigned int *)((char *)p + 1);
-            cs2 = (unsigned int *)((char *)cs2 + 1);
-            *(char *)p = *(char *)cs2;
-            break;
-    }
-    return (s1);
+  /* Use MVCL for memory move */
+  __asm__("MVCL 4,2"
+          :
+          : "d" (src_addr), "d" (src_len), "d" (dest_addr), "d" (dest_len)
+         );
+  return s1;
 }
-#endif /* 32BIT */
-#endif /* USE_ASSEMBLER */
 
 #ifdef memmove
 #undef memmove
 #endif
-void *memmove(void *s1, const void *s2, size_t n)
+void *memmove(void *s1, const void *s2, size_t sz)
 {
-    char *p = s1;
-    const char *cs2 = s2;
-    size_t x;
+  if (!s1) return 0;
+  if (!s2) return s1;
+  if (!sz) return s1;
+  if (s1 == s2) return s1;
+  if (s1<s2) return memcpy(s1, s2, sz); /* So called non-destructive overlap */
+  int delta = s1-s2;
+  if (delta >= sz) return memcpy(s1, s2, sz); /* No Overlap */
 
-    if (p <= cs2)
-    {
-        for (x=0; x < n; x++)
-        {
-            *p = *cs2;
-            p++;
-            cs2++;
-        }
+  s1 += sz;
+  s2 += sz;
+
+  if (delta>=255) {
+    while (sz>255) {
+     s1 -= 255;
+     s2 -= 255;
+     sz -= 255;
+      __asm__("MVC 0(255,%0),0(%1)"
+              :
+              : "d" (s1), "d" (s2)
+            );
     }
-    else
-    {
-        if (n != 0)
-        {
-            for (x=n-1; x > 0; x--)
-            {
-                *(p+x) = *(cs2+x);
-            }
-            *(p+x) = *(cs2+x);
-        }
-    }
-    return (s1);
+  }
+  if (delta>=64) {
+    while (sz>64) {
+     s1 -= 64;
+     s2 -= 64;
+     sz -= 64;
+     __asm__("MVC 0(64,%0),0(%1)"
+              :
+              : "d" (s1), "d" (s2)
+            );
+   }
+  }
+  if (delta>=16) {
+   while (sz>16) {
+     s1 -= 16;
+     s2 -= 16;
+     sz -= 16;
+     __asm__("MVC 0(16,%0),0(%1)"
+              :
+              : "d" (s1), "d" (s2)
+            );
+   }
+  }
+  if (delta>=4) {
+   while (sz>4) {
+     s1 -= 4;
+     s2 -= 4;
+     sz -= 4;
+     __asm__("MVC 0(4,%0),0(%1)"
+              :
+              : "d" (s1), "d" (s2)
+            );
+   }
+  }
+
+  /* do the rest bytewise */
+  while (sz--)
+    *(--(char*)s1) = *(--(char*)s2);
+
+  return s1;
 }
 
 #ifdef memset
 #undef memset
 #endif
-void *memset(void *s, int c, size_t n)
+void *memset(void *s, int c, size_t sz)
 {
-    size_t x = 0;
+  if (!s) return 0;
+  if (!sz) return s;
 
-    for (x = 0; x < n; x++)
-    {
-        *((char *)s + x) = (unsigned char)c;
-    }
-    return (s);
+  /* MVCL uses register pairs so we have to force the right register assignment by gcc */
+  register size_t src_addr __asm__("2") = s;  /* Source Addr */
+  register size_t src_len_pad __asm__("3") = (size_t)(c & 0xff) << 24; /* Fill Char in high byte + 0 length */
+  register size_t dest_addr __asm__("4") = s; /* Dest Addr */
+  register size_t dest_len __asm__("5") = sz & 0x00ffffff; /* Dest Length */
+
+  /* Use MVCL for memory move / set */
+  __asm__("MVCL 4,2"
+          :
+          : "d" (src_addr), "d" (src_len_pad), "d" (dest_addr), "d" (dest_len)
+         );
+
+  return s;
 }
 
 #ifdef strcat
