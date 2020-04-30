@@ -24,6 +24,7 @@ typedef void* mspace;
 /* Function Pointers */
 typedef int (MAINFUNC)(int argc, char *argv[]); /* declare a main() function pointer */
 typedef void (EXITFUNC)(int rc); /* declare a exit() function pointer */
+typedef void (SIGHANDLER)(int);  /* Signal Handler */
 
 /* The CMSCRAB macro maps the GCC stack. */
 typedef struct CMSCRAB CMSCRAB;
@@ -60,6 +61,7 @@ struct GCCCRAB {
    FILE **stdout;
    FILE **stderr;
    int *errno;
+   SIGHANDLER **handlers;
 };
 
 /* To get the addresses of the crabs */

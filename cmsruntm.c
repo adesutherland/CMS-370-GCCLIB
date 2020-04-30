@@ -9,12 +9,13 @@
 /* Released to the public domain.                                                                 */
 /**************************************************************************************************/
 /* TODO Paramter Overruns */
-#include "cmsruntm.h"
+#include <cmsruntm.h>
 #define IN_RESLIB
-#include "stdio.h"
-#include "stdlib.h"
-#include "stddef.h"
-#include "string.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <stddef.h>
+#include <string.h>
+#include <signal.h>
 
 #define CMSINLINE static __inline __attribute__ ((always_inline))
 
@@ -37,6 +38,14 @@ int __cstart(MAINFUNC* mainfunc, PLIST *plist, EPLIST *eplist)
 
   /* Get the GCCCRAB */
   gcccrab = GETGCCCRAB();
+
+  /* Setup default signal handlers */
+  GETGCCCRAB()->handlers[SIGABRT] = __sigdfl;
+  GETGCCCRAB()->handlers[SIGFPE] = __sigdfl;
+  GETGCCCRAB()->handlers[SIGILL] = __sigdfl;
+  GETGCCCRAB()->handlers[SIGINT] = __sigdfl;
+  GETGCCCRAB()->handlers[SIGSEGV] = __sigdfl;
+  GETGCCCRAB()->handlers[SIGTERM] = __sigdfl;
 
   /* Setup stdout and stderr */
   *(gcccrab->stdout) = &actualConsoleOutputFileHandle;

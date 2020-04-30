@@ -13,8 +13,7 @@
 #include <cmsruntm.h>
 #include <stdio.h>
 #include <stdlib.h>
-// Routines in signal.h not yet implemented...
-// #include <signal.h>
+#include <signal.h>
 #include <string.h>
 #include <ctype.h>
 
@@ -27,9 +26,7 @@ __abort(void)
 /* void __abort(void)                                                                             */
 /**************************************************************************************************/
 {
-/* TODO  raise(SIGABRT); or CMS ABEND MACRO */
-  perror("ABNORMAL TERMINATION (NO RESOURCE CLEANUP)");
-  GETGCCCRAB()->exitfunc(EXIT_FAILURE); /* Standard specifies no exit processing */
+  raise(SIGABRT);
 }
 /* end of abort */
 

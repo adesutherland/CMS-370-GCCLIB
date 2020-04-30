@@ -193,12 +193,9 @@
          VTENTRY TANH,VTTANH,&CODE
 ***********************************************************************
 * Entry points in SIGNAL C / SIGNAL H                                 *
-* Note: these are not included here as they fiddle with the call      *
-* stack, so it is easier just to link them directly with the user     *
-* program.                                                            *
 ***********************************************************************
-*        VTENTRY RAISE,VTRAISE,&CODE
-*        VTENTRY SIGNAL,VTSIGNAL,&CODE
+         VTENTRY RAISE,VTRAISE,&CODE
+         VTENTRY SIGNAL,VTSIGNAL,&CODE
 ***********************************************************************
 * Entry points in STRING C / STRING H                                 *
 ***********************************************************************

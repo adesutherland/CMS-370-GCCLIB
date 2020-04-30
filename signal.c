@@ -9,59 +9,45 @@
 /*  signal.c - implementation of stuff in signal.h                   */
 /*                                                                   */
 /*********************************************************************/
-
+#define IN_RESLIB
+#include <cmsruntm.h>
 #include "signal.h"
 #include "stdlib.h"
+#include "stdio.h"
 
-static void (*handlers[])(int) = {
-    __sigdfl,
-    __sigdfl,
-    __sigdfl,
-    __sigdfl,
-    __sigdfl,
-    __sigdfl,
-    __sigdfl };
+#define handlers (GETGCCCRAB()->handlers)
 
-void __sigdfl(int sig);
-void __sigerr(int sig);
-void __sigign(int sig);
-
-#define SIG_DFL __sigdfl
-#define SIG_ERR __sigerr
-#define SIG_IGN __sigign
-
-void (*signal(int sig, void (*func)(int)))(int)
+void (*signal(int sig, void (*func)(int))) (int)
 {
+    SIGHANDLER *old_signal_handler = handlers[sig];
     handlers[sig] = func;
-    return (func);
+    return (old_signal_handler);
 }
-
 
 int raise(int sig)
 {
+    if (sig < SIGABRT) return -1;
+    if (sig > SIGTERM) return -1;
     (handlers[sig])(sig);
     return (0);
 }
 
 void __sigdfl(int sig)
 {
-    handlers[sig] = SIG_DFL;
     if (sig == SIGABRT)
     {
-        exit(EXIT_FAILURE);
+        perror("ABNORMAL TERMINATION (NO RESOURCE CLEANUP)");
+        GETGCCCRAB()->exitfunc(EXIT_FAILURE); /* Standard specifies no exit processing */
     }
     return;
 }
 
 void __sigerr(int sig)
 {
-    (void)sig;
     return;
 }
 
 void __sigign(int sig)
 {
-    (void)sig;
     return;
 }
-

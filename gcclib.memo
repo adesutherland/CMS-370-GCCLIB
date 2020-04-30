@@ -102,8 +102,6 @@ Limitations
 
 GCCLIB does not yet implement the complete C runtime library.  The following
 routines are not yet implemented:
-   raise()           signal.h
-   signal()          signal.h
    snprintf()        stdio.h
 
 The resident version of the GCC library uses the nucleus field DOSTRANS as an

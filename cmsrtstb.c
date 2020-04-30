@@ -10,12 +10,16 @@
 /**************************************************************************************************/
 #include <cmsruntm.h>
 #include <stdio.h>
+#include <signal.h>
 
 /* Stdlib Public Global Variables */
 FILE *stdin;               /* predefined stream for standard input: we map it to console */
 FILE *stdout;              /* predefined stream for standard output: we map it to console */
 FILE *stderr;              /* predefined stream for error output: we map it to console */
 int errno = 0;             /* Std error number */
+
+/* Space for Signal Handlers, need to add the actual default handlers when in RESLIB */
+static void (*handlers[])(int) = {0, 0, 0, 0, 0, 0};
 
 int main(int argc, char *argv[]);
 
@@ -40,6 +44,7 @@ int __cstub(PLIST *plist , EPLIST *eplist)
   gcccrab.stderr = &stderr;
   gcccrab.errno = &errno;
   gcccrab.exitfunc = __exit;
+  gcccrab.handlers = handlers;
 
   return(__cstart(main, plist, eplist));
 }
