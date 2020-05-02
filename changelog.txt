@@ -1,6 +1,7 @@
 GCCLIB Change LOG
 =================
 
+0.7.6 - 2 May 2020
 F0012 - Build Update - Create Source tape.
         Updates move FIXRECFM from BUILD EXEC as we want file format
         to be correct for source tape.
