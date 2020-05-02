@@ -1,9 +1,13 @@
 GCCLIB Change LOG
 =================
 
+F0012 - Build Update - Create Source tape.
+        Updates move FIXRECFM from BUILD EXEC as we want file format
+        to be correct for source tape.
+        Changes to PREPARE EXEC to remove unwanted macro libraries.
 F0011 - Signal and raise to RESLIB
-        Make abort() raise abort signal
-        Default abort signal handler now aborts program
+        Make abort() raise SIGABRT signal
+        Default SIGABRT signal handler now aborts program
 F0010 - Assembler versions of memset, memcpy, memmove
 F0009 - Dynamic Stack - longjmp friendly, i.e. needs
         to clear up orphaned allocated stack bins when LESSSTAK

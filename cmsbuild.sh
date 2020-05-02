@@ -25,9 +25,24 @@ herccontrol -w "HHCRD012I" -f $mark
 herccontrol "/" -w "RDR FILE"
 herccontrol "/read *" -w "^Ready;"
 
-# Build
+# Prepare Source
 herccontrol "/yata -x -d f" -w "^Ready;" -t 120
 herccontrol "/erase yata txt a" -w "^Ready;"
+herccontrol "/fixrecfm" -w "^Ready;"
+
+# Make source tape
+herccontrol "/cp disc" -w "^VM/370 Online"
+herccontrol "/logon operator operator" -w "RECONNECTED AT"
+hetinit -n -d gcclibsrc.aws
+herccontrol "devinit 480 io/gcclibsrc.aws" -w "^HHCPN098I"
+herccontrol "/attach 480 to cmsuser as 181" -w "TAPE 480 ATTACH TO CMSUSER"
+herccontrol "/cp disc" -w "^VM/370 Online"
+herccontrol "/logon cmsuser cmsuser" -w "RECONNECTED AT"
+herccontrol "/begin"
+herccontrol "/tape dump * * f" -w "^Ready;"
+herccontrol "/detach 181" -w "^Ready;"
+
+# Build
 herccontrol "/build" -w "^Ready;" -t 120
 herccontrol "/rename * * e = = e2" -w "^Ready;"
 herccontrol "/cleanup" -w "^Ready;"
@@ -38,15 +53,13 @@ herccontrol "/ipl cms" -w "^CMS VERSION"
 herccontrol "/" -w "^Ready;"
 herccontrol "/mktest" -w "^Ready;"
 
-# Make and load Tape
+# Make binary tape
 herccontrol "/cp disc" -w "^VM/370 Online"
 herccontrol "/logon operator operator" -w "RECONNECTED AT"
 hetinit -n -d gcclibbin.aws
 herccontrol "devinit 480 io/gcclibbin.aws" -w "^HHCPN098I"
 herccontrol "/attach 480 to cmsuser as 181" -w "TAPE 480 ATTACH TO CMSUSER"
 herccontrol "/cp disc" -w "^VM/370 Online"
-
-# Write to tape
 herccontrol "/logon cmsuser cmsuser" -w "RECONNECTED AT"
 herccontrol "/begin"
 herccontrol "/tape dump * * e" -w "^Ready;"

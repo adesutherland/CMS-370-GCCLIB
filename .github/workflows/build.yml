@@ -36,6 +36,7 @@ jobs:
       run: |
         mkdir -p exe
         cp /opt/hercules/vm370/io/gcclibbin.aws exe
+        cp /opt/hercules/vm370/io/gcclibsrc.aws exe
         cp /opt/hercules/vm370/io/LICENSE exe
         cp /opt/hercules/vm370/io/README.md exe
         cp /opt/hercules/vm370/io/cmsinstall.sh exe
