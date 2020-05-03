@@ -8,6 +8,7 @@ set -e
 herccontrol -v
 herccontrol "ipl 141" -w "USER DSC LOGOFF AS AUTOLOG1"
 herccontrol "/cp start c" -w "RDR"
+herccontrol "/cp start d class a" -w "PUN"
 
 # LOGON CMSUSER
 herccontrol "/cp disc" -w "^VM/370 Online"
@@ -30,17 +31,19 @@ herccontrol "/yata -x -d f" -w "^Ready;" -t 120
 herccontrol "/erase yata txt a" -w "^Ready;"
 herccontrol "/fixrecfm" -w "^Ready;"
 
-# Make source tape
+# Make source tape and vmarc
 herccontrol "/cp disc" -w "^VM/370 Online"
 herccontrol "/logon operator operator" -w "RECONNECTED AT"
 hetinit -n -d gcclibsrc.aws
 herccontrol "devinit 480 io/gcclibsrc.aws" -w "^HHCPN098I"
 herccontrol "/attach 480 to cmsuser as 181" -w "TAPE 480 ATTACH TO CMSUSER"
+herccontrol "devinit 00d io/gcclibsrc.vmarc" -w "^HHCPN098I"
 herccontrol "/cp disc" -w "^VM/370 Online"
 herccontrol "/logon cmsuser cmsuser" -w "RECONNECTED AT"
 herccontrol "/begin"
 herccontrol "/tape dump * * f" -w "^Ready;"
 herccontrol "/detach 181" -w "^Ready;"
+herccontrol "/vmarc pack * * f (pun" -w "^Ready;"
 
 # Build
 herccontrol "/build" -w "^Ready;" -t 120
@@ -53,17 +56,19 @@ herccontrol "/ipl cms" -w "^CMS VERSION"
 herccontrol "/" -w "^Ready;"
 herccontrol "/mktest" -w "^Ready;"
 
-# Make binary tape
+# Make binary tape and vmarc
 herccontrol "/cp disc" -w "^VM/370 Online"
 herccontrol "/logon operator operator" -w "RECONNECTED AT"
 hetinit -n -d gcclibbin.aws
 herccontrol "devinit 480 io/gcclibbin.aws" -w "^HHCPN098I"
 herccontrol "/attach 480 to cmsuser as 181" -w "TAPE 480 ATTACH TO CMSUSER"
+herccontrol "devinit 00d io/gcclibbin.vmarc" -w "^HHCPN098I"
 herccontrol "/cp disc" -w "^VM/370 Online"
 herccontrol "/logon cmsuser cmsuser" -w "RECONNECTED AT"
 herccontrol "/begin"
 herccontrol "/tape dump * * e" -w "^Ready;"
 herccontrol "/detach 181" -w "^Ready;"
+herccontrol "/vmarc pack * * e (pun" -w "^Ready;"
 
 # Clean Up
 herccontrol "/erase gcclib * a" -w "^Ready;"
@@ -83,3 +88,7 @@ herccontrol "/logoff" -w "^VM/370 Online"
 # SHUTDOWN
 herccontrol "/logon operator operator" -w "RECONNECTED AT"
 herccontrol "/shutdown" -w "^HHCCP011I"
+
+# Remove extra record from VMARC files
+truncate -s-80 gcclibsrc.vmarc
+truncate -s-80 gcclibbin.vmarc

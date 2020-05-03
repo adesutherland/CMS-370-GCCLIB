@@ -1,6 +1,9 @@
 GCCLIB Change LOG
 =================
 
+0.7.7 - 3 May 2020
+F0013 - Build update - create VMARC source and binary archives
+
 0.7.6 - 2 May 2020
 F0012 - Build Update - Create Source tape.
         Updates move FIXRECFM from BUILD EXEC as we want file format
