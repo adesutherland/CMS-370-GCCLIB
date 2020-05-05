@@ -1,6 +1,10 @@
 GCCLIB Change LOG
 =================
 
+F0014 - Workaround for memory error in stdio; __wrterm added in cmsrtstb.c
+        which seemed to clear/reset stdout for subsequent RESLIB runs
+        Clean MORECORE comments *only* from cmssysc.c
+
 0.7.7 - 3 May 2020
 F0013 - Build update - create VMARC source and binary archives
 

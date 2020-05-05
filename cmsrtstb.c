@@ -11,6 +11,7 @@
 #include <cmsruntm.h>
 #include <stdio.h>
 #include <signal.h>
+#include <cmssys.h> /* For __wrterm() workaround */
 
 /* Stdlib Public Global Variables */
 FILE *stdin;               /* predefined stream for standard input: we map it to console */
@@ -27,6 +28,8 @@ void __exit(int rc);
 
 int __cstub(PLIST *plist , EPLIST *eplist)
 {
+  __wrterm("",0); /* Workaround to reset stdout - TODO root fix, probably in stdio */
+
   GCCCRAB gcccrab;
   CMSCRAB *cmscrab;
 
