@@ -11,11 +11,14 @@
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
+#include <cmssys.h>
 #include <cmsruntm.h>
 
+/* Low Level Assembler __SVC202 fnction */
 int __SVC202(PLIST *plist , EPLIST *eplist, int calltype);
 
-int __CMSCMD(char *command, int calltype)
+/* Worker Function - create PLIST / EPLIST and call __svc202 */
+static int cmd_with_plist(char *command, int calltype)
 {
  int i, j, len, args, maxargs;
  int useEplist = 0;
@@ -84,4 +87,63 @@ int __CMSCMD(char *command, int calltype)
   }
 
   return __SVC202(plist, eplist, calltype);
+}
+
+/* Main Function - has the search logic foir call type 11 (CMS_CONSOLE)*/
+int __CMSCMD(char *command, int calltype)
+{
+
+  char fileid[28];
+  CMSFILEINFO * fst;
+  int rc;
+  int len, i, j;
+  char program[9];
+  char *newcommand;
+
+  if (calltype == CMS_CONSOLE) {
+    len = strlen(command);
+    /* Skip spaces */
+    for (i=0; i<len && command[i]==' '; i++);
+
+    /* Get the program */
+    for (j=0; i<len && command[i]!=' '; i++) {
+      program[j++] = toupper(command[i]);
+      if (j>8) break;
+    }
+    program[j] = 0;
+
+    /* Special cases */
+    if (!strcmp(program,"EXEC")) return cmd_with_plist(command, calltype);
+    if (!strcmp(program,"CP")) return cmd_with_plist(command, calltype);
+
+    /* Does an EXEC exist? */
+    strcpy(fileid, "        EXEC    * ");
+    strncpy(fileid, program, strlen(program));
+    rc = CMSfileState(fileid, &fst);
+    if (!rc) {
+      newcommand = (char*)malloc(strlen(command) + 6);
+      newcommand[0] = 0;
+      strcat(newcommand, "EXEC ");
+      strcat(newcommand, command);
+      rc = cmd_with_plist(newcommand, calltype);
+      free(newcommand);
+      return rc;
+    }
+
+    /* Try the command naked */
+    rc = cmd_with_plist(command, calltype);
+    if (rc != -3) return rc;
+
+    /* Finally see if it is a CP command */
+    newcommand = (char*)malloc(strlen(command) + 4);
+    newcommand[0] = 0;
+    strcat(newcommand, "CP ");
+    strcat(newcommand, command);
+    rc = cmd_with_plist(newcommand, calltype);
+    free(newcommand);
+    return rc;
+  }
+
+  /* If not call type 11 just try the command naked */
+  else return cmd_with_plist(command, calltype);
 }
