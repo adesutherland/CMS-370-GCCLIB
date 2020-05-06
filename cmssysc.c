@@ -114,7 +114,11 @@ int __CMSCMD(char *command, int calltype)
 
     /* Special cases */
     if (!strcmp(program,"EXEC")) return cmd_with_plist(command, calltype);
-    if (!strcmp(program,"CP")) return cmd_with_plist(command, calltype);
+    if (!strcmp(program,"CP")) {
+      rc = cmd_with_plist(command, calltype);
+      if (rc == 1) rc = -1;
+      return rc;
+    }
 
     /* Does an EXEC exist? */
     strcpy(fileid, "        EXEC    * ");
@@ -141,7 +145,8 @@ int __CMSCMD(char *command, int calltype)
     strcat(newcommand, command);
     rc = cmd_with_plist(newcommand, calltype);
     free(newcommand);
-    return rc;
+    if (rc == 1) return -3;
+    else return rc;
   }
 
   /* If not call type 11 just try the command naked */

@@ -1,6 +1,12 @@
 GCCLIB Change LOG
 =================
 
+0.7.9 - 6 May 2020
+F0016 - Calltype 11 emulation - report RC=-3 if CP command not found (i.e. revert
+                                to CMS not found RC)
+                                report RC=-1 if explicit CP command not found
+                                (CP RC 1 turned to -1)
+
 0.7.8 - 5 May 2020
 F0015 - Calltype 11 (CMS_CONSOLE) Emulation
         Build with optimiser (-O3)
