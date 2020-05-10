@@ -1,6 +1,10 @@
 GCCLIB Change LOG
 =================
 
+0.7.10- 10 May 2020
+F0017 - CMSGetFlag(), CMSSetFlag() for HI/TS/TE Immediates
+        Thanks to Bob Bolch
+
 0.7.9 - 6 May 2020
 F0016 - Calltype 11 emulation - report RC=-3 if CP command not found (i.e. revert
                                 to CMS not found RC)

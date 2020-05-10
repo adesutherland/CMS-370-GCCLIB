@@ -58,7 +58,46 @@ CMSSYS   CSECT
          L     R15,0(R1)      get the desired return code
          BR    R14            return to our caller
          EJECT
-         ENTRY @@ARGSTR
+***********************************************************************
+* void CMSSetFlag(int flag, int value) - thanks to Bob Bolch          *
+*                                                                     *
+* Set the value of the CMS Flag (TRACEFLAG or HALTFLAG)               *
+* Args flag and value (0 or 1)                                        *
+***********************************************************************
+         ENTRY CMSSETFL
+CMSSETFL DS    0H
+         STM   R14,R12,12(R13)
+         LR    R12,R15
+         USING CMSSETFL,R12   establish addressability
+         USING NUCON,0
+         L     R5,0(R1)       get Flag
+         L     R3,4(R1)       get Value
+         LTR   R3,R3
+         BZ    SETFOFF        branch to reset flag
+         IPK   ,
+         SPKA  0
+         SSM   *+1
+         IC    R4,EXECFLAG    Get Flag
+         OR    R4,R5          Set Flag On
+         STC   R4,EXECFLAG    Save Flag
+         B     SETFDONE
+SETFOFF  DS    0H
+         IPK   ,
+         SPKA  0
+         SSM   *+1
+         LA    R6,X'FF'       For Anding the Flag
+         SR    R6,R5
+         IC    R4,EXECFLAG    Get Flag
+         NR    R4,R6          Set Flag Off
+         STC   R4,EXECFLAG    Save Flag
+SETFDONE DS    0H
+         SPKA  0(R2)
+         SSM   =X'FF'
+         L     R14,12(R13)    restore our return address
+         LM    R0,R12,20(R13) restore the registers
+         BR    R14            return to our caller
+         LTORG
+         EJECT
 ***********************************************************************
 * @@ARGSTR  Entry Point                                               *
 * Return the program argument string.                                 *
@@ -68,6 +107,7 @@ CMSSYS   CSECT
 * returns:                                                            *
 *    (char *)  A pointer to the argument string.                      *
 ***********************************************************************
+         ENTRY @@ARGSTR
 @@ARGSTR DS    0H
          STM   R14,R12,12(R13)
          LR    R12,R15

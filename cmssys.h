@@ -45,6 +45,30 @@ typedef struct {
    } CMSFILEINFO;
 
 /**************************************************************************************************/
+/* HI, TS, TE - Immediate flags                                                                   */
+/**************************************************************************************************/
+#define TRACEFLAG 0x1
+#define HALTFLAG 0x10
+
+/**************************************************************************************************/
+/* int CMSGetFlag(int flag)                                                                       */
+/*                                                                                                */
+/* Get the value of the CMS Flag (TRACEFLAG or HALTFLAG)                                          */
+/* Returns 1 or 0                                                                                 */
+/* Implemented as a macro for performance - polling                                               */
+/* The flag is stored at 0x5e6                                                                    */
+/**************************************************************************************************/
+#define CMSGetFlag(flag)   (int)(((*(char*)0x5e6) & (flag)) ? 1 : 0)
+
+/**************************************************************************************************/
+/* void CMSSetFlag(int flag, int value) - thanks to Bob Bolch                                     */
+/*                                                                                                */
+/* Set the value of the CMS Flag (TRACEFLAG or HALTFLAG)                                          */
+/* Args flag and value (0 or 1)                                                                   */
+/**************************************************************************************************/
+void CMSSetFlag(int flag, int value);
+
+/**************************************************************************************************/
 /* char * CMSargstring(void)                                                                      */
 /*                                                                                                */
 /* Return the unedited argument string passed to the user program when it was invoked as a CMS    */

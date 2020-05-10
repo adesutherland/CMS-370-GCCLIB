@@ -16,6 +16,7 @@
 * Entry points in CMSSYS ASSEMBLE                                     *
 ***********************************************************************
          VTENTRY @@DEBUG,VTDEBUG,&CODE
+         VTENTRY CMSSETFL,VTCSETFL,&CODE
          VTENTRY @@ARGSTR,VTARGSTR,&CODE
          VTENTRY @@ATTN,VTATTN,&CODE
          VTENTRY @@SVC202,VTSVC202,&CODE
