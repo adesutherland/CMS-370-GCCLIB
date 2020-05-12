@@ -1,8 +1,6 @@
 /**************************************************************************************************/
 /* CMSSTDLB.C: Native CMS implementation of STDLIB.H.                                             */
 /*                                                                                                */
-/* Not implemented:                                                                               */
-/*     int atexit(void (* func)(void))                                                            */
 /*                                                                                                */
 /* Robert O'Hara, Redmond Washington, July 2010.                                                  */
 /*                                                                                                */
@@ -17,7 +15,6 @@
 #include <string.h>
 #include <ctype.h>
 
-// void (*__userExit[__NATEXIT])(void);                                  // don't know what this is for
 static unsigned long myseed = 1;                                 // seed for random number generator
 
 void
@@ -45,21 +42,21 @@ return j;
 }                                                                                      // end of abs
 
 
-// int atexit(void (* func)(void))
-// /**************************************************************************************************/
-// /* int atexit(void (* func)(void))                                                                */
-// /**************************************************************************************************/
-// {
-// int x;
-//
-// for (x = 0; x < __NATEXIT; x++) {
-//    if (__userExit[x] == 0) {
-//       __userExit[x] = func;
-//       return 0;
-//       }
-//    }
-// return -1;
-// }                                                                                   // end of atexit
+int atexit(void (* func)(void))
+/**************************************************************************************************/
+/* int atexit(void (* func)(void))                                                                */
+/**************************************************************************************************/
+{
+  int x;
+  GCCCRAB *theCRAB = GETGCCCRAB();
+  for (x = 0; x < __NATEXIT; x++) {
+    if (theCRAB->userexits[x] == 0) {
+       theCRAB->userexits[x] = func;
+       return 0;
+    }
+  }
+  return -1;
+}                                                                                   // end of atexit
 
 
 double
@@ -157,10 +154,18 @@ void
 /**************************************************************************************************/
 exit(int status)
 {
-  /* TODO call exit functions! */
+  int x;
+  GCCCRAB *theCRAB = GETGCCCRAB();
+
+  /* Call Exit functions */
+  for (x = __NATEXIT - 1; x >= 0; x--) {
+    if (theCRAB->userexits[x]) {
+       (theCRAB->userexits[x])();
+    }
+  }
 
   /* Call exit_stage2 under the aux stack */
-  __CLVSTK(GETGCCCRAB()->auxstack, exit_stage2, status);
+  __CLVSTK(theCRAB->auxstack, exit_stage2, status);
 } // end of exit
 
 char * getenv(const char *name)

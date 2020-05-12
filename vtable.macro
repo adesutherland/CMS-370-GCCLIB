@@ -103,7 +103,7 @@
 ***********************************************************************
          VTENTRY ABORT,VTABORT,&CODE
          VTENTRY ABS,VTABS,&CODE
-*        VTENTRY ATEXIT,VTATEXIT,&CODE
+         VTENTRY ATEXIT,VTATEXIT,&CODE
          VTENTRY ATOF,VTATOF,&CODE
          VTENTRY ATOI,VTATOI,&CODE
          VTENTRY ATOL,VTATOL,&CODE

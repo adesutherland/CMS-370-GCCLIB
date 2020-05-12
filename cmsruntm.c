@@ -176,6 +176,13 @@ int __cstart(MAINFUNC* mainfunc, PLIST *plist, EPLIST *eplist)
   /* adds a frame from there (hope that makes sense!)                         */
   rc = __CLVSTK(gcccrab->dynamicstack, mainfunc, argc, argv);
 
+  /* Call Exit functions */
+  for (i = __NATEXIT - 1; i >= 0; i--) {
+    if (gcccrab->userexits[i]) {
+       (gcccrab->userexits[i])();
+    }
+  }
+
   /* Deallocate Stack */
   lessstak(gcccrab->dynamicstack);
   free(gcccrab->dynamicstack);

@@ -7,6 +7,16 @@ void signal_handler(int signal)
     printf("Received signal %d\n", signal);
 }
 
+void fnExit1 (void)
+{
+  printf("Exit function 1\n");
+}
+
+void fnExit2 (void)
+{
+  printf("Exit function 2\n");
+}
+
 int main(int argc, char * argv[])
 {
   printf("GCCLIB Sanity Test\n");
@@ -36,5 +46,7 @@ int main(int argc, char * argv[])
   signal(SIGTERM, signal_handler);
   raise(SIGTERM);
 
-
+  printf("Test Exit Functions (order 2,1)\n");
+  atexit (fnExit1);
+  atexit (fnExit2);
 }

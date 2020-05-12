@@ -33,7 +33,8 @@ STDIO    DS    F              FILE **stdin;
 STDOUT   DS    F              FILE **stdout;
 STDERR   DS    F              FILE **stderr;
 ERRNO    DS    F              int *errno;
-HANFLERS DS    F              SIGHANDLER *handlers[];
+HANFLERS DS    F              SIGHANDLER **handlers;
+USREXITS DS    F              USEREXIT **userexits;
          SPACE
 GCCGLEN  EQU   *-GCCCRAB      length of the CRAB / Global Area
          MEND

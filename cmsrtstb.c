@@ -11,6 +11,7 @@
 #include <cmsruntm.h>
 #include <stdio.h>
 #include <signal.h>
+#include <stdlib.h>
 #include <cmssys.h> /* For __wrterm() workaround */
 
 /* Stdlib Public Global Variables */
@@ -19,8 +20,11 @@ FILE *stdout;              /* predefined stream for standard output: we map it t
 FILE *stderr;              /* predefined stream for error output: we map it to console */
 int errno = 0;             /* Std error number */
 
-/* Set up default handlers */
+/* Default handlers */
 static void (*handlers[])(int) = {SIG_DFL, SIG_DFL, SIG_DFL, SIG_DFL, SIG_DFL, SIG_DFL};
+
+/* User Exits */
+static void (*userexits[__NATEXIT])(void);
 
 int main(int argc, char *argv[]);
 
@@ -48,6 +52,7 @@ int __cstub(PLIST *plist , EPLIST *eplist)
   gcccrab.errno = &errno;
   gcccrab.exitfunc = __exit;
   gcccrab.handlers = handlers;
+  gcccrab.userexits = userexits;
 
   return(__cstart(main, plist, eplist));
 }
