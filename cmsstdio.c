@@ -1898,10 +1898,9 @@ else if (strchr("eEgGfF", specifier) != NULL && specifier != 0) {
    extraCh += slen;
    }
 else if (specifier == 's') {
-   if (precision < 0) precision = 1;
    svalue = va_arg(*arg, char *);
    fillCh = ' ';
-   if (precision > 1) {
+   if (precision > -1) {
       char *p;
 
       p = memchr(svalue, '\0', precision);

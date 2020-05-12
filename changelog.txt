@@ -1,6 +1,9 @@
 GCCLIB Change LOG
 =================
 
+F0018 - printf() fix for string precision of 1 causing the whole string to be
+        printed rather than just one character
+
 0.7.10- 10 May 2020
 F0017 - CMSGetFlag(), CMSSetFlag() for HI/TS/TE Immediates
         Thanks to Bob Bolch
