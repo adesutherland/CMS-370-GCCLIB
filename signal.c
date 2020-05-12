@@ -19,6 +19,8 @@
 
 void (*signal(int sig, void (*func)(int))) (int)
 {
+    if (sig < SIGABRT) return SIG_ERR;
+    if (sig > SIGTERM) return SIG_ERR;
     SIGHANDLER *old_signal_handler = handlers[sig];
     handlers[sig] = func;
     return (old_signal_handler);
@@ -28,26 +30,14 @@ int raise(int sig)
 {
     if (sig < SIGABRT) return -1;
     if (sig > SIGTERM) return -1;
-    (handlers[sig])(sig);
-    return (0);
-}
-
-void __sigdfl(int sig)
-{
-    if (sig == SIGABRT)
+    if (handlers[sig] == SIG_DFL)
     {
-        perror("ABNORMAL TERMINATION (NO RESOURCE CLEANUP)");
-        GETGCCCRAB()->exitfunc(EXIT_FAILURE); /* Standard specifies no exit processing */
+      if (sig == SIGABRT)
+      {
+          perror("ABNORMAL TERMINATION (NO RESOURCE CLEANUP)");
+          GETGCCCRAB()->exitfunc(EXIT_FAILURE); /* Standard specifies no exit processing */
+      }
     }
-    return;
-}
-
-void __sigerr(int sig)
-{
-    return;
-}
-
-void __sigign(int sig)
-{
-    return;
+    else (handlers[sig])(sig);
+    return (0);
 }

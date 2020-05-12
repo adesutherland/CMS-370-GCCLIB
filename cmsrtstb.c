@@ -19,8 +19,8 @@ FILE *stdout;              /* predefined stream for standard output: we map it t
 FILE *stderr;              /* predefined stream for error output: we map it to console */
 int errno = 0;             /* Std error number */
 
-/* Space for Signal Handlers, need to add the actual default handlers when in RESLIB */
-static void (*handlers[])(int) = {0, 0, 0, 0, 0, 0};
+/* Set up default handlers */
+static void (*handlers[])(int) = {SIG_DFL, SIG_DFL, SIG_DFL, SIG_DFL, SIG_DFL, SIG_DFL};
 
 int main(int argc, char *argv[]);
 

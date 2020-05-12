@@ -1,6 +1,7 @@
 GCCLIB Change LOG
 =================
-
+F0019 - SIG_DFL, SIG_ERR, SIG_IGN made pointers to non-real functions
+        as per standards and to remove RESLIB linkage issues
 F0018 - printf() fix for string precision of 1 causing the whole string to be
         printed rather than just one character
 

@@ -1,5 +1,11 @@
 #include <stdio.h>
 #include <cmssys.h>
+#include <signal.h>
+
+void signal_handler(int signal)
+{
+    printf("Received signal %d\n", signal);
+}
 
 int main(int argc, char * argv[])
 {
@@ -25,5 +31,10 @@ int main(int argc, char * argv[])
   CMSSetFlag(HALTFLAG, 0);
   printf("Trace %d\n", CMSGetFlag(TRACEFLAG) );
   printf("Halt %d\n", CMSGetFlag(HALTFLAG) );
+
+  printf("Signal Test\n");
+  signal(SIGTERM, signal_handler);
+  raise(SIGTERM);
+
 
 }

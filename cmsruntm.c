@@ -39,14 +39,6 @@ int __cstart(MAINFUNC* mainfunc, PLIST *plist, EPLIST *eplist)
   /* Get the GCCCRAB */
   gcccrab = GETGCCCRAB();
 
-  /* Setup default signal handlers */
-  GETGCCCRAB()->handlers[SIGABRT] = __sigdfl;
-  GETGCCCRAB()->handlers[SIGFPE] = __sigdfl;
-  GETGCCCRAB()->handlers[SIGILL] = __sigdfl;
-  GETGCCCRAB()->handlers[SIGINT] = __sigdfl;
-  GETGCCCRAB()->handlers[SIGSEGV] = __sigdfl;
-  GETGCCCRAB()->handlers[SIGTERM] = __sigdfl;
-
   /* Setup stdout and stderr */
   *(gcccrab->stdout) = &actualConsoleOutputFileHandle;
   *(gcccrab->stderr) = &actualConsoleOutputFileHandle;

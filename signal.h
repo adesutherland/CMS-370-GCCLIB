@@ -19,9 +19,9 @@ void __sigdfl(int sig);
 void __sigerr(int sig);
 void __sigign(int sig);
 
-#define SIG_DFL __sigdfl
-#define SIG_ERR __sigerr
-#define SIG_IGN __sigign
+#define SIG_ERR (void (*)())-1
+#define SIG_DFL (void (*)())0
+#define SIG_IGN (void (*)())1
 
 #define SIGABRT 1
 #define SIGFPE 2
