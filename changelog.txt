@@ -1,5 +1,6 @@
 GCCLIB Change LOG
 =================
+F0021 - Fix for Issue #1 (ctype.h has c++ style comments)
 F0020 - Implement atexit()
 F0019 - SIG_DFL, SIG_ERR, SIG_IGN made pointers to non-real functions
         as per standards and to remove RESLIB linkage issues
