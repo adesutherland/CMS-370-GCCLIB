@@ -709,7 +709,12 @@ switch (file->device) {
             writeRecord = 1;
             if (file->fscb.format[0] == 'F')                  // pad fixed length record with blanks
                for (; file->next < file->last; file->next++) file->next[0] = ' ';
+            else if (file->next == file->buffer) {
+               /* CMS does not support zero length valiable length records, so pad */
+               *(file->next) = ' ';
+               file->next++;
             }
+         }
          else {                                                    // not handling newline character
             file->next[0] = c;
             file->next = file->next + 1;
