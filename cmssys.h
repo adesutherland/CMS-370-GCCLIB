@@ -77,7 +77,8 @@ void CMSSetFlag(int flag, int value);
 /* Returns:                                                                                       */
 /*    a pointer to the argument string.                                                           */
 /**************************************************************************************************/
-#define CMSargstring(void) (__argstr(void))
+char *__argstr(void);
+#define CMSargstring() (__argstr())
 
 /**************************************************************************************************/
 /* int CMScardPunch(char * line)                                                                  */
@@ -95,6 +96,7 @@ void CMSSetFlag(int flag, int value);
 /*    1.  Use the CP CLOSE command to close the virtual card punch.  You can issue this via the   */
 /*        CMScommand function.                                                                    */
 /**************************************************************************************************/
+int __punchc(char * line);
 #define CMScardPunch(s1) (__punchc((s1)))
 
 /**************************************************************************************************/
@@ -114,6 +116,7 @@ void CMSSetFlag(int flag, int value);
 /*     5     Length not equal to requested length.                                                */
 /*   100     Punch not attached.                                                                  */
 /**************************************************************************************************/
+int __rdcard(char * line, int * len);
 #define CMScardRead(s1, i2) (__rdcard((s1),(i2)))
 
 /**************************************************************************************************/
@@ -124,6 +127,7 @@ void CMSSetFlag(int flag, int value);
 /* Returns:                                                                                       */
 /*    (int)  The number of seconds since 1/1/1970.                                                */
 /**************************************************************************************************/
+__getclk(void * clock);
 #define CMSclock(s1) (__getclk((s1)))
 
 /**************************************************************************************************/
@@ -143,6 +147,7 @@ void CMSSetFlag(int flag, int value);
 /*    1.  Both a standard and extended parameter list (plist) are passed to the command.          */
 /*    2.  Be aware that the command invoked can potentially overlay your program in memory.       */
 /**************************************************************************************************/
+int __cmscmd(char * cmdLine, int cmdFlag);
 #define CMScommand(s1, i1) (__cmscmd((s1),(i1)))
 #define CMS_COMMAND  1
 #define CMS_CONSOLE 11
@@ -158,6 +163,7 @@ void CMSSetFlag(int flag, int value);
 /* Returns:                                                                                       */
 /*    the length of the string placed in the buffer.                                              */
 /**************************************************************************************************/
+int __rdterm(char * line);
 #define CMSconsoleRead(s1) (__rdterm((s1)))
 
 /**************************************************************************************************/
@@ -168,7 +174,8 @@ void CMSSetFlag(int flag, int value);
 /* Returns:                                                                                       */
 /*    Return code from the WAITT function, always 0.                                              */
 /**************************************************************************************************/
-#define CMSconsoleWait(void) (__waitt(void))
+int __waitt(void);
+#define CMSconsoleWait() (__waitt())
 
 /**************************************************************************************************/
 /* int CMSconsoleWrite(char * line, int edit)                                                     */
@@ -191,6 +198,7 @@ void CMSSetFlag(int flag, int value);
 /**************************************************************************************************/
 #define CMS_EDIT 1
 #define CMS_NOEDIT 0
+int __wrterm(char * line, int edit);
 #define CMSconsoleWrite(s1, i2) (__wrterm((s1),(i2)))
 
 /**************************************************************************************************/
@@ -203,10 +211,11 @@ void CMSSetFlag(int flag, int value);
 /* Returns:                                                                                       */
 /*    (int)    as specified.                                                                      */
 /**************************************************************************************************/
+int __debug(int retcode);
 #define CMSdebug(i1) (__debug((i1)))
 
 /**************************************************************************************************/
-/* int CMSfileClose(* CMSFILE file)                                                               */
+/* int CMSfileClose(CMSFILE* file)                                                               */
 /*                                                                                                */
 /* Close an open file and save its current status to disk.                                        */
 /*    file       is a pointer to the file handle (FSCB) of the file to be closed.                 */
@@ -215,6 +224,7 @@ void CMSSetFlag(int flag, int value);
 /*     0     Success.                                                                             */
 /*     6     The file is not open.                                                                */
 /**************************************************************************************************/
+int __fsclos(CMSFILE* file);
 #define CMSfileClose(s1) (__fsclos((s1)))
 
 /**************************************************************************************************/
@@ -232,11 +242,12 @@ void CMSSetFlag(int flag, int value);
 /*    28     The file was not found.                                                              */
 /*    36     Disk not accessed.                                                                   */
 /**************************************************************************************************/
+int __fseras(char * fileid);
 #define CMSfileErase(s1) (__fseras((s1)))
 
 /**************************************************************************************************/
 /* int CMSfileOpen(char * fileid, char * buffer, int bufferSize, char format, int numRecords,     */
-/*                 int recordNum, * CMSFILE file)                                                 */
+/*                 int recordNum, CMSFILE * file)                                                 */
 /*                                                                                                */
 /* Open a file for reading or writing.                                                            */
 /*    fileid     is a pointer to the CMS fileid, an 18 character field.  The first 8 characters   */
@@ -270,10 +281,12 @@ void CMSSetFlag(int flag, int value);
 /*    3. To overwrite an existing file with new records, call CMSfileErase to first erase the     */
 /*       file, then open the file and begin writing from record 1.                                */
 /**************************************************************************************************/
+int __fsopen(char * fileid, char * buffer, int bufferSize, char format,
+                int numRecords, int recordNum, CMSFILE * file);
 #define CMSfileOpen(s1, s2, i3, c4, i5, i6, s7) (__fsopen((s1),(s2),(i3),(c4),(i5),(i6),(s7)))
 
 /**************************************************************************************************/
-/* int CMSfilePoint(* CMSFILE file, int recordNum, int readWrite)                                 */
+/* int CMSfilePoint(CMSFILE * file, int recordNum, int readWrite)                                 */
 /*                                                                                                */
 /* Set the read or write pointer to a specific record in the file.                                */
 /*    file       is a pointer to a CMS file handle (FSCB).  It is updated by CMS when the file is */
@@ -291,12 +304,13 @@ void CMSSetFlag(int flag, int value);
 /*    1. Pointing to an record number greater than the number of records in the file yields       */
 /*       unpredictable results.                                                                   */
 /**************************************************************************************************/
+int __fspoin(CMSFILE * file, int recordNum, int readWrite);
 #define CMSfilePoint(s1, i2, i3) (__fspoin((s1),(i2),(i3)))
 #define CMS_POINTREAD 0
 #define CMS_POINTWRITE 1
 
 /**************************************************************************************************/
-/* int CMSfileRead(* CMSFILE file, int recordNum, * int bytesRead)                                */
+/* int CMSfileRead(CMSFILE * file, int recordNum, int *bytesRead)                                */
 /*                                                                                                */
 /* Read one or more records from an open file.                                                    */
 /*    file       is the file handle (FSCB) of the open file.                                      */
@@ -326,6 +340,7 @@ void CMSSetFlag(int flag, int value);
 /*    1. The bytes read are placed in the buffer specified in the previous call to CMSfileOpen.   */
 /*       They are NOT terminated with a null character.                                           */
 /**************************************************************************************************/
+int __fsread(CMSFILE * file, int recordNum, int *bytesRead);
 #define CMSfileRead(s1, i2, s3) (__fsread((s1),(i2),(s3)))
 
 /**************************************************************************************************/
@@ -351,10 +366,11 @@ void CMSSetFlag(int flag, int value);
 /*       Thus this function cannot be called from a C program executing in the transient area.    */
 /*    2. The RENAME command may issue error messages for certain errors.                          */
 /**************************************************************************************************/
+int __rename(char * oldFileid, char * newFileid);
 #define CMSfileRename(s1, s2) (__rename((s1),(s2)))
 
 /**************************************************************************************************/
-/* int CMSfileState(char * fileid, ** CMSFILEINFO fileInfo)                                       */
+/* int CMSfileState(char * fileid, CMSFILEINFO ** fileInfo)                                       */
 /*                                                                                                */
 /* Determine whether or not a file exists.                                                        */
 /*    fileid     is a pointer to the CMS fileid, an 18 character field.  It may be specified in   */
@@ -373,10 +389,11 @@ void CMSSetFlag(int flag, int value);
 /*    28     The file was not found.                                                              */
 /*    36     Disk not accessed.                                                                   */
 /**************************************************************************************************/
+int __fsstat(char * fileid, CMSFILEINFO **fileInfo);
 #define CMSfileState(s1, s2) (__fsstat((s1),(s2)))
 
 /**************************************************************************************************/
-/* int CMSfileWrite(* CMSFILE file, int recordNum, int recordLen)                                 */
+/* int CMSfileWrite(CMSFILE * file, int recordNum, int recordLen)                                 */
 /*                                                                                                */
 /* Writes one or more records to an open file.                                                    */
 /*    file       is the file handle (FSCB) of the open file.                                      */
@@ -422,6 +439,7 @@ void CMSSetFlag(int flag, int value);
 /*    2. To overwrite an existing file with new records, call CMSfileErase to first erase the     */
 /*       file, then open the file and begin writing from record 1.                                */
 /**************************************************************************************************/
+int __fswrit(CMSFILE * file, int recordNum, int recordLen);
 #define CMSfileWrite(s1, i2, i3) (__fswrit((s1),(i2),(i3)))
 
 /**************************************************************************************************/
@@ -438,6 +456,7 @@ void CMSSetFlag(int flag, int value);
 /*    1.  If you allocate NUCLEUS memory, your program must be generated with the SYSTEM option.  */
 /*        Note that if such a program abnormally terminates, CMS does not release this memory.    */
 /**************************************************************************************************/
+void * __dmsfre(int bytes, int type);
 #define CMSmemoryAlloc(i1, i2) (__dmsfre((i1),(i2)))
 #define CMS_NUCLEUS 0
 #define CMS_USER 1
@@ -460,6 +479,7 @@ void CMSSetFlag(int flag, int value);
 /*    1.  If you allocate NUCLEUS memory, your program must be generated with the SYSTEM option.  */
 /*        Note that if such a program abnormally terminates, CMS does not release this memory.    */
 /**************************************************************************************************/
+int __dmsfrt(void * memory);
 #define CMSmemoryFree(s1) (__dmsfrt((s1)))
 
 /**************************************************************************************************/
@@ -485,6 +505,7 @@ void CMSSetFlag(int flag, int value);
 /*    1.  Use the CP CLOSE command to close the virtual printer.  You can issue this via the      */
 /*        CMScommand function.                                                                    */
 /**************************************************************************************************/
+int __printl(char * line);
 #define CMSprintLine(s1) (__printl((s1)))
 
 /**************************************************************************************************/
@@ -500,6 +521,7 @@ void CMSSetFlag(int flag, int value);
 /* Returns:                                                                                       */
 /*    0                                                                                           */
 /**************************************************************************************************/
+int __attn(char * line, int order);
 #define CMSstackLine(s1, i2) (__attn((s1),(i2)))
 #define CMS_STACKLIFO 0
 #define CMS_STACKFIFO 1
@@ -512,6 +534,7 @@ void CMSSetFlag(int flag, int value);
 /* Returns:                                                                                       */
 /*    the number of lines currently on the console stack.                                         */
 /**************************************************************************************************/
-#define CMSstackQuery(void) (__stackn(void))
+int __stackn(void);
+#define CMSstackQuery() (__stackn())
 
 #endif

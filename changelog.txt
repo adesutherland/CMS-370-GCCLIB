@@ -1,5 +1,7 @@
 GCCLIB Change LOG
 =================
+
+F0023 - Fix for Issue #12 (CMS System Function should be functions not defines)
 F0022 - Fix for Issue #3 (Writing a empty line causes an error)
 F0021 - Fix for Issue #1 (ctype.h has c++ style comments)
 F0020 - Implement atexit()

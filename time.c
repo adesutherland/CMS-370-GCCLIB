@@ -24,9 +24,6 @@
 #include "mvssupa.h"
 #endif
 
-#if defined(__CMS__)
-unsigned int __getclk(void *buf);
-#endif
 #ifdef __OS2__
 #include <os2.h>
 #endif
@@ -567,4 +564,3 @@ static void strfmt(char *str, const char *fmt, ...)
       *str = '\0';
       va_end(vp);
 }
-
