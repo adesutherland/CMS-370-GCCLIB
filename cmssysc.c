@@ -89,7 +89,7 @@ static int cmd_with_plist(char *command, int calltype)
   return __SVC202(plist, eplist, calltype);
 }
 
-/* Main Function - has the search logic foir call type 11 (CMS_CONSOLE)*/
+/* Main Function - has the search logic for call type 11 (CMS_CONSOLE) */
 int __CMSCMD(char *command, int calltype)
 {
 

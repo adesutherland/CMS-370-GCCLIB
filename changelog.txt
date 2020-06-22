@@ -1,6 +1,20 @@
 GCCLIB Change LOG
 =================
 
+0.7.11- 22 June 2020
+F0024 - IO Refactoring / Drivers
+      - Record cache for random record access
+      - Read/Write files
+      - Close files on exit
+      - fix __wrterm() needed on startup
+      - fix fopen() with missing file mode
+      - removed notyet()
+      - setvbuf()/setbuf() Implemented
+      - tmpfile() implemented
+      - putc()/putchar()/getc()/getchar() turned into macros
+      - freopen() Implemented
+      - fread()/fputs()/fgets() no longer just use putc()/getc() - performance
+      - IO Test Suite
 F0023 - Fix for Issue #12 (CMS System Function should be functions not defines)
 F0022 - Fix for Issue #3 (Writing a empty line causes an error)
 F0021 - Fix for Issue #1 (ctype.h has c++ style comments)

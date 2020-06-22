@@ -1,4 +1,7 @@
 REM Copy and build source files to VM370
+docker kill vm370
+docker run --rm -d -p 3270:3270 -p 8038:8038 -p 3505:3505 --name vm370 adriansutherland/vm370:latest
+
 yata -c -f tmp.txt
 echo USERID  CMSUSER > yata.txt
 echo :READ  YATA     TXT      >> yata.txt

@@ -29,58 +29,37 @@ int __cstart(MAINFUNC* mainfunc, PLIST *plist, EPLIST *eplist)
   int a, b, i, len;
   int rc;
   char ch;
+  char messagebuffer[100];
   GCCLIBPLIST *gcclibplist = 0;
   EPLIST *magic_eplist = 0;
-  FILE actualConsoleOutputFileHandle;
-  char consoleOutputBuffer[132];
-  FILE actualConsoleInputFileHandle;
-  char consoleInputBuffer[132];
 
   /* Get the GCCCRAB */
   gcccrab = GETGCCCRAB();
 
+  /* Initialize Memory System */
+  struct mallinfo memoryinfo;
+  creat_msp();
+  memoryinfo = mallinfo();
+  gcccrab->startmemoryusage = memoryinfo.uordblks;
+
   /* Setup stdout and stderr */
-  *(gcccrab->stdout) = &actualConsoleOutputFileHandle;
-  *(gcccrab->stderr) = &actualConsoleOutputFileHandle;
-  actualConsoleOutputFileHandle.access = 3; /* set access to ACCESS_WRITE_TXT */
-  actualConsoleOutputFileHandle.device = 0; /* Console */
-  actualConsoleOutputFileHandle.ungetChar = -2; /* 'unget' not yet valid */
-  actualConsoleOutputFileHandle.eof = 0;
-  actualConsoleOutputFileHandle.next = consoleOutputBuffer;
-  actualConsoleOutputFileHandle.error = 0;
-  actualConsoleOutputFileHandle.last = consoleOutputBuffer + 130;
-  actualConsoleOutputFileHandle.readPos = 0;
-  actualConsoleOutputFileHandle.writePos = 0;
-  actualConsoleOutputFileHandle.name[0] = 0;
-  actualConsoleOutputFileHandle.buffer = consoleOutputBuffer;
+  *(gcccrab->stdout) = fopen("CONSOLE","w");
+  *(gcccrab->stderr) = fopen("CONSOLE","w");
+  *(gcccrab->stdin)  = fopen("CONSOLE","r");
 
-  /* Setup stdin */
-  *(gcccrab->stdin) = &actualConsoleInputFileHandle;
-  actualConsoleInputFileHandle.access = 1;
-  actualConsoleInputFileHandle.device = 0; /* Console */
-  actualConsoleInputFileHandle.eof = 0;
-  actualConsoleInputFileHandle.ungetChar = -2; /* 'unget' not yet valid */
-  actualConsoleInputFileHandle.error = 0;
-  actualConsoleInputFileHandle.next = consoleInputBuffer;
-  actualConsoleInputFileHandle.last = consoleInputBuffer;
-  actualConsoleInputFileHandle.readPos = 0;
-  actualConsoleInputFileHandle.writePos = 0;
-  actualConsoleInputFileHandle.name[0] = 0;
-  actualConsoleInputFileHandle.buffer = consoleInputBuffer;
-
+  /* Process parameters */
   /* The high order byte contains the
      traditional CMS R1 flag byte.  A x'0B' or x'01' indicates the
-     presence of an extended parameter accessable via R0 */
+     presence of an extended parameter accessable via R0 (the eplist parameter) */
   calltype = ((int)(plist) &  0xff000000) >> 24;
   plist = (PLIST*)((int)(plist) & 0xffffff);
 
   /* MAGIC MARKER - NON-STANDARD - Designed to allow EPLIST to be found
-     if R0 is corrupted - So see if the magic eplist marker exists */
+     if R0 (the eplist parameter) is corrupted - So see if the magic eplist marker exists */
   gcclibplist = (GCCLIBPLIST*)((int)plist - (int)&(gcclibplist->plist));
   if (!strcmp(EPLISTMARKER, gcclibplist->marker)) {
     magic_eplist = &(gcclibplist->eplist);
     eplist = magic_eplist;
-    /* Delete the marker in case the PLIST space is reused (it sometimes is) */
   }
 
   /* Process Arguments - note 6 word eplist (for calltype 5) not implemented */
@@ -149,12 +128,6 @@ int __cstart(MAINFUNC* mainfunc, PLIST *plist, EPLIST *eplist)
     }
   }
 
-  /* Initialize Memory System */
-  struct mallinfo memoryinfo;
-  creat_msp();
-  memoryinfo = mallinfo();
-  gcccrab->startmemoryusage = memoryinfo.uordblks;
-
   /* Setup Stacks */
   CMSCRAB *currentstackframe = GETCMSCRAB();
 
@@ -183,6 +156,9 @@ int __cstart(MAINFUNC* mainfunc, PLIST *plist, EPLIST *eplist)
     }
   }
 
+  /* Close Files */
+  _clfiles();
+
   /* Deallocate Stack */
   lessstak(gcccrab->dynamicstack);
   free(gcccrab->dynamicstack);
@@ -191,7 +167,10 @@ int __cstart(MAINFUNC* mainfunc, PLIST *plist, EPLIST *eplist)
   memoryinfo = mallinfo();
   dest_msp();
   size_t leaked = memoryinfo.uordblks - gcccrab->startmemoryusage;
-  if (leaked) fprintf( *(GETGCCCRAB()->stderr), "WARNING: MEMORY FREED (%d BYTES LEAKED)\n", leaked);
+  if (leaked) {
+    sprintf( messagebuffer, "WARNING: MEMORY FREED (%d BYTES LEAKED)", leaked);
+    CMSconsoleWrite(messagebuffer, CMS_EDIT);
+  }
 
   return rc;
 }

@@ -135,6 +135,8 @@ return x;
 /**************************************************************************************************/
 static void exit_stage2(int status)
 {
+  char messagebuffer[100];
+
   /* Deallocate Stack */
   lessstak(GETGCCCRAB()->dynamicstack);
   free(GETGCCCRAB()->dynamicstack);
@@ -144,7 +146,10 @@ static void exit_stage2(int status)
   memoryinfo = mallinfo();
   dest_msp();
   size_t leaked = memoryinfo.uordblks - GETGCCCRAB()->startmemoryusage;
-  if (leaked) fprintf(stderr, "WARNING: MEMORY FREED (%d BYTES LEAKED)\n", leaked);
+  if (leaked) {
+    sprintf( messagebuffer, "WARNING: MEMORY FREED (%d BYTES LEAKED)", leaked);
+    CMSconsoleWrite(messagebuffer, CMS_EDIT);
+  }
   GETGCCCRAB()->exitfunc(status);
 }
 
@@ -163,6 +168,8 @@ exit(int status)
        (theCRAB->userexits[x])();
     }
   }
+  /* Close files */
+  _clfiles();
 
   /* Call exit_stage2 under the aux stack */
   __CLVSTK(theCRAB->auxstack, exit_stage2, status);

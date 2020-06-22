@@ -877,7 +877,7 @@ PRINTL2  DS    0H
          BR    R14            return to our caller
          LTORG
          EJECT
-         ENTRY @@RDCARD
+*
 ***********************************************************************
 * @@RDCARD  Entry Point                                               *
 * Read a line from the virtual card reader.                           *
@@ -890,8 +890,9 @@ PRINTL2  DS    0H
 *              the buffer must be at least 133 bytes in size.  The    *
 *              incoming line is terminated with a null character,     *
 *              forming a C string.                                    *
-*    len       is a pointer to a variable that will receive the       *
-*              number of characters read.                             *
+*    len       is a pointer to a variable that on:                    *
+*                 input  - holds the line lenght expected             *
+*                 output - the line the number of characters read     *
 * returns:                                                            *
 *     0        Success.                                               *
 *     1        End-of-file.                                           *
@@ -900,13 +901,14 @@ PRINTL2  DS    0H
 *     5        Length not equal to requested length.                  *
 *   100        Punch not attached.                                    *
 ***********************************************************************
+         ENTRY @@RDCARD
 @@RDCARD DS    0H
          STM   R14,R12,12(R13)
          LR    R12,R15
          USING @@RDCARD,R12   establish addressability
          L     R2,0(R1)       get buffer address
          L     R4,4(R1)       get address of length variable
-         LA    R3,132         length of line to read
+         L     R3,0(R4)       length of line to read
 * Use RDCARD to read the line.
          RDCARD (2),(3)
          ST    R0,0(R4)       return number of bytes read in 'len'
@@ -917,6 +919,7 @@ PRINTL2  DS    0H
          BR    R14            return to our caller
          LTORG
          EJECT
+*
          ENTRY @@RDTERM
 ***********************************************************************
 * @@RDTERM  Entry Point                                               *

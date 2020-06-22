@@ -1,14 +1,13 @@
 /**************************************************************************************************/
-/* Native CMS implementation of STDIO.H.                                                          */
+/* STDIO.H                                                                                        */
 /*                                                                                                */
-/* Not implemented:                                                                               */
-/*     int snprintf(char * buffer, int buff_size, const char * format, ...)                       */
+/* Part of GCCLIB - VM/370 CMS Native Std C Library; A Historic Computing Toy                     */
 /*                                                                                                */
-/* Robert O'Hara, Redmond Washington, July 2010.                                                  */
+/* Contributors: See contrib memo                                                                 */
 /*                                                                                                */
-/* Based code written by Paul Edwards.                                                            */
 /* Released to the public domain.                                                                 */
 /**************************************************************************************************/
+
 #ifndef STDIO_INCLUDED
 #define STDIO_INCLUDED
 
@@ -18,31 +17,30 @@
 
 #ifndef __FPOS_T_DEFINED
 #define __FPOS_T_DEFINED
-typedef unsigned long fpos_t;
+/* File Pos */
+struct FPOS_T {
+  struct FILE *file;
+  int recpos;
+  int recnum;
+};
+typedef struct FPOS_T fpos_t;
 #endif
 
 #define EOF -1
 
+/* setbuf / setvbuf defines */
+#define _IOFBF 1
+#define _IOLBF 2
+#define _IONBF 3
+#define BUFSIZ (16*1024)
+
+#define L_tmpnam 21 /* tmpname() */
+
 /**************************************************************************************************/
-/* FILE describes an open stream.                                                                 */
-/* Note:  if you change this, you must make the corresponding change in CMSENTRY ASSEMBLE.        */
+/* FILE - open stream file block                                                                  */
+/* Specified in cmsruntm.h                                                                        */
 /**************************************************************************************************/
-typedef struct {
-   int access;                                              /* type of access (read, write, etc.) */
-   int device;                                            /* type of device (console, disk, etc.) */
-   int ungetChar;   /* the character pushed back to the stream, -1 if empty, -2 if ungetc invalid */
-   int eof;                                              /* 1 if we have reached EOF, 0 otherwise */
-   int error;                             /* error code from last I/O operation against this file */
-   CMSFILE fscb;                      /* the CMS File System Control Block (if it is a disk file) */
-   char * next;                       /* next unread byte on input, end of current line on output */
-   char * last;                /* first byte after last byte on input, after buffer end on output */
-   int readPos;           /* byte offset from start of file from where the next character is read */
-   int writePos;         /* byte offset from start of file to where the next character is written */
-                   /* note that we do not use this field:  support for this is a future objective */
-   char name[24];                      /* fileid as a string with blanks, used for error messages */
-   char * buffer;    /* input or output buffer for this file (MUST BE LAST VARIABLE IN STRUCT!!!) */
-   /* note: buffer begins here, immediately after 'buffer'!                                       */
-   } FILE;
+typedef struct FILE FILE;
 
 #ifndef IN_RESLIB
 extern FILE * stdin;                /* predefined stream for standard input: we map it to console */
@@ -120,9 +118,6 @@ fgetc(FILE * stream);
 /* Returns:                                                                                       */
 /*    the character, or EOF if there is an error.                                                 */
 /*                                                                                                */
-/* Notes:                                                                                         */
-/*    1.  A newline character is added at the end of each physical line read when reading TEXT    */
-/*        files.                                                                                  */
 /**************************************************************************************************/
 
 int
@@ -136,9 +131,6 @@ fgetpos(FILE * stream, fpos_t *position);
 /* Returns:                                                                                       */
 /*    0 on success, -1 on failure.                                                                */
 /*                                                                                                */
-/* Notes:                                                                                         */
-/*    1.  fgetpos is only valid for a disk file that is open for reading.                         */
-/*    2.  Functioally, fgetpos is equivalent to ftell.                                            */
 /**************************************************************************************************/
 
 char *
@@ -169,11 +161,12 @@ fopen(const char * filespec, const char * access);
 /*       "PRINTER"   printer (write only)                                                         */
 /*       "PUNCH"     card punch (write only)                                                      */
 /*       "READER"    card reader (read only)                                                      */
-/*       filename filetype filemode [F|V [recordLength]]                                          */
+/*       filename filetype [filemode [F|V] [recordLength]]                                        */
 /*                   disk file (read or write), where:                                            */
 /*                   filename is the up to 8 character name.                                      */
 /*                   filetype is the up to 8 character type.                                      */
 /*                   filemode is the up to 2 character disk mode leter and optional number.       */
+/*                            Default "A1"                                                        */
 /*                   F|V      specifies the record format fixed or variable.  It is ignored when  */
 /*                            opening a file for reading.                                         */
 /*                   reclen   specifies the record length.  It is required for fixed-length       */
@@ -182,12 +175,7 @@ fopen(const char * filespec, const char * access);
 /*                   Each of the above items must be separated by one or more blanks.             */
 /*                                                                                                */
 /*    access   specifies how the file will be accessed (i.e. for input, output, etc):             */
-/*             "r"   Open a text file for reading                                                 */
-/*             "w"   Create a text file for writing                                               */
-/*             "a"   Append to a text file                                                        */
-/*             "rb"  Open a binary file for reading                                               */
-/*             "wb"  Create a binary file for writing                                             */
-/*             "ab"  Append to a binary file                                                      */
+/*              r|w|a[+][b]                                                                       */
 /*                                                                                                */
 /* Returns:                                                                                       */
 /*    a pointer to the stream associated with the open file, or NULL on failure.                  */
@@ -272,10 +260,24 @@ freopen(const char * filespec, const char * access, FILE * stream);
 /**************************************************************************************************/
 /* FILE * freopen(const char * filespec, const char * access, FILE * stream)                      */
 /*                                                                                                */
-/* This function does nothing.                                                                    */
+/* Reuses stream to either open the file specified by filename or to change its access mode.      */
 /*                                                                                                */
-/* Returns:                                                                                       */
-/*    NULL, indicating the request could not be satisfied.                                        */
+/* If a new filename is specified, the function first attempts to close any file already          */
+/* associated with stream (third parameter) and disassociates it. Then, independently of whether  */
+/* that stream was successfuly closed or not, freopen opens the file specified by filename and    */
+/* associates it with the stream just as fopen would do using the specified mode.                 */
+/*                                                                                                */
+/* If filename is a null pointer, the function attempts to change the mode of the stream.         */
+/* Although a particular library implementation is allowed to restrict the changes permitted, and */
+/* under which circumstances.                                                                     */
+/*                                                                                                */
+/* The error indicator and eof indicator are automatically cleared (as if clearerr was called).   */
+/*                                                                                                */
+/* If the file is successfully reopened, the function returns the pointer passed as parameter     */
+/* stream, which can be used to identify the reopened stream.                                     */
+/* Otherwise, a null pointer is returned.                                                         */
+/* The errno variable is also set to a system-specific error code on failure.                     */
+/*                                                                                                */
 /**************************************************************************************************/
 
 int
@@ -310,7 +312,7 @@ fseek(FILE * stream, long offset, int origin);
 /*    0 on success, non-zero on failure.                                                          */
 /*                                                                                                */
 /* Note:                                                                                          */
-/*    1.  fseek is only valid for a disk file that is open for reading.                           */
+/*    1.  fseek is only valid for fixed record length disk files                                  */
 /**************************************************************************************************/
 #define SEEK_SET 0
 #define SEEK_CUR 1
@@ -327,8 +329,6 @@ fsetpos(FILE * stream, const fpos_t * position);
 /* Returns:                                                                                       */
 /*    0 on success, non-zero on failure.                                                          */
 /*                                                                                                */
-/* Note:                                                                                          */
-/*    1.  fsetpos is only valid for a disk file that is open for reading.                         */
 /**************************************************************************************************/
 
 long
@@ -342,9 +342,6 @@ ftell(FILE * stream);
 /* Returns:                                                                                       */
 /*    the position of the next character to be read or written, or -1 if there is an error.       */
 /*                                                                                                */
-/* Notes:                                                                                         */
-/*    1.  ftell is only valid for a disk file that is open for reading.                           */
-/*    2.  Functioally, ftell is equivalent to fgetpos.                                            */
 /**************************************************************************************************/
 
 int
@@ -366,37 +363,6 @@ fwrite(const void * buffer, size_t size, size_t count, FILE * stream);
 /*        other character.                                                                        */
 /*    2.  When the record length for the file is reached, that record is written to disk and a    */
 /*        new record is started.  Thus the file is treated as a stream of bytes.                  */
-/**************************************************************************************************/
-
-int
-getc(FILE * stream);
-/**************************************************************************************************/
-/* int getc(FILE * stream)                                                                        */
-/*                                                                                                */
-/* Read the next character from the specified output stream.  This is identical to fgetc().       */
-/*    stream   a pointer to the open output stream.                                               */
-/*                                                                                                */
-/* Returns:                                                                                       */
-/*    the character, or EOF if there is an error.                                                 */
-/*                                                                                                */
-/* Notes:                                                                                         */
-/*    1.  A newline character is added at the end of each physical line read when reading TEXT    */
-/*        files.                                                                                  */
-/**************************************************************************************************/
-
-int
-getchar(void);
-/**************************************************************************************************/
-/* int getchar(void)                                                                              */
-/*                                                                                                */
-/* Read the next character from the console.                                                      */
-/*                                                                                                */
-/* Returns:                                                                                       */
-/*    the character, or EOF if there is an error.                                                 */
-/*                                                                                                */
-/* Notes:                                                                                         */
-/*    1.  A newline character is added at the end of each physical line read when reading TEXT    */
-/*        files.                                                                                  */
 /**************************************************************************************************/
 
 char *
@@ -434,31 +400,6 @@ printf(const char * format, ...);
 /*                                                                                                */
 /* Returns:                                                                                       */
 /*    the number of characters printed.                                                           */
-/**************************************************************************************************/
-
-int
-putc(int c, FILE * stream);
-/**************************************************************************************************/
-/* int putc(int c, FILE * stream)                                                                 */
-/*                                                                                                */
-/* Write a character to the specified output stream.  This is the same as fputc().                */
-/*    c        the character to be written.                                                       */
-/*    stream   a pointer to the open output stream.                                               */
-/*                                                                                                */
-/* Returns:                                                                                       */
-/*    the character, or EOF if there is an error.                                                 */
-/**************************************************************************************************/
-
-int
-putchar(int c);
-/**************************************************************************************************/
-/* int putchar(int c)                                                                             */
-/*                                                                                                */
-/* Write a character to the console.                                                              */
-/*    c        the character to be written.                                                       */
-/*                                                                                                */
-/* Returns:                                                                                       */
-/*    the character, or EOF if there is an error.                                                 */
 /**************************************************************************************************/
 
 int
@@ -534,20 +475,36 @@ scanf(const char * format, ...);
 void
 setbuf(FILE * stream, char * buffer);
 /**************************************************************************************************/
-/* void setbuf(FILE * stream, char *buffer)                                                       */
+/* void setbuf(FILE * file, char *buffer)                                                         */
 /*                                                                                                */
-/* This function does nothing.                                                                    */
+/* Specifies the buffer to be used by the stream for I/O operations, used as a cache. Or,         */
+/* alternatively, if buffer is a null pointer, buffering is disabled for the stream               */
+/* The buffer is assumed to be at least BUFSIZ bytes in size                                      */
+/*                                                                                                */
+/* A call to this function is equivalent to calling setvbuf with _IOFBF as mode and BUFSIZ as     */
+/* size (when buffer is not a null pointer), or equivalent to calling it with _IONBF as mode      */
+/* (when it is a null pointer).                                                                   */
+/*                                                                                                */
 /**************************************************************************************************/
 
 int
 setvbuf(FILE * stream, char * buffer, int mode, size_t size);
 /**************************************************************************************************/
-/* int setvbuf(FILE * stream, char * buffer, int mode, size_t size)                               */
+/* int setvbuf(FILE * file, char * buffer, int mode, size_t size)                                 */
 /*                                                                                                */
-/* This function does nothing.                                                                    */
+/* Specifies a buffer for stream. The function allows to specify the mode and size of the buffer  */
+/* (in bytes).                                                                                    */
+/*                                                                                                */
+/* If buffer is a null pointer, the function automatically allocates a buffer                     */
+/* (using size as a hint on the size to use). Otherwise, the array pointed by buffer may be       */
+/* used as a buffer of size bytes.                                                                */
+/*                                                                                                */
+/* Notes                                                                                          */
+/*   Modes _IOFBF and _IOLBF are equivalent and are a line cache for reading                      */
 /*                                                                                                */
 /* Returns:                                                                                       */
-/*    1, indicating that the request cannot be satistifed.                                        */
+/*   If the buffer is correctly assigned to the file, a zero value is returned.                   */
+/*   Otherwise, a non-zero value is returned                                                      */
 /**************************************************************************************************/
 
 /**************************************************************************************************/
@@ -592,10 +549,15 @@ tmpfile(void);
 /**************************************************************************************************/
 /* FILE * tmpfile(void)                                                                           */
 /*                                                                                                */
-/* This function does nothing.                                                                    */
+/* Creates a temporary binary file, open for update ("wb+" mode, variable length records) wit     */
+/* a filename guaranteed to be different from any other existing file.                            */
+/*                                                                                                */
+/* The temporary file created is automatically deleted when the stream is closed (fclose)         */
+/* or when the program terminates normally.                                                       */
 /*                                                                                                */
 /* Returns:                                                                                       */
-/*    NULL, indicating that the request cannot be satistifed.                                     */
+/*   If successful, the function returns a stream pointer to the temporary file created.          */
+/*   On failure, NULL is returned.                                                                */
 /**************************************************************************************************/
 
 char *
@@ -603,7 +565,17 @@ tmpnam(char * name);
 /**************************************************************************************************/
 /* char * tmpnam(char * name)                                                                     */
 /*                                                                                                */
-/* Returns a temporary fileid (filename filetype A1) that is in all likelihood unique.            */
+/* Generate temporary filename                                                                    */
+/* Returns a string containing a file name different from the name of any existing file, and thus */
+/* suitable to safely create a temporary file without risking to overwrite an existing file.      */
+/*                                                                                                */
+/* If str is a null pointer, the resulting string is stored in an internal static array that can  8/
+/* be accessed by the return value. The content of this string is preserved at least until a      */
+/* subsequent call to this same function, which may overwrite it.                                 */
+/*                                                                                                */
+/* If str is not a null pointer, it shall point to an array of at least L_tmpnam characters that  */
+/* will be filled with the proposed temporary file name.                                          */
+/*                                                                                                */
 /**************************************************************************************************/
 
 int
@@ -654,13 +626,89 @@ vsprintf(char * buffer, const char * format, va_list arg);
 /*    the number of characters printed.                                                           */
 /**************************************************************************************************/
 
-int
-notyet(void);
 /**************************************************************************************************/
-/* Emit a message when runtime routines not yet implemented are called.                           */
+/* int fcachehits(FILE * stream)                                                                  */
+/*                                                                                                */
+/* The function returns the precentage of cache read hits achieved                                */
+/* Non-standard GCC CMS extention                                                                 */
 /*                                                                                                */
 /* Returns:                                                                                       */
-/*    -1                                                                                          */
+/*    Percentage of cache hits or -1 on error (device without a cache)                            */
 /**************************************************************************************************/
+int fcachehits(FILE * file);
+
+/**************************************************************************************************/
+/* int fgetrec(FILE * stream)                                                  */
+/*                                                                                                */
+/* The function returns the current record number (1 base)                                        */
+/* Non-standard GCC CMS extention                                                                 */
+/*                                                                                                */
+/* Returns:                                                                                       */
+/*    record number or 0 on failure / not block device                                            */
+/**************************************************************************************************/
+int fgetrec(FILE * file);
+
+/**************************************************************************************************/
+/* int fsetrec(FILE * stream, int recnum)                                                         */
+/*                                                                                                */
+/* The function sets/moves to the record number (1 base)                                          */
+/* Non-standard GCC CMS extention                                                                 */
+/*                                                                                                */
+/* Returns:                                                                                       */
+/*    record number or 0 on failure / not block device                                            */
+/**************************************************************************************************/
+int fsetrec(FILE * file, const int recnum);
+
+/**************************************************************************************************/
+/* int getc(FILE * stream)                                                                        */
+/*                                                                                                */
+/* Read the next character from the specified output stream.  This is identical to fgetc().       */
+/*    stream   a pointer to the open output stream.                                               */
+/*                                                                                                */
+/* Returns:                                                                                       */
+/*    the character, or EOF if there is an error.                                                 */
+/*                                                                                                */
+/* Notes:                                                                                         */
+/*    1.  A newline character is added at the end of each physical line read when reading TEXT    */
+/*        files.                                                                                  */
+/**************************************************************************************************/
+#define getc(s) fgetc((c))
+
+/**************************************************************************************************/
+/* int getchar(void)                                                                              */
+/*                                                                                                */
+/* Read the next character from the console.                                                      */
+/*                                                                                                */
+/* Returns:                                                                                       */
+/*    the character, or EOF if there is an error.                                                 */
+/*                                                                                                */
+/* Notes:                                                                                         */
+/*    1.  A newline character is added at the end of each physical line read when reading TEXT    */
+/*        files.                                                                                  */
+/**************************************************************************************************/
+#define getchar() fgetc(stdin)
+
+/**************************************************************************************************/
+/* int putc(int c, FILE * stream)                                                                 */
+/*                                                                                                */
+/* Write a character to the specified output stream.  This is the same as fputc().                */
+/*    c        the character to be written.                                                       */
+/*    stream   a pointer to the open output stream.                                               */
+/*                                                                                                */
+/* Returns:                                                                                       */
+/*    the character, or EOF if there is an error.                                                 */
+/**************************************************************************************************/
+#define putc(c,s) fputc((c),(s))
+
+/**************************************************************************************************/
+/* int putchar(int c)                                                                             */
+/*                                                                                                */
+/* Write a character to the console.                                                              */
+/*    c        the character to be written.                                                       */
+/*                                                                                                */
+/* Returns:                                                                                       */
+/*    the character, or EOF if there is an error.                                                 */
+/**************************************************************************************************/
+#define putchar(c) fputc((c),stdout)
 
 #endif

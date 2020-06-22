@@ -75,14 +75,9 @@
          VTENTRY FSETPOS,VTFSETPO,&CODE
          VTENTRY FTELL,VTFTELL,&CODE
          VTENTRY FWRITE,VTFWRITE,&CODE
-         VTENTRY GETC,VTGETC,&CODE
-         VTENTRY GETCHAR,VTGETCHA,&CODE
          VTENTRY GETS,VTGETS,&CODE
-         VTENTRY NOTYET,VTNOTYET,&CODE
          VTENTRY PERROR,VTPERROR,&CODE
          VTENTRY PRINTF,VTPRINTF,&CODE
-         VTENTRY PUTC,VTPUTC,&CODE
-         VTENTRY PUTCHAR,VTPUTCHA,&CODE
          VTENTRY PUTS,VTPUTS,&CODE
          VTENTRY REMOVE,VTREMOVE,&CODE
          VTENTRY RENAME,VTRENAME,&CODE
@@ -98,6 +93,9 @@
          VTENTRY UNGETC,VTUNGETC,&CODE
          VTENTRY VFPRINTF,VTVFPRIN,&CODE
          VTENTRY VSPRINTF,VTVSPRIN,&CODE
+         VTENTRY FCACHEHI,VTFCAHIT,&CODE
+         VTENTRY FGETREC,VTFGETR,&CODE
+         VTENTRY FSETREC,VTFSETR,&CODE
 ***********************************************************************
 * Entry points in CMSSTDLB C / STDLIB H                               *
 ***********************************************************************

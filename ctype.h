@@ -1,21 +1,18 @@
-/*********************************************************************/
-/*                                                                   */
-/*  This Program Written by Paul Edwards.                            */
-/*  Released to the Public Domain                                    */
-/*                                                                   */
-/*********************************************************************/
-/*********************************************************************/
-/*                                                                   */
-/*  ctype.h - ctype header file.                                     */
-/*                                                                   */
-/*********************************************************************/
-
+/**************************************************************************************************/
+/* ctype.h - ctype header file                                                                    */
+/*                                                                                                */
+/* Part of GCCLIB - VM/370 CMS Native Std C Library; A Historic Computing Toy                     */
+/*                                                                                                */
+/* Contributors: See contrib memo                                                                 */
+/*                                                                                                */
+/* Released to the public domain.                                                                 */
+/**************************************************************************************************/
 #ifndef __CTYPE_INCLUDED
 #define __CTYPE_INCLUDED
 
 /* These Macros need reinstating for performance reasons
    This means that we need to be able to expose the RESLIB address of
-   __isfuff[] etc. to a client program
+   __issuff[] etc. to a client program
 
 extern unsigned short *__isbuf;
 extern short *__tolow;

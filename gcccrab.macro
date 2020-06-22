@@ -35,6 +35,7 @@ STDERR   DS    F              FILE **stderr;
 ERRNO    DS    F              int *errno;
 HANFLERS DS    F              SIGHANDLER **handlers;
 USREXITS DS    F              USEREXIT **userexits;
+FILEHNDL DS    F              FILE* filehandles;
          SPACE
 GCCGLEN  EQU   *-GCCCRAB      length of the CRAB / Global Area
          MEND

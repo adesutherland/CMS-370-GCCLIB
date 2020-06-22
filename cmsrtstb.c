@@ -32,7 +32,7 @@ void __exit(int rc);
 
 int __cstub(PLIST *plist , EPLIST *eplist)
 {
-  __wrterm("",0); /* Workaround to reset stdout - TODO root fix, probably in stdio */
+  /*  __wrterm("",0); */ /* Workaround to reset stdout - TODO root fix, probably in stdio */
 
   GCCCRAB gcccrab;
   CMSCRAB *cmscrab;
@@ -53,6 +53,7 @@ int __cstub(PLIST *plist , EPLIST *eplist)
   gcccrab.exitfunc = __exit;
   gcccrab.handlers = handlers;
   gcccrab.userexits = userexits;
+  gcccrab.filehandles = NULL;
 
   return(__cstart(main, plist, eplist));
 }

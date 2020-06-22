@@ -41,12 +41,12 @@ herccontrol "devinit 00d io/gcclibsrc.vmarc" -w "^HHCPN098I"
 herccontrol "/cp disc" -w "^VM/370 Online"
 herccontrol "/logon cmsuser cmsuser" -w "RECONNECTED AT"
 herccontrol "/begin"
-herccontrol "/tape dump * * f" -w "^Ready;"
+herccontrol "/tape dump * * f (noprint" -w "^Ready;"
 herccontrol "/detach 181" -w "^Ready;"
-herccontrol "/vmarc pack * * f (pun" -w "^Ready;"
+herccontrol "/vmarc pack * * f (pun notrace" -w "^Ready;"
 
 # Build
-herccontrol "/build" -w "^Ready;" -t 120
+herccontrol "/build" -w "^Ready;" -t 240
 herccontrol "/rename * * e = = e2" -w "^Ready;"
 herccontrol "/cleanup" -w "^Ready;"
 
@@ -54,7 +54,7 @@ herccontrol "/cleanup" -w "^Ready;"
 herccontrol "/copy * * e = = a" -w "^Ready;"
 herccontrol "/ipl cms" -w "^CMS VERSION"
 herccontrol "/" -w "^Ready;"
-herccontrol "/mktest" -w "^Ready;"
+herccontrol "/mktest" -w "^Ready;" -t 240
 
 # Make binary tape and vmarc
 herccontrol "/cp disc" -w "^VM/370 Online"
@@ -66,9 +66,9 @@ herccontrol "devinit 00d io/gcclibbin.vmarc" -w "^HHCPN098I"
 herccontrol "/cp disc" -w "^VM/370 Online"
 herccontrol "/logon cmsuser cmsuser" -w "RECONNECTED AT"
 herccontrol "/begin"
-herccontrol "/tape dump * * e" -w "^Ready;"
+herccontrol "/tape dump * * e (noprint" -w "^Ready;"
 herccontrol "/detach 181" -w "^Ready;"
-herccontrol "/vmarc pack * * e (pun" -w "^Ready;"
+herccontrol "/vmarc pack * * e (pun notrace" -w "^Ready;"
 
 # Clean Up
 herccontrol "/erase gcclib * a" -w "^Ready;"

@@ -1,1 +1,1 @@
--o dd:out - -w -S -DTARGET_CMS -D__CMS__
+-o dd:out - -w -O3 -S -DTARGET_CMS -D__CMS__

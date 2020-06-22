@@ -34,7 +34,7 @@ int raise(int sig)
     {
       if (sig == SIGABRT)
       {
-          perror("ABNORMAL TERMINATION (NO RESOURCE CLEANUP)");
+          CMSconsoleWrite("ABNORMAL TERMINATION (NO RESOURCE CLEANUP)", CMS_EDIT);
           GETGCCCRAB()->exitfunc(EXIT_FAILURE); /* Standard specifies no exit processing */
       }
     }
