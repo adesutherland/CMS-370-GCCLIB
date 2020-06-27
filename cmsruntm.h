@@ -23,15 +23,9 @@ typedef void* mspace;
 
 /* Function Pointers */
 typedef int (MAINFUNC)(int argc, char *argv[]); /* declare a main() function pointer */
-typedef void (EXITFUNC)(int rc); /* declare a exit() function pointer */
-typedef void (SIGHANDLER)(int);  /* Signal Handler */
-typedef void (USEREXIT)(void);   /* User Exits */
 
 /* The CMSCRAB macro maps the GCC stack. */
 typedef struct CMSCRAB CMSCRAB;
-
-/* The GCCCRAB macro maps the GCC RESLIB Global Area */
-typedef struct GCCCRAB GCCCRAB;
 
 /**************************************************************************************************/
 /* M U S T   B E   S Y N C E D   W I T H   C M S C R A B   M A C R O                              */
@@ -48,27 +42,7 @@ struct CMSCRAB {
   unsigned char locals[];                                           /* Local Variables etc +88 */
 };
 
-/**************************************************************************************************/
-/* M U S T   B E   S Y N C E D   W I T H   G C C C R A B   M A C R O                              */
-/**************************************************************************************************/
-struct GCCCRAB {
-   CMSCRAB *rootcmscrab;
-   CMSCRAB *auxstack;
-   CMSCRAB *dynamicstack;
-   EXITFUNC *exitfunc;
-   mspace dlmspace; /* For DLMALLOC */
-   size_t startmemoryusage;
-   FILE **stdin;
-   FILE **stdout;
-   FILE **stderr;
-   int *errno;
-   SIGHANDLER **handlers;
-   USEREXIT **userexits;
-   FILE* filehandles;
-};
-
-/* To get the addresses of the crabs */
-#define GETGCCCRAB() ({GCCCRAB *theCRAB; __asm__("L %0,72(13)" : "=d" (theCRAB)); theCRAB;})
+/* To get the addresses of the CMS crab */
 #define GETCMSCRAB() ({CMSCRAB *theCRAB; __asm__("LR %0,13" : "=d" (theCRAB)); theCRAB;})
 
 /**************************************************************************************************/
@@ -132,14 +106,6 @@ typedef struct GCCLIBPLIST {
   char marker[8];
   EPLIST eplist;
 } GCCLIBPLIST;
-
-/* Stdlib Public Global Variables - RESLIB Defines */
-#ifdef IN_RESLIB
-#define stdin (*(GETGCCCRAB()->stdin))
-#define stdout (*(GETGCCCRAB()->stdout))
-#define stderr (*(GETGCCCRAB()->stderr))
-#define errno (*(GETGCCCRAB()->errno))
-#endif
 
 /* Startup Functions */
 int __cstub(PLIST *plist , EPLIST *eplist);

@@ -74,8 +74,7 @@ DYNSTK   CSECT
          CR    R0,R10           1 means it is a static stack
          BNE   ISDYNSK          Is dynamic
          LA    R0,420           Aux Stack Overflow error
-         L     R1,ERRNO         The address of the ERRNO global
-         ST    R0,0(R1)         Set ERRNO
+         ST    R0,GERRNO        Set ERRNO
          L     R15,=V(ABORT)    Is static so we bought a farm
          BR    R15
 * Calling MORESTAK

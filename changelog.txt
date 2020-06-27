@@ -1,6 +1,12 @@
 GCCLIB Change LOG
 =================
 
+
+F0025 - Changed to -O2 optimisation (-O3 seemed to have a bug)
+      - Changed code to support -Wall -pedantic -ansi builds
+      - Remove stdout, stdin, stdout, errno, etc. from client library static globals
+      - Removed strtok() static variable
+
 0.7.11- 22 June 2020
 F0024 - IO Refactoring / Drivers
       - Record cache for random record access

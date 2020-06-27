@@ -13,7 +13,7 @@
     tmpname - Static Name and counter to CRAB. Check already opened
 */
 
-#define IN_RESLIB
+
 #include <cmsruntm.h>
 #include <stdio.h>
 #include <stdlib.h>

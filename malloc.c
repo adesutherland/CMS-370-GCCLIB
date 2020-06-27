@@ -17,7 +17,7 @@
 /* CMS Config */
 /****************************************************************/
 /* Need CMS Runtime */
-#define IN_RESLIB
+
 #include "cmsruntm.h"
 
 /* Not Windows, Mac or Linux */

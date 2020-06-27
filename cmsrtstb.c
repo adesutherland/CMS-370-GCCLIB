@@ -12,19 +12,6 @@
 #include <stdio.h>
 #include <signal.h>
 #include <stdlib.h>
-#include <cmssys.h> /* For __wrterm() workaround */
-
-/* Stdlib Public Global Variables */
-FILE *stdin;               /* predefined stream for standard input: we map it to console */
-FILE *stdout;              /* predefined stream for standard output: we map it to console */
-FILE *stderr;              /* predefined stream for error output: we map it to console */
-int errno = 0;             /* Std error number */
-
-/* Default handlers */
-static void (*handlers[])(int) = {SIG_DFL, SIG_DFL, SIG_DFL, SIG_DFL, SIG_DFL, SIG_DFL};
-
-/* User Exits */
-static void (*userexits[__NATEXIT])(void);
 
 int main(int argc, char *argv[]);
 
@@ -32,10 +19,18 @@ void __exit(int rc);
 
 int __cstub(PLIST *plist , EPLIST *eplist)
 {
-  /*  __wrterm("",0); */ /* Workaround to reset stdout - TODO root fix, probably in stdio */
-
   GCCCRAB gcccrab;
   CMSCRAB *cmscrab;
+  int x;
+
+  /* Default handlers */
+  void (*handlers[])(int) = {SIG_DFL, SIG_DFL, SIG_DFL, SIG_DFL, SIG_DFL, SIG_DFL};
+
+  /* User Exits */
+  void (*userexits[__NATEXIT])(void);
+
+  /* Call Exit functions */
+  for (x = 0; x < __NATEXIT; x++) userexits[x] = NULL;
 
   /* Fixup the GCCCRAB */
   cmscrab = GETCMSCRAB();
@@ -46,14 +41,11 @@ int __cstub(PLIST *plist , EPLIST *eplist)
   gcccrab.rootcmscrab = cmscrab;
 
   /* Set Global Variables */
-  gcccrab.stdin = &stdin;
-  gcccrab.stdout = &stdout;
-  gcccrab.stderr = &stderr;
-  gcccrab.errno = &errno;
   gcccrab.exitfunc = __exit;
   gcccrab.handlers = handlers;
   gcccrab.userexits = userexits;
   gcccrab.filehandles = NULL;
+  gcccrab.strtok_old = NULL;
 
   return(__cstart(main, plist, eplist));
 }

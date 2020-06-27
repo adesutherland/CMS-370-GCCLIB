@@ -42,11 +42,11 @@ typedef struct FPOS_T fpos_t;
 /**************************************************************************************************/
 typedef struct FILE FILE;
 
-#ifndef IN_RESLIB
-extern FILE * stdin;                /* predefined stream for standard input: we map it to console */
-extern FILE * stdout;              /* predefined stream for standard output: we map it to console */
-extern FILE * stderr;                 /* predefined stream for error output: we map it to console */
-#endif
+/* Stdlib Public Global Variables */
+#include <gcccrab.h>
+#define stdin ((GETGCCCRAB()->gstdin))
+#define stdout ((GETGCCCRAB()->gstdout))
+#define stderr ((GETGCCCRAB()->gstderr))
 
 void
 clearerr(FILE * stream);

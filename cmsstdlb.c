@@ -7,7 +7,7 @@
 /* Based code written by Paul Edwards and Dave Wade.                                              */
 /* Released to the public domain.                                                                 */
 /**************************************************************************************************/
-#define IN_RESLIB
+
 #include <cmsruntm.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -15,7 +15,7 @@
 #include <string.h>
 #include <ctype.h>
 
-static unsigned long myseed = 1;                                 // seed for random number generator
+static unsigned long myseed = 1;                                 /* seed for random number generator */
 
 void
 __abort(void)
@@ -39,7 +39,7 @@ abs(int j)
 {
 if (j < 0) j = -j;
 return j;
-}                                                                                      // end of abs
+}                                                                                      /* end of abs */
 
 
 int atexit(void (* func)(void))
@@ -56,7 +56,7 @@ int atexit(void (* func)(void))
     }
   }
   return -1;
-}                                                                                   // end of atexit
+}
 
 
 double
@@ -66,7 +66,7 @@ atof(const char *nptr)
 /**************************************************************************************************/
 {
 return (strtod(nptr, (char **) NULL));
-}                                                                                     // end of atof
+}
 
 
 int
@@ -76,7 +76,7 @@ atoi(const char * nptr)
 /**************************************************************************************************/
 {
 return ((int) strtol(nptr, (char **) NULL, 10));
-}                                                                                     // end of atoi
+}
 
 
 long int
@@ -86,7 +86,7 @@ atol(const char * nptr)
 /**************************************************************************************************/
 {
 return (strtol(nptr, (char **) NULL, 10));
-}                                                                                     // end of atol
+}
 
 
 void *
@@ -113,8 +113,7 @@ while (nmemb > 0) {
    else nmemb = try;
    }
 return NULL;
-}                                                                                  // end of bsearch
-
+}
 div_t
 div(int numer, int denom)
 /**************************************************************************************************/
@@ -126,8 +125,7 @@ div_t x;
 x.quot = numer / denom;
 x.rem = numer % denom;
 return x;
-}                                                                                      // end of div
-
+}
 
 /**************************************************************************************************/
 /* void exit_stage2(int status)                                                                   */
@@ -173,7 +171,7 @@ exit(int status)
 
   /* Call exit_stage2 under the aux stack */
   __CLVSTK(theCRAB->auxstack, exit_stage2, status);
-} // end of exit
+}
 
 char * getenv(const char *name)
 /**************************************************************************************************/
@@ -181,8 +179,7 @@ char * getenv(const char *name)
 /**************************************************************************************************/
 {
 return NULL;
-}                                                                                   // end of getenv
-
+}
 
 #ifdef labs
 #undef labs
@@ -194,7 +191,7 @@ long int labs(long int j)
 {
 if (j < 0) j = -j;
 return j;
-}                                                                                     // end of labs
+}
 
 
 ldiv_t ldiv(long int numer, long int denom)
@@ -207,7 +204,7 @@ ldiv_t x;
 x.quot = numer / denom;
 x.rem = numer % denom;
 return x;
-}                                                                                     // end of ldiv
+}
 
 int
 mblen(const char * s, size_t n)
@@ -218,7 +215,7 @@ mblen(const char * s, size_t n)
 if (s == NULL) return 0;
 if (n == 1) return 1;
 else return -1;
-}                                                                                    // end of mblen
+}
 
 
 size_t
@@ -230,7 +227,7 @@ mbstowcs(wchar_t * pwcs, const char * s, size_t n)
 strncpy((char *) pwcs, s, n);
 if (strlen(s) >= n) return n;
 return strlen((char *) pwcs);
-}                                                                                 // end of mbstowcs
+}
 
 
 int
@@ -246,7 +243,7 @@ if (n == 1) {
    }
 else
    return -1;
-}                                                                                   // end of mbtowc
+}
 
 
 void
@@ -267,25 +264,25 @@ size_t i,a,b,c;
 while(nmemb > 1) {
    a = 0;
    b = nmemb-1;
-   c = (a + b) / 2;                                                                // middle element
+   c = (a + b) / 2;                                                                /* middle element */
    for(;;) {
       while((* compar) (&base2[size * c], &base2[size * a]) > 0)
-         a++;                                                              // look for one >= middle
+         a++;                                                              /* look for one >= middle */
       while((* compar) (&base2[size * c], &base2[size * b]) < 0)
-         b--;                                                              // look for one <= middle
-      if (a >= b) break;                                                         // we found no pair
-      for (i = 0; i < size; i++) {                                                      // swap them
+         b--;                                                              /* look for one <= middle */
+      if (a >= b) break;                                                         /* we found no pair */
+      for (i = 0; i < size; i++) {                                                      /* swap them */
          char tmp = base2[size * a + i];
          base2[size * a + i] = base2[size * b + i];
          base2[size * b + i] = tmp;
          }
-      if (c == a) c = b;                                             // keep track of middle element
+      if (c == a) c = b;                                             /* keep track of middle element */
       else if(c == b) c = a;
-      a++;                                                           // these two are already sorted
+      a++;                                                           /* these two are already sorted */
       b--;
-      }                       // a points to first element of right interval now (b to last of left)
+    }                       /* a points to first element of right interval now (b to last of left) */
    b++;
-   if (b < nmemb - b) {              // do recursion on smaller interval and iteration on larger one
+   if (b < nmemb - b) {              /* do recursion on smaller interval and iteration on larger one */
       qsort(base2, b, size, compar);
       base2 = &base2[size * b];
       nmemb = nmemb - b;
@@ -295,7 +292,7 @@ while(nmemb > 1) {
       nmemb = b;
       }
    }
-}                                                                                    // end of qsort
+}
 
 int
 rand(void)
@@ -306,7 +303,7 @@ rand(void)
 int ret;
 
 #if defined(__MVS__) || defined(__CMS__)
-// This hack should be removed. It is to get around a bug in the GCC 3.2.3 MVS 3.0 optimizer.
+/* This hack should be removed. It is to get around a bug in the GCC 3.2.3 MVS 3.0 optimizer. */
 myseed = myseed * 1103515245UL;
 ret = (int)(((myseed + 12345) >> 16) & 0x8fff);
 #else
@@ -314,7 +311,7 @@ myseed = myseed * 1103515245UL + 12345;
 ret = (int)((myseed >> 16) & 0x8fff);
 #endif
 return ret;
-}                                                                                     // end of rand
+}
 
 
 void
@@ -325,7 +322,7 @@ srand(unsigned int seed)
 {
 myseed = seed;
 return;
-}                                                                                    // end of srand
+}
 
 
 double
@@ -397,7 +394,7 @@ if ((* nptr == 'e') || (* nptr == 'E')) {
    }
 if (endptr != NULL) * endptr = (char *) nptr;
 return (x);
-}                                                                                   // end of strtod
+}
 
 
 long int
@@ -420,7 +417,7 @@ y = strtoul(nptr, endptr, base);
 if (neg) x = (long)-y;
 else x = (long)y;
 return x;
-}                                                                                   // end of strtol
+}
 
 
 unsigned long int
@@ -455,7 +452,7 @@ while (1) {
             undecided = 0;
             nptr++;
             }
-         else if (base == 16) nptr++;               // hex values are allowed to have an optional 0x
+         else if (base == 16) nptr++;               /* hex values are allowed to have an optional 0x */
          else break;
          }
       else if (base <= 10) break;
@@ -468,7 +465,7 @@ while (1) {
    }
 if (endptr != NULL) * endptr = (char *) nptr;
 return (x);
-}                                                                                  // end of strtoul
+}
 
 
 int
@@ -478,7 +475,7 @@ system(const char * s)
 /**************************************************************************************************/
 {
 return CMScommand(s, CMS_COMMAND);
-}                                                                                   // end of system
+}
 
 
 size_t
@@ -490,7 +487,7 @@ wcstombs(char * s, const wchar_t * pwcs, size_t n)
 strncpy(s, (const char *) pwcs, n);
 if (strlen((const char *) pwcs) >= n) return n;
 return strlen(s);
-}                                                                                  // end of wctombs
+}
 
 
 int
@@ -504,4 +501,4 @@ if (s != NULL) {
    return 1;
    }
 else return 0;
-}                                                                                   // end of wctomb
+}                        

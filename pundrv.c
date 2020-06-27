@@ -7,7 +7,7 @@
 /*                                                                                                */
 /* Released to the public domain.                                                                 */
 /**************************************************************************************************/
-#define IN_RESLIB
+
 #include <cmsruntm.h>
 #include <cmssys.h>
 #include <stdio.h>

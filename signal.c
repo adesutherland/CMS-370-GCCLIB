@@ -9,7 +9,7 @@
 /*  signal.c - implementation of stuff in signal.h                   */
 /*                                                                   */
 /*********************************************************************/
-#define IN_RESLIB
+
 #include <cmsruntm.h>
 #include "signal.h"
 #include "stdlib.h"

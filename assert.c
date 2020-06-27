@@ -9,7 +9,7 @@
 /*  assert.c - implementation of stuff in assert.h                   */
 /*                                                                   */
 /*********************************************************************/
-#define IN_RESLIB
+
 #include "cmsruntm.h"
 #include "assert.h"
 #include "stdio.h"

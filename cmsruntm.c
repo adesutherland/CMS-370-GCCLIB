@@ -10,7 +10,7 @@
 /**************************************************************************************************/
 /* TODO Paramter Overruns */
 #include <cmsruntm.h>
-#define IN_RESLIB
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stddef.h>
@@ -33,7 +33,7 @@ int __cstart(MAINFUNC* mainfunc, PLIST *plist, EPLIST *eplist)
   GCCLIBPLIST *gcclibplist = 0;
   EPLIST *magic_eplist = 0;
 
-  /* Get the GCCCRAB */
+  /* Get GCCCRAB */
   gcccrab = GETGCCCRAB();
 
   /* Initialize Memory System */
@@ -43,9 +43,9 @@ int __cstart(MAINFUNC* mainfunc, PLIST *plist, EPLIST *eplist)
   gcccrab->startmemoryusage = memoryinfo.uordblks;
 
   /* Setup stdout and stderr */
-  *(gcccrab->stdout) = fopen("CONSOLE","w");
-  *(gcccrab->stderr) = fopen("CONSOLE","w");
-  *(gcccrab->stdin)  = fopen("CONSOLE","r");
+  stdout = fopen("CONSOLE","w");
+  stderr = fopen("CONSOLE","w");
+  stdin  = fopen("CONSOLE","r");
 
   /* Process parameters */
   /* The high order byte contains the

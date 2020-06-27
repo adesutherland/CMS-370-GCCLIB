@@ -13,6 +13,7 @@
 #ifndef __ERRNO_INCLUDED
 #define __ERRNO_INCLUDED
 
+#include <gcccrab.h>
 #define EPERM 10
 #define ENOENT 20
 #define EINTR 30
@@ -56,8 +57,6 @@
 #define EOVERFLOW 410
 #define ESTACKOVERFLOW 420 /* sync with dynstk.assemble */
 
-#ifndef IN_RESLIB
-extern int errno;
-#endif
+#define errno ((GETGCCCRAB()->gerrno))
 
 #endif
