@@ -310,6 +310,7 @@ char *strerror(int errnum)
     case ENODATA: return("No data available.");
     case EOVERFLOW: return("Value too large for defined data type.");
     case ESTACKOVERFLOW: return("Auxiliary stack overflow.");
+    case EMALLOC: return("DLMalloc aborted.");
     default: return("Unknown error.");
   }
 }

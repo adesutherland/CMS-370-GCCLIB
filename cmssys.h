@@ -8,6 +8,8 @@
 #ifndef CMSSYS_INCLUDED
 #define CMSSYS_INCLUDED
 
+#define GCCLIB_VERSION "F0026"
+
 /**************************************************************************************************/
 /* CMSFILE maps the CMS FSCB (File System Control Block).                                         */
 /**************************************************************************************************/
@@ -66,7 +68,23 @@ typedef struct {
 /* Set the value of the CMS Flag (TRACEFLAG or HALTFLAG)                                          */
 /* Args flag and value (0 or 1)                                                                   */
 /**************************************************************************************************/
-void CMSSetFlag(int flag, int value);
+void CMSSETFL(int flag, int value);
+#define CMSSetFlag(s1, s2) (CMSSETFL((s1),(s2)))
+
+/**************************************************************************************************/
+/* void CMSSetNUCON(void *address, int value)                                                     */
+/*                                                                                                */
+/* Set memory in NUCON                                                                            */
+/**************************************************************************************************/
+void CMSSETNU(void *address, int value);
+#define CMSSetNUCON(s1, s2) (CMSSETNU((s1),(s2)))
+
+/**************************************************************************************************/
+/* char CMSGetNUCON(void *address)                                                                 */
+/*                                                                                                */
+/* Get memory in NUCON                                                                            */
+/**************************************************************************************************/
+#define CMSGetNUCON(address)   ((*(int*)(address)))
 
 /**************************************************************************************************/
 /* char * CMSargstring(void)                                                                      */

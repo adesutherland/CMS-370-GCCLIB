@@ -52,8 +52,8 @@ FUNCRSLT DS    F           +84 function result buffer
 * Basically the C local variables etc. start from MAINSTK in each
 * stack frame
 * ---------------------------------------------------------------------
-MAINSTK  DS    1024F          Bootstrap Stack (4K)
+MAINSTK  DS    0D             Bootstrap Stack (4K)
          SPACE
-MAINLEN  EQU   *-MAINSTK      length of the stack
-STACKLEN EQU   *-CMSCRAB      length of the CRAB
+MAINLEN  EQU   4096                    length of the stack
+STACKLEN EQU   4096+MAINSTK-CMSCRAB    length of the CRAB
          MEND

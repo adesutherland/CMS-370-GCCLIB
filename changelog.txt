@@ -1,11 +1,18 @@
 GCCLIB Change LOG
 =================
 
-
-F0025 - Changed to -O2 optimisation (-O3 seemed to have a bug)
+F0026 - Automate Stub Build (C based builder MAKELIB)
+      - Re-entrant version of CMSSYS (Thanks to Bob Bolch)
+      - Re-entrant version of CMSENTRY (Thanks to Bob Bolch)
+      - ABORT announces errno / message
+      - DLMALLOC announces line number of any panic
+      - GCCLIB announces version
+      - GCCLIB sets Stub Anchor in NUCON (NUCRSV7)
+      - Performance tuned DYNSTAK (Thanks to Bob Bolch)
+F0025 - Changed to -O2 optimisation (-O3 seems to have a bug)
       - Changed code to support -Wall -pedantic -ansi builds
       - Remove stdout, stdin, stdout, errno, etc. from client library static globals
-      - Removed strtok() static variable
+      - Removed strtok()'s static variable
 
 0.7.11- 22 June 2020
 F0024 - IO Refactoring / Drivers

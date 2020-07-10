@@ -17,6 +17,9 @@
 typedef unsigned long size_t;
 #endif
 
+/* Function Vector Table for Stubs is stored @ 0x486 - NUCRSV7 (Reserved word for the last 45 years) */
+#define STUB_ANCHOR_ADDRESS 0x468
+
 /* mspace is an opaque type representing an independent
    region of space that supports malloc(), etc. */
 typedef void* mspace;

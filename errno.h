@@ -56,6 +56,7 @@
 #define ENODATA 400
 #define EOVERFLOW 410
 #define ESTACKOVERFLOW 420 /* sync with dynstk.assemble */
+#define EMALLOC 430
 
 #define errno ((GETGCCCRAB()->gerrno))
 

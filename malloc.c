@@ -62,7 +62,7 @@ information in the footers of allocated chunks. */
 perform traversal of all heap space. */
 #undef MALLOC_INSPECT_ALL
 /* Defines how to abort on failed checks. */
-#define ABORT abort()
+#define ABORT {printf ("DLMALLOC PANIC LINE %d\n", __LINE__); errno=EMALLOC; abort();}
 /* Controls whether detected bad addresses cause them to bypassed
 rather than aborting. */
 #define PROCEED_ON_ERROR 0

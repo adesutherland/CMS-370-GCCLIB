@@ -11,9 +11,10 @@
 /*********************************************************************/
 
 #include <cmsruntm.h>
-#include "signal.h"
-#include "stdlib.h"
-#include "stdio.h"
+#include <signal.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <errno.h>
 
 #define handlers (GETGCCCRAB()->handlers)
 
@@ -28,13 +29,15 @@ void (*signal(int sig, void (*func)(int))) (int)
 
 int raise(int sig)
 {
+    char message[130];
     if (sig < SIGABRT) return -1;
     if (sig > SIGTERM) return -1;
     if (handlers[sig] == SIG_DFL)
     {
       if (sig == SIGABRT)
       {
-          CMSconsoleWrite("ABNORMAL TERMINATION (NO RESOURCE CLEANUP)", CMS_EDIT);
+          sprintf(message, "ABNORMAL TERMINATION (NO RESOURCE CLEANUP) ERRNO %d %s", errno, strerror(errno));
+          CMSconsoleWrite(message, CMS_EDIT);
           GETGCCCRAB()->exitfunc(EXIT_FAILURE); /* Standard specifies no exit processing */
       }
     }

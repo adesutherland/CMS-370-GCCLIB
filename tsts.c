@@ -72,7 +72,9 @@ void TST_STRT(char *title) {
 }
 
 void TST_OK() {
-/*  printf("TEST OK %d.%d.%d (%s)\n", LEVEL1, LEVEL2, LEVEL3, LEVEL3_D); */
+/*
+  printf("TEST OK %d.%d.%d (%s)\n", LEVEL1, LEVEL2, LEVEL3, LEVEL3_D);
+*/
   OK++;
 }
 

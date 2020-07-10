@@ -40,9 +40,10 @@
 * Released to the public domain.                                      *
 ***********************************************************************
 CMSSYS   CSECT
-         DS    0H
+         USING CMSSYS,R12
+         USING CMSCRAB,R13    map the save area
+         USING FSCBD,R8       CMS File System Control Block
          SPACE 3
-         ENTRY @@DEBUG
 ***********************************************************************
 * @@DEBUG Entry Point                                                 *
 * Return to caller.  This is a place to set a breakpoint.             *
@@ -54,8 +55,34 @@ CMSSYS   CSECT
 * returns:                                                            *
 *    (int)     The number passed to this function.                    *
 ***********************************************************************
+         ENTRY @@DEBUG
 @@DEBUG  DS    0H
          L     R15,0(R1)      get the desired return code
+         BR    R14            return to our caller
+         EJECT
+***********************************************************************
+* CMSSetNU                                                            *
+* void CMSSetNUCON(void *address, int value)                         *
+*                                                                     *
+* Set memory in NUCON                                                 *
+***********************************************************************
+         ENTRY CMSSETNU
+CMSSETNU DS    0H
+         STM   R14,R12,12(R13)
+         LR    R12,R15
+         LA    R15,CMSSETNU-CMSSYS
+         SLR   R12,R15
+         USING NUCON,0
+         L     R5,0(R1)       get Address
+         L     R3,4(R1)       get Value
+         IPK   ,
+         SPKA  0
+         SSM   *+1
+         ST    R3,0(R5)       Save Value
+         SPKA  0(R2)
+         SSM   =X'FF'
+         L     R14,12(R13)    restore our return address
+         LM    R0,R12,20(R13) restore the registers
          BR    R14            return to our caller
          EJECT
 ***********************************************************************
@@ -68,7 +95,8 @@ CMSSYS   CSECT
 CMSSETFL DS    0H
          STM   R14,R12,12(R13)
          LR    R12,R15
-         USING CMSSETFL,R12   establish addressability
+         LA    R15,CMSSETFL-CMSSYS
+         SLR   R12,R15
          USING NUCON,0
          L     R5,0(R1)       get Flag
          L     R3,4(R1)       get Value
@@ -96,7 +124,6 @@ SETFDONE DS    0H
          L     R14,12(R13)    restore our return address
          LM    R0,R12,20(R13) restore the registers
          BR    R14            return to our caller
-         LTORG
          EJECT
 ***********************************************************************
 * @@ARGSTR  Entry Point                                               *
@@ -110,21 +137,19 @@ SETFDONE DS    0H
          ENTRY @@ARGSTR
 @@ARGSTR DS    0H
          STM   R14,R12,12(R13)
-         LR    R12,R15
-         USING @@ARGSTR,R12   establish addressability
-         USING CMSCRAB,R13    map the save area
-         L     R2,GCCCRABA
-         DROP  R13
-         USING CMSCRAB,R2     map the CRAB
-         SR    R15,R15        * TODO RETURN ZERO for the moment *
-*         LA    R15,ARGSTRNG   get the argument string address
-         DROP  R2
+         LA    R15,@@ARGSTR-CMSSYS
+         SLR   R12,R15
+*        USING CMSCRAB,R13    map the save area
+*        L     R2,GCCCRABA
+*        DROP  R13
+*        USING CMSCRAB,R2     Map the CRAB<---This is the GCCCRAB?
+         SR    R15,R15        * TODO Return Zero for the moment *
+*        LA    R15,ARGSTRING  Get the Argument String address
+*        DROP  R2
          L     R14,12(R13)    restore our return address
          LM    R0,R12,20(R13) restore the registers
          BR    R14            return to our caller
-         LTORG
          EJECT
-         ENTRY @@ATTN
 ***********************************************************************
 * @@ATTN  Entry Point                                                 *
 * Place a line on the CMS console stack.                              *
@@ -140,10 +165,11 @@ SETFDONE DS    0H
 * returns:                                                            *
 *    (int)     Return code from the ATTN function, always 0.          *
 ***********************************************************************
-@@ATTN   DS    0H
-         STM   R14,R12,12(R13)
-         LR    R12,R15
-         USING @@ATTN,R12     establish addressability
+@@ATTN   PDPPRLG CINDEX=0,FRAME=CMSSVALN,BASER=12,ENTRY=YES
+         LA    R15,@@ATTN-CMSSYS
+         SLR   R12,R15
+         USING CMSSYS,R12
+         MVC   ATTNPL,=CL8'ATTN'
          L     R6,0(R1)       R6 is start of line to stack
          LA    R3,LINELEN(R6) last possible char to stack
          LA    R2,1           loop increment
@@ -171,18 +197,8 @@ ATTN4    DS    0H
          DC    AL4(ATTNRT)    go here if an error
 ATTNRT   DS    0H
          SR    R15,R15        zero return code
-         L     R14,12(R13)    restore our return address
-         LM    R0,R12,20(R13) restore the registers
-         BR    R14            return to our caller
-         LTORG
-*
-ATTNPL   DS    0D             ATTN parameter list
-         DC    CL8'ATTN'
-ATTNOD   DC    CL4'XXXX'      'FIFO' or 'LIFO'
-ATTNLN   DC    AL1(0)         length of line to be stacked
-ATTNAD   DC    AL3(0)         address of line to be stacked
+         PDPEPIL
          EJECT
-         ENTRY @@SVC202
 ***********************************************************************
 * @@SVC202  Entry Point                                               *
 * Invoke a CMS system service or command.  Both a standard and        *
@@ -204,10 +220,12 @@ ATTNAD   DC    AL3(0)         address of line to be stacked
 * returns:                                                            *
 *    (int)     Return code from the invoked service or command.       *
 ***********************************************************************
+         ENTRY @@SVC202
 @@SVC202 DS    0H
          STM   R14,R12,12(R13)
          LR    R12,R15
-         USING @@SVC202,R12   establish addressability
+         LA    R15,@@SVC202-CMSSYS
+         SLR   R12,R15
          LR    R2,R1          save C parameter list
          L     R1,0(R2)       plist
          L     R0,4(R2)       eplist
@@ -217,7 +235,6 @@ ATTNAD   DC    AL3(0)         address of line to be stacked
          L     R14,12(R13)    restore our return address
          LM    R0,R12,20(R13) restore the registers
          BR    R14            return to our caller
-         LTORG
          EJECT
 ***********************************************************************
 * @DMSFREE                                                            *
@@ -234,7 +251,8 @@ ATTNAD   DC    AL3(0)         address of line to be stacked
 @DMSFREE DS    0H
          STM   R14,R12,12(R13)
          LR    R12,R15
-         USING @DMSFREE,R12   establish addressability
+         LA    R15,@DMSFREE-CMSSYS
+         SLR   R12,R15
          L     R0,0(R1)       get number of dounlewords to allocate
 * Use DMSFREE to allocate the memory.
          DMSFREE DWORDS=(0),TYPE=USER,ERR=DMSFREE2
@@ -248,7 +266,6 @@ DMSFREE1 DS    0H
 DMSFREE2 DS    0H             no memory
          SR    R15,R15        indicate no memory allocated
          B     DMSFREE1
-         LTORG
          EJECT
 ***********************************************************************
 * @DMSFRET                                                            *
@@ -267,7 +284,8 @@ DMSFREE2 DS    0H             no memory
 @DMSFRET DS    0H
          STM   R14,R12,12(R13)
          LR    R12,R15
-         USING @DMSFRET,R12   establish addressability
+         LA    R15,@DMSFRET-CMSSYS
+         SLR   R12,R15
          L     R0,4(R1)       get doublewords to return
          L     R1,0(R1)       get address of memory to return
 * Use DMSFRET to return the memory.
@@ -280,7 +298,6 @@ DMSFRET1 DS    0H
 DMSFRET2 DS    0H             no memory
          LA    R15,1          indicate error
          B     DMSFRET1
-         LTORG
          EJECT
 ***********************************************************************
 * @@DMSFRE  Entry Point                                               *
@@ -307,11 +324,10 @@ DMSFRET2 DS    0H             no memory
 *    with the SYSTEM option.  Note that if such a program abnormally  *
 *    terminates, CMS does not release this memory.                    *
 ***********************************************************************
-         ENTRY @@DMSFRE
-@@DMSFRE DS    0H
-         STM   R14,R12,12(R13)
-         LR    R12,R15
-         USING @@DMSFRE,R12   establish addressability
+@@DMSFRE PDPPRLG CINDEX=0,FRAME=CMSSVALN,BASER=12,ENTRY=YES
+         LA    R15,@@DMSFRE-CMSSYS
+         SLR   R12,R15
+         USING CMSSYS,R12
          L     R2,0(R1)       get number of bytes to allocate
          SRL   R2,3           convert to doublewords
          LA    R0,2(R2)       round up plus 1 for housekeeping
@@ -322,8 +338,11 @@ DMSFRET2 DS    0H             no memory
          L     R4,=F'1000000'
          SR    R4,R3
          BP    OKAY
+         MVC   LINEDITL(LINEDISZ),LINEDITP Set pattern
+         MVI   OUTBUF,255         Set buffer size in byte 1
          LINEDIT TEXT='Attempting to allocate ........ bytes',         X
-               SUB=(DEC,(3)),COMP=NO,RENT=NO
+               SUB=(DEC,(3)),COMP=NO,BUFFA=OUTBUF,                     X
+               MF=(E,LINEDITL)
          SR    R0,R0
          SR    R1,R1
          B     NOMEMORY
@@ -349,19 +368,19 @@ POSTMEM  DS    0H
          LR    R2,R15
          LR    R3,R0
          LR    R4,R1
+         MVC   LINEDITL(LINEDISZ),LINEDITP Set pattern
+         MVI   OUTBUF,255         Set buffer size in byte 1
          LINEDIT TEXT='Allocated ...... dwords of memory at ......',   X
-               SUB=(DEC,(3),HEX,(4)),COMP=NO,RENT=NO
+               SUB=(DEC,(3),HEX,(4)),COMP=NO,                          X
+               MF=(E,LINEDITL)
          LR    R15,R2
 * End of debugging...
 * ---------------------------------------------------------------------
 FREERET  DS    0H
-         L     R14,12(R13)    restore our return address
-         LM    R0,R12,20(R13) restore the registers
-         BR    R14            return to our caller
+         PDPEPIL
 NOMEMORY DS    0H
          SR    R15,R15        indicate no memory allocated
          B     FREERET
-         LTORG
          EJECT
 ***********************************************************************
 * @@DMSFRT  Entry Point                                               *
@@ -379,15 +398,17 @@ NOMEMORY DS    0H
 *     7        Returned block is not double-word aligned.             *
 *     8        Illegal code or argument.                              *
 ***********************************************************************
-         ENTRY @@DMSFRT
-@@DMSFRT DS    0H
-         STM   R14,R12,12(R13)
-         LR    R12,R15
-         USING @@DMSFRT,R12   establish addressability
+@@DMSFRT PDPPRLG CINDEX=0,FRAME=CMSSVALN,BASER=12,ENTRY=YES
+         LA    R15,@@DMSFRT-CMSSYS
+         SLR   R12,R15
+         USING CMSSYS,R12
          L     R1,0(R1)       get address of memory to return
          LTR   R1,R1          check the address
          BP    FRTOK
-         LINEDIT TEXT='Invalid address passed to __DMSFRT'
+         MVC   LINEDITL(LINEDISZ),LINEDITP Set pattern
+         MVI   OUTBUF,255         Set buffer size in byte 1
+         LINEDIT TEXT='Invalid address passed to __DMSFRT',            X
+               MF=(E,LINEDITL)
          LA    R15,8          indicate bad pointer
          B     FRTEND
 FRTOK    DS    0H
@@ -396,8 +417,11 @@ FRTOK    DS    0H
          CLC   4(4,R1),=X'C7C3C300'
          BE    ALLSWELL       looks good
          LR    R2,R1
+         MVC   LINEDITL(LINEDISZ),LINEDITP Set pattern
+         MVI   OUTBUF,255         Set buffer size in byte 1
          LINEDIT TEXT='Memory overwrite detected by __DMSFRT at ......'X
-               ,SUB=(HEX,(2))
+               ,SUB=(HEX,(2)),                                         X
+               MF=(E,LINEDITL)
          LA    R15,5          indicate memory overwrite
          B     FRTEND
 ALLSWELL DS    0H
@@ -410,16 +434,16 @@ ALLSWELL DS    0H
          LR    R2,R15
          LR    R3,R0
          LR    R4,R1
+         MVC   LINEDITL(LINEDISZ),LINEDITP Set pattern
+         MVI   OUTBUF,255         Set buffer size in byte 1
          LINEDIT TEXT='Freed     ...... dwords of memory at ......',   X
-               SUB=(DEC,(3),HEX,(4)),COMP=NO,RENT=NO
+               SUB=(DEC,(3),HEX,(4)),COMP=NO,                          X
+               MF=(E,LINEDITL)
          LR    R15,R2
 * End of debugging...
 * ---------------------------------------------------------------------
 FRTEND   DS    0H
-         L     R14,12(R13)    restore our return address
-         LM    R0,R12,20(R13) restore the registers
-         BR    R14            return to our caller
-         LTORG
+         PDPEPIL
          EJECT
 ***********************************************************************
 * @@FSCLOS  Entry Point                                               *
@@ -437,16 +461,15 @@ FRTEND   DS    0H
 @@FSCLOS DS    0H
          STM   R14,R12,12(R13)
          LR    R12,R15
-         USING @@FSCLOS,R12   establish addressability
-         L     R2,0(R1)       get FSCB
+         LA    R15,@@FSCLOS-CMSSYS
+         SLR   R12,R15
+         L     R8,0(R1)       get FSCB
 * Use FSCLOSE to close the file.
-         FSCLOSE FSCB=(2)
+         FSCLOSE FSCB=(R8)
          L     R14,12(R13)    restore our return address
          LM    R0,R12,20(R13) restore the registers
          BR    R14            return to our caller
-         LTORG
          EJECT
-         ENTRY @@FSERAS
 ***********************************************************************
 * @@FSERAS  Entry Point                                               *
 * Delete a CMS file.                                                  *
@@ -464,22 +487,20 @@ FRTEND   DS    0H
 *    28        The file was not found.                                *
 *    36        Disk not accessed.                                     *
 ***********************************************************************
-@@FSERAS DS    0H
-         STM   R14,R12,12(R13)
-         LR    R12,R15
-         USING @@FSERAS,R12   establish addressability
+@@FSERAS PDPPRLG CINDEX=0,FRAME=CMSSVALN,BASER=12,ENTRY=YES
+         LA    R15,@@FSERAS-CMSSYS
+         SLR   R12,R15
+         USING CMSSYS,R12
          L     R2,0(R1)       get address of fileid
-         MVC   FILEID(18),0(R2) copy fileid
-         TR    FILEID(18),UPPER translate to uppercase
-         LA    R2,FILEID
+         LA    R8,WORKFSCB    FSCB is built here
+         XC    0(FSCBLEN,R8),0(R8)
+         MVI   FSCBFN,C' '
+         MVC   FSCBFN+1(18-1),FSCBFN blank out fileid
+         OC    FSCBFN(18),0(R2)   copy FILEID and uppercase
 * Use FSERASE to delete the file.
-         FSERASE (2)
-         L     R14,12(R13)    restore our return address
-         LM    R0,R12,20(R13) restore the registers
-         BR    R14            return to our caller
-         LTORG
+         FSERASE FSCB=WORKFSCB
+         PDPEPIL
          EJECT
-         ENTRY @@FSOPEN
 ***********************************************************************
 * @@FSOPEN  Entry Point                                               *
 * Open a CMS file for reading or writing.                             *
@@ -511,27 +532,31 @@ FRTEND   DS    0H
 *    20        The fileid is invalid.                                 *
 *    28        The file was not found.                                *
 ***********************************************************************
+         ENTRY @@FSOPEN
 @@FSOPEN DS    0H
          STM   R14,R12,12(R13)
          LR    R12,R15
-         USING @@FSOPEN,R12   establish addressability
-         L     R2,0(R1)       get address of fileid
-         MVC   FILEID(18),0(R2) copy fileid
-         TR    FILEID(18),UPPER translate to uppercase
-         LA    R2,FILEID
-         L     R3,4(R1)       get buffer address
-         L     R4,8(R1)       get buffer length
-         L     R5,12(R1)      get record format
-         L     R6,16(R1)      get number of records to read or write
-         L     R7,20(R1)      get record number
-         L     R8,24(R1)      get FSCB
+         LA    R15,@@FSOPEN-CMSSYS
+         SLR   R12,R15
+         LM    R2,R8,0(R1)    get address of parameters
+*              R2             address of fileid
+*              R3             buffer address
+*              R4             buffer length
+*              R5             record format
+*              R6             number of records to read or write
+*              R7             record number
+*              R8             FSCB is built here
+         XC    0(FSCBLEN,R8),0(R8)
+         MVI   FSCBFN,C' '
+         MVC   FSCBFN+1(18-1),FSCBFN blank out fileid
+         OC    FSCBFN(18),0(R2)   copy FILEID and uppercase
 * Use FSOPEN to open the file.
-         FSOPEN (2),BUFFER=(3),BSIZE=(4),RECFM=(5),NOREC=(6),RECNO=(7),X
-               FSCB=(8)
+         FSOPEN BUFFER=(R3),BSIZE=(R4),RECFM=(R5),                     *
+               NOREC=(R6),RECNO=(R7),                                  *
+               FSCB=(R8)
          L     R14,12(R13)    restore our return address
          LM    R0,R12,20(R13) restore the registers
          BR    R14            return to our caller
-         LTORG
          EJECT
          ENTRY @@FSPOIN
 ***********************************************************************
@@ -558,25 +583,25 @@ FRTEND   DS    0H
 @@FSPOIN DS    0H
          STM   R14,R12,12(R13)
          LR    R12,R15
-         USING @@FSPOIN,R12   establish addressability
-         L     R2,0(R1)       get FSCB
-         L     R3,4(R1)       get record number
-         L     R4,8(R1)       get read or write flag
+         LA    R15,@@FSPOIN-CMSSYS
+         SLR   R12,R15
+         L     R8,0(,R1)      FSCB
+         LM    R3,R4,0(R1)
+*              R3             record number
+*              R4             read or write flag
          LTR   R4,R4
          BZ    POINTRD        set the read pointer
 * Use FSPOINT to set the write pointer
-         FSPOINT FSCB=(2),WRPNT=(3)
+         FSPOINT FSCB=(R8),WRPNT=(R3)
          B     POINTED
 POINTRD  DS    0H
 * Use FSPOINT to set the read pointer
-         FSPOINT FSCB=(2),RDPNT=(3)
+         FSPOINT FSCB=(R8),RDPNT=(R3)
 POINTED  DS    0H
          L     R14,12(R13)    restore our return address
          LM    R0,R12,20(R13) restore the registers
          BR    R14            return to our caller
-         LTORG
          EJECT
-         ENTRY @@FSREAD
 ***********************************************************************
 * @@FSREAD  Entry Point                                               *
 * Read a record from an open file.                                    *
@@ -615,43 +640,42 @@ POINTED  DS    0H
 * 1. The bytes placed into the FSCB buffer are NOT terminated with a  *
 *    null character.                                                  *
 ***********************************************************************
+         ENTRY @@FSREAD
 @@FSREAD DS    0H
          STM   R14,R12,12(R13)
          LR    R12,R15
-         USING @@FSREAD,R12   establish addressability
+         LA    R15,@@FSREAD-CMSSYS
+         SLR   R12,R15
          LR    R2,R1          save our plist pointer
-         L     R3,0(R1)       get FSCB
-         L     R4,4(R1)       get record number
+         L     R8,0(,R1)      FSCB
+         LM    R4,R5,4(R1)
+*              R4             record number
+*              R5             where to store number of bytes read
          LTR   R4,R4
-         BH    READREC       if record number > 0, use it
-         BL    READNREC      if record number < 0, use FSCB recnum
-         USING FSCBD,R3
+         BH    READREC        if record number > 0, use it
+         BL    READNREC       if record number < 0, use FSCB recnum
 * The caller specified 0 as the record number to read.  If the FSCB is
 * set to read record 1, read that, then set the FSCB record number to 0
 * after the FSREAD has completed.
-         LH    R5,FSCBITNO    get the record number from the FSCB
-         C     R5,=F'1'
+         LH    R1,FSCBITNO    get the record number from the FSCB
+         C     R1,=F'1'
          BH    READREC        it was >1, so read next record instead
 READNREC DS    0H
 * Use FSREAD to read from the file, using the recnum in the FSCB
-         FSREAD FSCB=(3)
+         FSREAD FSCB=(R8)
          LTR   R4,R4          did the user specify recnum of 0?
          BNZ   DONEREAD       no, so we are done
          STH   R4,FSCBITNO    yes, set the FSCB record number to 0
          B     DONEREAD
 READREC  DS    0H
 * Use FSREAD to read from the file, specifying the recnum
-         FSREAD FSCB=(3),RECNO=(4)
+         FSREAD FSCB=(R8),RECNO=(R4)
 DONEREAD DS    0H
-         L     R3,8(R2)       where to store number of bytes read
-         ST    R0,0(R3)       return number of bytes read
+         ST    R0,0(R5)       return number of bytes read
          L     R14,12(R13)    restore our return address
          LM    R0,R12,20(R13) restore the registers
          BR    R14            return to our caller
-         DROP  R3
-         LTORG
          EJECT
-         ENTRY @@FSSTAT
 ***********************************************************************
 * @@FSSTAT  Entry Point                                               *
 * Determine whether a file exists.                                    *
@@ -676,22 +700,22 @@ DONEREAD DS    0H
 *    28        The file was not found.                                *
 *    36        Disk not accessed.                                     *
 ***********************************************************************
-@@FSSTAT DS    0H
-         STM   R14,R12,12(R13)
-         LR    R12,R15
-         USING @@FSSTAT,R12   establish addressability
-         L     R2,0(R1)       get address of fileid
-         MVC   FILEID(18),0(R2) copy fileid
-         TR    FILEID(18),UPPER translate to uppercase
-         LA    R2,FILEID
-         L     R3,4(R1)       get FST address
+@@FSSTAT PDPPRLG CINDEX=0,FRAME=CMSSVALN,BASER=12,ENTRY=YES
+         LA    R15,@@FSSTAT-CMSSYS
+         SLR   R12,R15
+         USING CMSSYS,R12
+         LM    R2,R3,0(R1)
+*              R2             address of fileid
+*              R3             address to receive FST ptr
+         LA    R8,WORKFSCB    FSCB is built here
+         XC    0(FSCBLEN,R8),0(R8)
+         MVI   FSCBFN,C' '
+         MVC   FSCBFN+1(18-1),FSCBFN Blank out FILEID
+         OC    FSCBFN(18),0(R2)   copy fileid and uppercase
 * Use FSSTATE to determine if the file exists.
-         FSSTATE (2)
-         ST    R1,0(R3)       store FST
-         L     R14,12(R13)    restore our return address
-         LM    R0,R12,20(R13) restore the registers
-         BR    R14            return to our caller
-         LTORG
+         FSSTATE FSCB=WORKFSCB
+         ST    R1,0(,R3)      store FST
+         PDPEPIL
          EJECT
          ENTRY @@FSWRIT
 ***********************************************************************
@@ -749,24 +773,24 @@ DONEREAD DS    0H
 @@FSWRIT DS    0H
          STM   R14,R12,12(R13)
          LR    R12,R15
-         USING @@FSWRIT,R12   establish addressability
-         L     R2,0(R1)       get FSCB
-         L     R3,4(R1)       get record number
-         L     R4,8(R1)       get record length
+         LA    R15,@@FSWRIT-CMSSYS
+         SLR   R12,R15
+         LM    R2,R4,0(R1)
+*              R2             FSCB
+*              R3             record number
+*              R4             record length
 * Use FSWRITE to write to the file.
          LTR   R3,R3
          BNL   WRECNO         if record number is 0 or higher, use it
-         FSWRITE FSCB=(2),BSIZE=(4)
+         FSWRITE FSCB=(R2),BSIZE=(R4)
          B     DONEWRIT
 WRECNO   DS    0H
-         FSWRITE FSCB=(2),RECNO=(3),BSIZE=(4)
+         FSWRITE FSCB=(R2),RECNO=(R3),BSIZE=(R4)
 DONEWRIT DS    0H
          L     R14,12(R13)    restore our return address
          LM    R0,R12,20(R13) restore the registers
          BR    R14            return to our caller
-         LTORG
          EJECT
-         ENTRY @@GETCLK
 ***********************************************************************
 * @@GETCLK  Entry Point                                               *
 * Get the system clock time.                                          *
@@ -779,10 +803,12 @@ DONEWRIT DS    0H
 * returns:                                                            *
 *    (int)     The number of seconds since 1/1/1970.                  *
 ***********************************************************************
+         ENTRY @@GETCLK
 @@GETCLK DS    0H
          STM   R14,R12,12(R13)
          LR    R12,R15
-         USING @@GETCLK,R12   establish addressability
+         LA    R15,@@GETCLK-CMSSYS
+         SLR   R12,R15
          L     R2,0(R1)       get address of 'clock'
          STCK  0(R2)          store the clock there
          L     R4,0(R2)       calculate seconds since 1/1/1970
@@ -795,9 +821,7 @@ DONEWRIT DS    0H
          L     R14,12(R13)    restore our return address
          LM    R0,R12,20(R13) restore the registers
          BR    R14            return to our caller
-         LTORG
          EJECT
-         ENTRY @@PRINTL
 ***********************************************************************
 * @@PRINTL  Entry Point                                               *
 * Write a line to the virtual printer.                                *
@@ -824,10 +848,10 @@ DONEWRIT DS    0H
 * 1. Use the CP CLOSE command to close the virtual printer.  You can  *
 *    issue this via the @@CMSCMD entry point.                         *
 ***********************************************************************
-@@PRINTL DS    0H
-         STM   R14,R12,12(R13)
-         LR    R12,R15
-         USING @@PRINTL,R12   establish addressability
+@@PRINTL PDPPRLG CINDEX=0,FRAME=CMSSVALN,BASER=12,ENTRY=YES
+         LA    R15,@@PRINTL-CMSSYS
+         SLR   R12,R15
+         USING CMSSYS,R12
          L     R6,0(R1)       R6 is start of line to display
          LA    R3,151(R6)     last possible char to display
          LA    R2,1           loop increment
@@ -840,13 +864,21 @@ PRINTL1  DS    0H
 PRINTL2  DS    0H
          SR    R4,R6          length of line to display
 * Use PRINTL to display the line.
-         PRINTL (6),(4)
-         L     R14,12(R13)    restore our return address
-         LM    R0,R12,20(R13) restore the registers
-         BR    R14            return to our caller
-         LTORG
+*         PRINTL (R6),(R4)
+         MVC   PRINTLE(PRINTLPL),PRINTLP SET PATTERN
+         LA    R9,PRINTLE     BRANCH THERE TO CALL IT
+         BR    R9
+PRINTLND DS    0H             IT RETURNS HERE
+*
+         PDPEPIL
+*
+         DS    0D             ALIGN TO AVOID GENERATED CNOP
+         USING PRINTLP,R9
+PRINTLP  PRINTL (R6),(R4)
+         DROP  R9
+         B     PRINTLND
+PRINTLPL EQU   *-PRINTLP
          EJECT
-         ENTRY @@PUNCHC
 ***********************************************************************
 * @@PUNCHC  Entry Point                                               *
 * Write a line to the virtual card punch.                             *
@@ -865,19 +897,27 @@ PRINTL2  DS    0H
 * 1. Use the CP CLOSE command to close the virtual card punch.  You   *
 *    can issue this via the @@CMSCMD entry point.                     *
 ***********************************************************************
-@@PUNCHC DS    0H
-         STM   R14,R12,12(R13)
-         LR    R12,R15
-         USING @@PUNCHC,R12   establish addressability
+@@PUNCHC PDPPRLG CINDEX=0,FRAME=CMSSVALN,BASER=12,ENTRY=YES
+         LA    R15,@@PUNCHC-CMSSYS
+         SLR   R12,R15
+         USING CMSSYS,R12
          L     R6,0(R1)       R6 is start of line to punch
 * Use PUNCHC to punch the card.
-         PUNCHC (6)
-         L     R14,12(R13)    restore our return address
-         LM    R0,R12,20(R13) restore the registers
-         BR    R14            return to our caller
-         LTORG
-         EJECT
+*        PUNCHC (6)
+         MVC   PUNCHCE(PUNCHCPL),PUNCHCP set pattern
+         LA    R9,PUNCHCE     branch there to call it
+         BR    R9
+PUNCHCND DS    0H             it returns here
 *
+         PDPEPIL
+*
+         DS    0D             align to avoid generated CNOP
+         USING PUNCHCP,R9
+PUNCHCP  PUNCHC (6)
+         DROP  R9
+         B     PUNCHCND
+PUNCHCPL EQU   *-PUNCHCP
+         EJECT
 ***********************************************************************
 * @@RDCARD  Entry Point                                               *
 * Read a line from the virtual card reader.                           *
@@ -901,26 +941,32 @@ PRINTL2  DS    0H
 *     5        Length not equal to requested length.                  *
 *   100        Punch not attached.                                    *
 ***********************************************************************
-         ENTRY @@RDCARD
-@@RDCARD DS    0H
-         STM   R14,R12,12(R13)
-         LR    R12,R15
-         USING @@RDCARD,R12   establish addressability
+@@RDCARD PDPPRLG CINDEX=0,FRAME=CMSSVALN,BASER=12,ENTRY=YES
+         LA    R15,@@RDCARD-CMSSYS
+         SLR   R12,R15
+         USING CMSSYS,R12
          L     R2,0(R1)       get buffer address
          L     R4,4(R1)       get address of length variable
          L     R3,0(R4)       length of line to read
 * Use RDCARD to read the line.
-         RDCARD (2),(3)
+*        RDCARD (R2),(R3)
+         MVC   RDCARDE(RDCARDPL),RDCARDP set pattern
+         LA    R9,RDCARDE     branch there to call it
+         BR    R9
+RDCARDND DS    0H             it returns here
+*
          ST    R0,0(R4)       return number of bytes read in 'len'
          SR    R1,R1
          STC   R1,0(R3,R2)    place null character at end of line
-         L     R14,12(R13)    restore our return address
-         LM    R0,R12,20(R13) restore the registers
-         BR    R14            return to our caller
-         LTORG
-         EJECT
+         PDPEPIL
 *
-         ENTRY @@RDTERM
+         DS    0D             align to avoid generated CNOP
+         USING RDCARDP,R9
+RDCARDP  RDCARD (R2),(R3)
+         DROP  R9
+         B     RDCARDND
+RDCARDPL EQU   *-RDCARDP
+         EJECT
 ***********************************************************************
 * @@RDTERM  Entry Point                                               *
 * Read a line from the terminal.                                      *
@@ -934,22 +980,31 @@ PRINTL2  DS    0H
 * returns:                                                            *
 *    (int)     Length of the string placed in the buffer.             *
 ***********************************************************************
-@@RDTERM DS    0H
-         STM   R14,R12,12(R13)
-         LR    R12,R15
-         USING @@RDTERM,R12   establish addressability
+@@RDTERM PDPPRLG CINDEX=0,FRAME=CMSSVALN,BASER=12,ENTRY=YES
+         LA    R15,@@RDTERM-CMSSYS
+         SLR   R12,R15
+         USING CMSSYS,R12
          L     R2,0(R1)       get buffer address
 * Use RDTERM to read the line.
-         RDTERM (2),EDIT=NO
+*        RDTERM (2),EDIT=NO
+         MVC   RDTERME(RDTERMPL),RDTERMP set pattern
+         LA    R9,RDTERME     branch there to call it
+         BR    R9
+RDTERMND DS    0H             it returns here
+         LH    R0,14(,R1)     Length returned here
+*
          LR    R15,R0         get number of bytes read as return code
          SR    R1,R1
          STC   R1,0(R15,R2)   place null character at end of line
-         L     R14,12(R13)    restore our return address
-         LM    R0,R12,20(R13) restore the registers
-         BR    R14            return to our caller
-         LTORG
+         PDPEPIL
+*
+         DS    0D             align to avoid generated CNOP
+         USING RDTERMP,R9
+RDTERMP  RDTERM (2),EDIT=NO
+         DROP  R9
+         B     RDTERMND
+RDTERMPL EQU   *-RDTERMP
          EJECT
-         ENTRY @@RENAME
 ***********************************************************************
 * @@RENAME  Entry Point                                               *
 * Rename a CMS file.                                                  *
@@ -976,33 +1031,26 @@ PRINTL2  DS    0H
 *    from a C program executing in the transient area.                *
 * 2. The RENAME command may issue error messages for certain errors.  *
 ***********************************************************************
-@@RENAME DS    0H
-         STM   R14,R12,12(R13)
-         LR    R12,R15
-         USING @@RENAME,R12   establish addressability
+@@RENAME PDPPRLG CINDEX=0,FRAME=CMSSVALN,BASER=12,ENTRY=YES
+         LA    R15,@@RENAME-CMSSYS
+         SLR   R12,R15
+         USING CMSSYS,R12
+         MVC   RENAMEPL(8),=CL8'RENAME'
+         MVC   RENFENCE(8),=XL8'FFFFFFFFFFFFFFFF'
          L     R2,0(R1)       get address of old fileid
-         MVC   RENOLDN(18),0(R2) copy fileid
-         TR    RENOLDN(18),UPPER translate to uppercase
+         MVI   RENOLDN,C' '
+         MVC   RENOLDN+1(24-1),RENOLDN
+         OC    RENOLDN(18),0(R2) copy fileid and uppercase
          L     R2,4(R1)       get address of new fileid
-         MVC   RENNEWN(18),0(R2) copy fileid
-         TR    RENNEWN(18),UPPER translate to uppercase
+         MVI   RENNEWN,C' '
+         MVC   RENNEWN+1(24-1),RENNEWN
+         OC    RENNEWN(18),0(R2) copy fileid and uppercase
 * Use the RENAME command to rename the file.
          LA    R1,RENAMEPL
          SVC   202            rename the file
          DC    AL4(RENAMERT)  go here if an error
 RENAMERT DS    0H
-         L     R14,12(R13)    restore our return address
-         LM    R0,R12,20(R13) restore the registers
-         BR    R14            return to our caller
-         LTORG
-*
-RENAMEPL DS    0D             RENAME parameter list
-         DC    CL8'RENAME'
-RENOLDN  DS    CL18           old fileid
-         DC    CL6'      '
-RENNEWN  DS    CL18           new fileid
-         DC    CL6'      '
-RENFENCE DC    XL8'FFFFFFFFFFFFFFFF'
+         PDPEPIL
          EJECT
          ENTRY @@STACKN
 ***********************************************************************
@@ -1017,13 +1065,13 @@ RENFENCE DC    XL8'FFFFFFFFFFFFFFFF'
 @@STACKN DS    0H
          STM   R14,R12,12(R13)
          LR    R12,R15
-         USING @@STACKN,R12   establish addressability
+         LA    R15,@@STACKN-CMSSYS
+         SLR   R12,R15
          USING NUCON,R0
          LH    R15,NUMFINRD   put number of lines in stack in R15
          L     R14,12(R13)    restore our return address
          LM    R0,R12,20(R13) restore the registers
          BR    R14            return to our caller
-         LTORG
          EJECT
          ENTRY @@WAITT
 ***********************************************************************
@@ -1038,14 +1086,13 @@ RENFENCE DC    XL8'FFFFFFFFFFFFFFFF'
 @@WAITT  DS    0H
          STM   R14,R12,12(R13)
          LR    R12,R15
-         USING @@WAITT,R12    establish addressability
+         LA    R15,@@WAITT-CMSSYS
+         SLR   R12,R15
          WAITT
          L     R14,12(R13)    restore our return address
          LM    R0,R12,20(R13) restore the registers
          BR    R14            return to our caller
-         LTORG
          EJECT
-         ENTRY @@WRTERM
 ***********************************************************************
 * @@WRTERM  Entry Point                                               *
 * Display a line on the terminal.                                     *
@@ -1067,10 +1114,10 @@ RENFENCE DC    XL8'FFFFFFFFFFFFFFFF'
 * returns:                                                            *
 *    (int)     Return code from the WRTERM function, always 0.        *
 ***********************************************************************
-@@WRTERM DS    0H
-         STM   R14,R12,12(R13)
-         LR    R12,R15
-         USING @@WRTERM,R12   establish addressability
+@@WRTERM PDPPRLG CINDEX=0,FRAME=CMSSVALN,BASER=12,ENTRY=YES
+         LA    R15,@@WRTERM-CMSSYS
+         SLR   R12,R15
+         USING CMSSYS,R12
          L     R6,0(R1)       R6 is start of line to display
          L     R7,4(R1)       get edit setting
          LA    R3,129(R6)     last possible char to display
@@ -1086,43 +1133,117 @@ WRTERM2  DS    0H
 * Use WRTERM to display the line.
          LTR   R7,R7          edit the line?
          BZ    WRTERM3        no
-         WRTERM (6),(4),EDIT=YES
+* Use WRTERM to write the line.
+*        WRTERM (R6),(R4),EDIT=YES
+         MVC   WRTRM1E(WRTRM1PL),WRTRM1P set pattern
+         LA    R9,WRTRM1E     branch there to call it
+         BR    R9
+WRTRM1ND DS    0H             it returns here
          B     WRTERM4
 WRTERM3  DS    0H
-         WRTERM (6),(4),EDIT=NO
+* Use WRTERM to write the line.
+*        WRTERM (6),(4),EDIT=NO
+         MVC   WRTRM2E(WRTRM2PL),WRTRM2P set pattern
+         LA    R9,WRTRM2E     branch there to call it
+         BR    R9
+WRTRM2ND DS    0H             it returns here
 WRTERM4  DS    0H
-         L     R14,12(R13)    restore our return address
-         LM    R0,R12,20(R13) restore the registers
-         BR    R14            return to our caller
-         LTORG
+         PDPEPIL
+*
+         DS    0D             align to avoid generated CNOP
+         USING WRTRM1P,R9
+WRTRM1P  WRTERM (R6),(R4),EDIT=YES
+         DROP  R9
+         B     WRTRM1ND
+WRTRM1PL EQU   *-WRTRM1P
+*
+         DS    0D             align to avoid generated CNOP
+         USING WRTRM2P,R9
+WRTRM2P  WRTERM (6),(4),EDIT=NO
+         DROP  R9
+         B     WRTRM2ND
+WRTRM2PL EQU   *-WRTRM2P
+         EJECT
+* ---------------------------------------------------------------------
+* Literal pool
+* ---------------------------------------------------------------------
+         LTORG ,
+LINEDITP LINEDIT MF=L,MAXSUBS=5
+LINEDISZ EQU   *-LINEDITP
          EJECT
 * ---------------------------------------------------------------------
 * To do:  try and get addressability to xlate table in DMSCRD!!!!!!!!!!
 * ---------------------------------------------------------------------
-FILEID   DS    CL18           copy of fileid so we can translate it
-UPPER    DS    0H             uppercase translation table
-*                             copied from DMSCRD
-         DC    X'000102030405060708090A0B0C0D0E0F'
-         DC    X'101112131415161718191A1B1C1D1E1F'
-         DC    X'202122232425262728292A2B2C2D2E2F'
-         DC    X'303132333435363738393A3B3C3D3E3F'
-         DC    X'404142434445464748494A4B4C4D4E4F'
-         DC    X'505152535455565758595A5B5C5D5E5F'
-         DC    X'606162636465666768696A6B6C6D6E6F'
-         DC    X'707172737475767778797A7B7C7D7E7F'
-         DC    X'80C1C2C3C4C5C6C7C8C98A8B8C8D8E8F'
-         DC    X'90D1D2D3D4D5D6D7D8D99A9B9C9D9E9F'
-         DC    X'A0A1E2E3E4E5E6E7E8E9AAABACADAEAF'
-         DC    X'B0B1B2B3B4B5B6B7B8B9BABBBCBDBEBF'
-         DC    X'C0C1C2C3C4C5C6C7C8C9CACBCCCDCECF'
-         DC    X'D0D1D2D3D4D5D6D7D8D9DADBDCDDDEDF'
-         DC    X'E0E1E2E3E4E5E6E7E8E9EAEBECEDEEEF'
-         DC    X'F0F1F2F3F4F5F6F7F8F9FAFBFCFDFEFF'
 LINELEN  EQU   130            130 for VM/370; 256 for VM/SP or z/VM
          SPACE
-         CMSCRAB
-FSCB     FSCBD
-         FSTB
-         NUCON
-         REGEQU
+         CMSCRAB              COntinually addressed by R13
+         ORG   MAINSTK        Local variables start here
+WORKFSCB FSCB  'WORK FILE A'  File System Control Block
+*
+ATTNPL   DS    0D             ATTN parameter list
+         DC    CL8'ATTN'
+ATTNOD   DC    CL4'XXXX'      'FIFO' or 'LIFO'
+ATTNLN   DC    AL1(0)         length of line to be stacked
+ATTNAD   DC    AL3(0)         address of line to be stacked
+*
+LINEDITL LINEDIT MF=L,MAXSUBS=5
+*
+RENAMEPL DS    0D             RENAME parameter list
+         DC    CL8'RENAME'
+RENOLDN  DS    CL18           old fileid
+         DC    CL6'      '
+RENNEWN  DS    CL18           new fileid
+         DC    CL6'      '
+RENFENCE DC    XL8'FFFFFFFFFFFFFFFF'
+*
+PLSTAREA DS    0D             BUILD PLISTS HERE FOR PRINTL, PUNCHL,
+*                                                   RDCARD,
+*                                                   RDTERM, and WRTERM
+         ORG   PLSTAREA
+         USING RDTERME,R9
+RDTERME  RDTERM (2),EDIT=NO
+         DROP  R9
+         B     RDTERMND
+****
+         ORG   PLSTAREA
+         USING WRTRM1E,R9
+WRTRM1E  WRTERM (R6),(R4),EDIT=YES
+         DROP  R9
+         B     WRTRM1ND
+****
+         ORG   PLSTAREA
+         USING WRTRM2E,R9
+WRTRM2E  WRTERM (6),(4),EDIT=NO
+         DROP  R9
+         B     WRTRM2ND
+*
+****
+         ORG   PLSTAREA
+         USING RDCARDE,R9
+RDCARDE  RDCARD (R2),(R3)
+         DROP  R9
+         B     RDCARDND
+*
+****
+         ORG   PLSTAREA
+         USING PRINTLE,R9
+PRINTLE  PRINTL (R6),(R4)
+         DROP  R9
+         B     PRINTLND
+*
+****
+         ORG   PLSTAREA
+         USING PUNCHCE,R9
+PUNCHCE  PRINTL (R6),(R4)
+         DROP  R9
+         B     PUNCHCND
+*
+         ORG   ,
+OUTBUF   DS    CL256          Terminal buffer
+CMSSVALN EQU   *-CMSCRAB      Save area length
+*
+FSCB     FSCBD                File System Control Block
+FSCBLEN  EQU   *-FSCBD        Length of FSCB
+         NUCON ,
+         REGEQU ,
          END

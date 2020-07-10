@@ -1,0 +1,239 @@
+***********************************************************************
+* Vector table of entries of the memory-resident GCC runtime routines *
+*                                                                     *
+* Part of GCCLIB - VM/370 CMS Native Std C Library                    *
+*                                                                     *
+* Contributors: See contrib memo                                      *
+*                                                                     *
+* Released to the public domain                                       *
+***********************************************************************
+*
+***********************************************************************
+* Entry points in CMSSYSC C / CMSSYS H                                *
+***********************************************************************
+@@CMSCMD
+***********************************************************************
+* Entry points in CMSSYS ASSEMBLE                                     *
+***********************************************************************
+@@DEBUG
+CMSSETFL
+CMSSETNU
+@@ARGSTR
+@@ATTN
+@@SVC202
+@@DMSFRE
+@@DMSFRT
+@@FSCLOS
+@@FSERAS
+@@FSOPEN
+@@FSPOIN
+@@FSREAD
+@@FSSTAT
+@@FSWRIT
+@@GETCLK
+@@PRINTL
+@@PUNCHC
+@@RDCARD
+* @@RDTAPE
+@@RDTERM
+@@RENAME
+@@STACKN
+* @@TAPCTL
+* @@WAITD
+@@WAITT
+* @@WRTAPE
+@@WRTERM
+***********************************************************************
+* Entry points in CMSJUMP ASSEMBLE / SETJMP H                         *
+***********************************************************************
+SETJMP
+LONGJMP
+***********************************************************************
+* Entry points in CMSRUNTM                                            *
+***********************************************************************
+@@CSTART
+MORESTAK
+LESSSTAK
+***********************************************************************
+* Entry points in CMSSTDIO C / STDIO H                                *
+***********************************************************************
+CLEARERR
+FCLOSE
+FEOF
+FERROR
+FFLUSH
+FGETC
+FGETPOS
+FGETS
+FOPEN
+FPRINTF
+FPUTC
+FPUTS
+FREAD
+FREOPEN
+FSCANF
+FSEEK
+FSETPOS
+FTELL
+FWRITE
+GETS
+PERROR
+PRINTF
+PUTS
+REMOVE
+RENAME
+REWIND
+SCANF
+SETBUF
+SETVBUF
+* SNPRINTF
+SPRINTF
+SSCANF
+TMPFILE
+TMPNAM
+UNGETC
+VFPRINTF
+VSPRINTF
+FCACHEHI
+FGETREC
+FSETREC
+***********************************************************************
+* Entry points in CMSSTDLB C / STDLIB H                               *
+***********************************************************************
+ABORT
+ABS
+ATEXIT
+ATOF
+ATOI
+ATOL
+BSEARCH
+DIV
+EXIT
+GETENV
+LABS
+LDIV
+MBLEN
+MBSTOWCS
+MBTOWC
+QSORT
+RAND
+SRAND
+STRTOD
+STRTOL
+STRTOUL
+SYSTEM
+WCSTOMBS
+WCTOMB
+***********************************************************************
+* Entry points in MALLOC C / STDLIB H                                 *
+***********************************************************************
+CALLOC
+FREE
+MALLOC
+REALLOC
+MEMALIGN
+ICALLOC
+ICOMALLO
+FOOTPRIN
+MFOOTPRI
+MALLINFO
+MALLOCUS
+MALLOCST
+MTRIM
+MALLOPT
+***********************************************************************
+* Entry points in ASSERT C / ASSERT H                                 *
+***********************************************************************
+@@ASSERT
+***********************************************************************
+* Entry points in CTYPE C / CTYPE H                                   *
+***********************************************************************
+ISALNUM
+ISALPHA
+ISCNTRL
+ISDIGIT
+ISGRAPH
+ISLOWER
+ISPRINT
+ISPUNCT
+ISSPACE
+ISUPPER
+ISXDIGIT
+TOLOWER
+TOUPPER
+***********************************************************************
+* Entry points in LOCALE C / LOCALE H                                 *
+***********************************************************************
+SETLOCAL
+LOCALECO
+***********************************************************************
+* Entry points in MATH C / MATH H                                     *
+***********************************************************************
+ACOS
+ASIN
+ATAN
+ATAN2
+CEIL
+COS
+COSH
+EXP
+FABS
+FLOOR
+FMOD
+FREXP
+LDEXP
+LOG
+LOG10
+MODF
+POW
+SIN
+SINH
+SQRT
+TAN
+TANH
+***********************************************************************
+* Entry points in SIGNAL C / SIGNAL H                                 *
+***********************************************************************
+RAISE
+SIGNAL
+***********************************************************************
+* Entry points in STRING C / STRING H                                 *
+***********************************************************************
+MEMCHR
+MEMCMP
+MEMCPY
+MEMMOVE
+MEMSET
+STRCAT
+STRCHR
+STRCMP
+STRCOLL
+STRCPY
+STRCSPN
+STRERROR
+STRICMP
+STRLEN
+STRLWR
+STRNCAT
+STRNCMP
+STRNCPY
+STRPBRK
+STRRCHR
+STRSPN
+STRSTR
+STRTOK
+STRUPR
+STRXFRM
+***********************************************************************
+* Entry points in TIME C / TIME H                                     *
+***********************************************************************
+ASCTIME
+CLOCK
+CTIME
+DIFFTIME
+GMTIME
+LOCALTIM
+MKTIME
+STRFTIME
+TIME
+*

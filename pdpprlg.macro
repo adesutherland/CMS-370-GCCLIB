@@ -38,7 +38,7 @@
          USING *,&BASER       establish addressability
          STM   14,12,12(13)   save the caller's registers
          LR    &BASER,15      copy the base register from R15
-         L     9,=F'&FRAME'   stack space requested
+         L     9,=A(&FRAME)   stack space requested
          L     5,=V(@DSTAKIN)
          BALR  14,5
          MEND
