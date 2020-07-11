@@ -23,7 +23,7 @@ void (*signal(int sig, void (*func)(int))) (int)
     if (sig < SIGABRT) return SIG_ERR;
     if (sig > SIGTERM) return SIG_ERR;
     SIGHANDLER *old_signal_handler = handlers[sig];
-    handlers[sig] = func;
+    handlers[sig-1] = func;
     return (old_signal_handler);
 }
 
@@ -32,7 +32,7 @@ int raise(int sig)
     char message[130];
     if (sig < SIGABRT) return -1;
     if (sig > SIGTERM) return -1;
-    if (handlers[sig] == SIG_DFL)
+    if (handlers[sig-1] == SIG_DFL)
     {
       if (sig == SIGABRT)
       {
@@ -41,6 +41,6 @@ int raise(int sig)
           GETGCCCRAB()->exitfunc(EXIT_FAILURE); /* Standard specifies no exit processing */
       }
     }
-    else (handlers[sig])(sig);
+    else (handlers[sig-1])(sig);
     return (0);
 }

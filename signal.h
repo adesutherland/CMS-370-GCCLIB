@@ -15,10 +15,6 @@
 
 typedef int sig_atomic_t;
 
-void __sigdfl(int sig);
-void __sigerr(int sig);
-void __sigign(int sig);
-
 #define SIG_ERR (void (*)())-1
 #define SIG_DFL (void (*)())0
 #define SIG_IGN (void (*)())1

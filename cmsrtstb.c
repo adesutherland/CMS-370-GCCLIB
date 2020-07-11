@@ -24,12 +24,12 @@ int __cstub(PLIST *plist , EPLIST *eplist)
   int x;
 
   /* Default handlers */
-  void (*handlers[])(int) = {SIG_DFL, SIG_DFL, SIG_DFL, SIG_DFL, SIG_DFL, SIG_DFL};
+  SIGHANDLER *handlers[6] = {SIG_DFL, SIG_DFL, SIG_DFL, SIG_DFL, SIG_DFL, SIG_DFL};
 
   /* User Exits */
-  void (*userexits[__NATEXIT])(void);
+  USEREXIT *userexits[__NATEXIT];
 
-  /* Call Exit functions */
+  /* Init Exit functions */
   for (x = 0; x < __NATEXIT; x++) userexits[x] = NULL;
 
   /* Fixup the GCCCRAB */

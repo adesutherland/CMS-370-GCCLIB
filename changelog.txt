@@ -1,6 +1,7 @@
 GCCLIB Change LOG
 =================
 
+F0027 - Fix SIGTERM handler overwriting User Exit function
 F0026 - Automate Stub Build (C based builder MAKELIB)
       - Re-entrant version of CMSSYS (Thanks to Bob Bolch)
       - Re-entrant version of CMSENTRY (Thanks to Bob Bolch)
