@@ -612,6 +612,97 @@ static int fcachehits_t() {
 }
 
 /**************************************************************************************************/
+/* int fateof(FILE * stream)                                                                      */
+/* Non-standard GCC CMS extention                                                                 */
+/* Detects if at EOF - unlike feof() it predicts if the next read will cause an EOF               */
+/*                                                                                                */
+/* Returns 1 if at EOF, EOF on error, or 0 is not at EOF                                          */
+/*                                                                                                */
+/**************************************************************************************************/
+static int fateof_t() {
+  FILE* test;
+
+  SUB_STRT("fateof()");
+  ASSERTNOTNULLP("fopen(PRINTER,w)", test=fopen("PRINTER","w"), test, );
+  ASSERTZERO("fateof()", , fateof(test), );
+  ASSERTZEROP("fclose()", , fclose(test), );
+}
+
+/**************************************************************************************************/
+/* FILE* fgethandle(char *fileName)                                                               */
+/* Non-standard GCC CMS extention                                                                 */
+/*                                                                                                */
+/* Finds an open file that matches fileName                                                       */
+/* It does not return stdin, stdout or stderr if assigned to the CONSOLE                          */
+/*                                                                                                */
+/* Return the FILE handle or NULL if the file is not opened                                       */
+/*                                                                                                */
+/**************************************************************************************************/
+static int fgethandle_t() {
+  FILE* test;
+
+  SUB_STRT("fgethandle()");
+  ASSERTNOTNULLP("fopen(PRINTER,w)", test=fopen("PRINTER","w"), test, );
+  ASSERTNOTZERO("fgethandle()", , fgethandle("PRINTER")==test, );
+  ASSERTZEROP("fclose()", , fclose(test), );
+  ASSERTZERO("fgethandle()", , fgethandle("PRINTER"), );
+}
+
+/**************************************************************************************************/
+/* int fgetrecs(FILE * stream)                                                                    */
+/* Non-standard GCC CMS extention                                                                 */
+/*                                                                                                */
+/* Gets the number of records in a file                                                           */
+/*                                                                                                */
+/* Returns the number of records or EOF on error                                                  */
+/*                                                                                                */
+/**************************************************************************************************/
+static int fgetrecs_t() {
+  FILE* test;
+
+  SUB_STRT("fgetrecs()");
+  ASSERTNOTNULLP("fopen(PRINTER,w)", test=fopen("PRINTER","w"), test, );
+  ASSERTEOF("fgetrecs()", , fgetrecs(test), );
+  ASSERTZEROP("fclose()", , fclose(test), );
+}
+
+/**************************************************************************************************/
+/* int fgetlen(FILE * stream)                                                                     */
+/*                                                                                                */
+/* Non-standard GCC CMS extention                                                                 */
+/* Gets the number of bytes/characters in a file                                                  */
+/* Only works of fixed record length files                                                        */
+/*                                                                                                */
+/* Returns the number of bytes/characters or EOF on error                                         */
+/*                                                                                                */
+/**************************************************************************************************/
+static int fgetlen_t() {
+  FILE* test;
+
+  SUB_STRT("fgetlen()");
+  ASSERTNOTNULLP("fopen(PRINTER,w)", test=fopen("PRINTER","w"), test, );
+  ASSERTEOF("fgetlen()", , fgetlen(test), );
+  ASSERTZEROP("fclose()", , fclose(test), );
+}
+
+/**************************************************************************************************/
+/* void append(FILE * stream)                                                                     */
+/*                                                                                                */
+/* Non-standard GCC CMS extention                                                                 */
+/* Move the file position indicator to the end of the specified stream, and clears the            */
+/* error and EOF flags associated with that stream. This is the oposite of rewind()               */
+/*    stream   a pointer to the open stream.                                                      */
+/**************************************************************************************************/
+static int append_t() {
+  FILE* test;
+
+  SUB_STRT("append()");
+  ASSERTNOTNULLP("fopen(PRINTER,w)", test=fopen("PRINTER","w"), test, );
+  ASSERTNOTZERO("append()",append(test) , 1, );
+  ASSERTZEROP("fclose()", , fclose(test), );
+}
+
+/**************************************************************************************************/
 /* Run Tests                                                                                      */
 /**************************************************************************************************/
 void IO_PRT_T() {
@@ -636,4 +727,9 @@ void IO_PRT_T() {
   setvbuf_t();
   fgetsetrec_t();
   fcachehits_t();
+  fateof_t();
+  fgethandle_t();
+  fgetrecs_t();
+  fgetlen_t();
+  append_t();
 }

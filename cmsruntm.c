@@ -43,9 +43,9 @@ int __cstart(MAINFUNC* mainfunc, PLIST *plist, EPLIST *eplist)
   gcccrab->startmemoryusage = memoryinfo.uordblks;
 
   /* Setup stdout and stderr */
-  stdout = fopen("CONSOLE","w");
-  stderr = fopen("CONSOLE","w");
-  stdin  = fopen("CONSOLE","r");
+  stdout = fopen("+CONSOLE+","w");
+  stderr = fopen("+CONSOLE+","w");
+  stdin  = fopen("+CONSOLE+","r");
 
   /* Process parameters */
   /* The high order byte contains the

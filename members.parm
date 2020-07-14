@@ -97,6 +97,11 @@ VSPRINTF
 FCACHEHI
 FGETREC
 FSETREC
+FATEOF
+FGETHAND
+FGETRECS
+FGETLEN
+APPEND
 ***********************************************************************
 * Entry points in CMSSTDLB C / STDLIB H                               *
 ***********************************************************************

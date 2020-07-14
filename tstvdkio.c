@@ -921,6 +921,149 @@ static int fcachehits_t() {
 }
 
 /**************************************************************************************************/
+/* int fateof(FILE * stream)                                                                      */
+/* Non-standard GCC CMS extention                                                                 */
+/* Detects if at EOF - unlike feof() it predicts if the next read will cause an EOF               */
+/*                                                                                                */
+/* Returns 1 if at EOF, EOF on error, or 0 is not at EOF                                          */
+/*                                                                                                */
+/**************************************************************************************************/
+static int fateof_t() {
+  FILE* test;
+  char buf[81];
+
+  SUB_STRT("fateof()");
+  ASSERTNOTNULLP("fopen(TEMP FILE A V 80,w)", test=fopen("TEMP FILE A V 80","w"), test, );
+  ASSERTNOTZERO("fateof()", , fateof(test), );
+  ASSERTNOTEOFP("fputs()", , fputs(TEST_SHORT_STRING, test), );
+  ASSERTZEROP("fclose()", , fclose(test), );
+  ASSERTNOTNULLP("fopen(TEMP FILE A,r)", test=fopen("TEMP FILE A","r"), test, );
+  ASSERTZERO("fateof()", , fateof(test), );
+  ASSERTNOTNULL("fgets()", , fgets(buf, 81, test), );
+  ASSERTNOTZERO("fateof()", , fateof(test), );
+  ASSERTZEROP("fclose()", , fclose(test), );
+  DELFILE("TEMP FILE A");
+}
+
+/**************************************************************************************************/
+/* FILE* fgethandle(char *fileName)                                                               */
+/* Non-standard GCC CMS extention                                                                 */
+/*                                                                                                */
+/* Finds an open file that matches fileName                                                       */
+/* It does not return stdin, stdout or stderr if assigned to the CONSOLE                          */
+/*                                                                                                */
+/* Return the FILE handle or NULL if the file is not opened                                       */
+/*                                                                                                */
+/**************************************************************************************************/
+static int fgethandle_t() {
+  FILE* test;
+  char buf[81];
+
+  SUB_STRT("fgethandle()");
+  ASSERTNOTNULLP("fopen(TEMP FILE A V 80,w)", test=fopen("TEMP FILE A V 80","w"), test, );
+  ASSERTNOTEOFP("fputs()", , fputs(TEST_SHORT_STRING, test), );
+  ASSERTNOTZERO("fgethandle()", , fgethandle("TEMP FILE A")==test, );
+  ASSERTNOTZERO("fgethandle()", , fgethandle("TEMP   FILE")==test, );
+  ASSERTNOTZERO("fgethandle()", , fgethandle("TEMP   FILE   * ")==test, );
+  ASSERTZEROP("fclose()", , fclose(test), );
+  ASSERTZERO("fgethandle()", , fgethandle("TEMP FILE A"), );
+  DELFILE("TEMP FILE A");
+}
+
+/**************************************************************************************************/
+/* int fgetrecs(FILE * stream)                                                                    */
+/* Non-standard GCC CMS extention                                                                 */
+/*                                                                                                */
+/* Gets the number of records in a file                                                           */
+/*                                                                                                */
+/* Returns the number of records or EOF on error                                                  */
+/*                                                                                                */
+/**************************************************************************************************/
+static int fgetrecs_t() {
+  FILE* test;
+  char buf[81];
+
+  SUB_STRT("fgetrecs()");
+  ASSERTNOTNULLP("fopen(TEMP FILE A V 80,w)", test=fopen("TEMP FILE A V 80","w"), test, );
+  ASSERTNOTEOFP("fputs()", , fputs(TEST_SHORT_STRING_NL, test), );
+  ASSERTNOTZERO("fgetrecs()", , fgetrecs(test)==1, );
+  ASSERTNOTEOFP("fputs()", , fputs(TEST_SHORT_STRING_NL, test), );
+  ASSERTNOTEOFP("fputs()", , fputs(TEST_SHORT_STRING_NL, test), );
+  ASSERTNOTZERO("fgetrecs()", , fgetrecs(test)==3, );
+  ASSERTNOTEOFP("fputs()", , fputs(TEST_SHORT_STRING_NL, test), );
+  ASSERTNOTEOFP("fputs()", , fputs(TEST_SHORT_STRING_NL, test), );
+  ASSERTNOTEOFP("fputs()", , fputs(TEST_SHORT_STRING_NL, test), );
+  ASSERTNOTZERO("fgetrecs()", , fgetrecs(test)==6, );
+  ASSERTZEROP("fclose()", , fclose(test), );
+  DELFILE("TEMP FILE A");
+}
+
+/**************************************************************************************************/
+/* int fgetlen(FILE * stream)                                                                     */
+/*                                                                                                */
+/* Non-standard GCC CMS extention                                                                 */
+/* Gets the number of bytes/characters in a file                                                  */
+/* Only works of fixed record length files                                                        */
+/*                                                                                                */
+/* Returns the number of bytes/characters or EOF on error                                         */
+/*                                                                                                */
+/**************************************************************************************************/
+static int fgetlen_t() {
+  FILE* test;
+  char buf[81];
+
+  SUB_STRT("fgetlen()");
+  ASSERTNOTNULLP("fopen(TEMP FILE A V 80,w)", test=fopen("TEMP FILE A V 80","w"), test, );
+  ASSERTNOTEOFP("fputs()", , fputs(TEST_SHORT_STRING_NL, test), );
+  ASSERTNOTZERO("fgetlen()", , fgetlen(test)==-1, );
+  ASSERTNOTEOFP("fputs()", , fputs(TEST_SHORT_STRING_NL, test), );
+  ASSERTNOTEOFP("fputs()", , fputs(TEST_SHORT_STRING_NL, test), );
+  ASSERTNOTZERO("fgetlen()", , fgetlen(test)==-1, );
+  ASSERTNOTEOFP("fputs()", , fputs(TEST_SHORT_STRING_NL, test), );
+  ASSERTNOTEOFP("fputs()", , fputs(TEST_SHORT_STRING_NL, test), );
+  ASSERTNOTEOFP("fputs()", , fputs(TEST_SHORT_STRING_NL, test), );
+  ASSERTNOTZERO("fgetlen()", , fgetlen(test)==-1, );
+  ASSERTZEROP("fclose()", , fclose(test), );
+  DELFILE("TEMP FILE A");
+}
+
+/**************************************************************************************************/
+/* void append(FILE * stream)                                                                     */
+/*                                                                                                */
+/* Non-standard GCC CMS extention                                                                 */
+/* Move the file position indicator to the end of the specified stream, and clears the            */
+/* error and EOF flags associated with that stream. This is the oposite of rewind()               */
+/*    stream   a pointer to the open stream.                                                      */
+/**************************************************************************************************/
+static int append_t() {
+  FILE* test;
+  const char *item1 = "1234567890abcdefghijklmnopqrstuvwxyz\n";
+  const char *item2 = "QWERTY12433345675875769869869867QWER\n";
+  const char *item3 = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n";
+  char* buffer;
+  int len = strlen(item1) + 1;
+  buffer = malloc(len);
+
+  SUB_STRT("append()");
+  ASSERTNOTNULLP("fopen(TEMP FILE A V,w+)", test=fopen("TEMP FILE A V","w+"), test, );
+  ASSERTNOTEOF("fputs()", ,fputs(item1, test), );
+  ASSERTNOTEOF("fputs()", ,fputs(item2, test), );
+  ASSERTNOTZERO("rewind()",rewind(test) , 1, ); /* No direct way to detect an error! */
+  ASSERTNOTEOF("fputs()", ,fputs(item3, test), );
+  ASSERTNOTZERO("append()",append(test) , 1, ); /* No direct way to detect an error! */
+  ASSERTNOTEOF("fputs()", ,fputs(item1, test), );
+  ASSERTNOTZERO("rewind()",rewind(test) , 1, ); /* No direct way to detect an error! */
+  ASSERTNOTEOF("fgets()", , fgets(buffer, len, test), );
+  ASSERTZERO("strcmp()", , strcmp(buffer,item3), );
+  ASSERTNOTEOF("fgets()", , fgets(buffer, len, test), );
+  ASSERTZERO("strcmp()", , strcmp(buffer,item2), );
+  ASSERTNOTEOF("fgets()", , fgets(buffer, len, test), );
+  ASSERTZERO("strcmp()", , strcmp(buffer,item1), );
+  ASSERTZEROP("fclose()", , fclose(test), );
+  free(buffer);
+}
+
+/**************************************************************************************************/
 /* Run Tests                                                                                      */
 /**************************************************************************************************/
 void IO_VFL_T() {
@@ -946,4 +1089,9 @@ void IO_VFL_T() {
   setvbuf_t();
   raccess_t();
   fcachehits_t();
+  fateof_t();
+  fgethandle_t();
+  fgetrecs_t();
+  fgetlen_t();
+  append_t();
 }

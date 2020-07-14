@@ -1,6 +1,12 @@
 GCCLIB Change LOG
 =================
 
+F0028 - REXX ASSISTS:
+          fateof() - is at the end of the file
+          fgethandle() - if the file is open
+          fgetrecs()
+          fgetchars()
+          append() - e.g. oposite of rewind()
 F0027 - Fix SIGTERM handler overwriting User Exit function
 F0026 - Automate Stub Build (C based builder MAKELIB)
       - Re-entrant version of CMSSYS (Thanks to Bob Bolch)

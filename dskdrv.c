@@ -173,8 +173,6 @@ static int open(char filespecwords[][10], FILE* theFile)
       return 0;
   }
 
-  /* Supports a cache? */
-/*   if (recfm == 'F') theFile->status |= STATUS_CACHE; */
   /* Supports a Cache */
   theFile->status |= STATUS_CACHE;
 

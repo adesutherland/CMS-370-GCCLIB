@@ -9,7 +9,7 @@
 /**************************************************************************************************/
 
 /*
-  TODOs
+  TODO
     tmpname - Static Name and counter to CRAB. Check already opened
 */
 
@@ -599,8 +599,6 @@ int fgetpos(FILE * file, fpos_t * position)
   return 0;
 }
 
-int
-fsetpos(FILE * file, const fpos_t * position)
 /**************************************************************************************************/
 /* int fsetpos(FILE * stream, fpos_t * position)                                                  */
 /*                                                                                                */
@@ -614,6 +612,7 @@ fsetpos(FILE * file, const fpos_t * position)
 /* Returns:                                                                                       */
 /*    0 on success, non-zero on failure.                                                          */
 /**************************************************************************************************/
+int fsetpos(FILE * file, const fpos_t * position)
 {
   int rc;
   if (badfile(file)) {errno = EINVAL; return 1;}
@@ -630,6 +629,173 @@ fsetpos(FILE * file, const fpos_t * position)
   rc = record_read(file);
   file->recpos = position->recpos;
   return rc;
+}
+
+/**************************************************************************************************/
+/* void append(FILE * stream)                                                                     */
+/*                                                                                                */
+/* Non-standard GCC CMS extention                                                                 */
+/* Move the file position indicator to the end of the specified stream, and clears the            */
+/* error and EOF flags associated with that stream. This is the oposite of rewind()               */
+/*    stream   a pointer to the open stream.                                                      */
+/**************************************************************************************************/
+void append(FILE * file)
+{
+  if (badfile(file)) return;
+
+  if (file->recnum != -1) {
+    fflush(file);
+    file->recnum = file->records+1;
+    file->reclen = -1; /* Empty record */
+    file->recpos = 0;
+  }
+  else file->recpos = file->reclen;
+
+  file->ungetchar = -1;
+  file->status &= 0xFFFF - STATUS_EOF;
+  file->error = 0;
+  return;
+}
+
+/**************************************************************************************************/
+/* int fateof(FILE * stream)                                                                      */
+/* Non-standard GCC CMS extention                                                                 */
+/* Detects if at EOF - unlike feof() it predicts if the next read will cause an EOF               */
+/*                                                                                                */
+/* Returns 1 if at EOF, EOF (-1) on error, or 0 is not at EOF                                     */
+/*                                                                                                */
+/**************************************************************************************************/
+int fateof(FILE * stream) {
+  int lrecl;
+  if (badfile(stream)) {errno = EINVAL; return EOF;}
+
+  if (stream->status & STATUS_EOF) return 1;
+
+  if (stream->records == -1) return 0; /* Not a block device so can't detect if at EOF */
+
+  if (stream->recnum != stream->records) return 0; /* not last record */
+
+  lrecl = stream->reclen;
+  if ((stream->access & ACCESS_TEXT) && lrecl) lrecl++;
+
+  if (stream->recpos >= lrecl) return 1;
+  else return 0;
+}
+
+/**************************************************************************************************/
+/* FILE* fgethandle(char *fileName)                                                               */
+/* Non-standard GCC CMS extention                                                                 */
+/*                                                                                                */
+/* Finds an open file that matches fileName                                                       */
+/* It does not return stdin, stdout or stderr if assigned to the CONSOLE                          */
+/*                                                                                                */
+/* Return the FILE handle or NULL if the file is not opened                                       */
+/*                                                                                                */
+/**************************************************************************************************/
+FILE* fgethandle(char *fileName) {
+  int w=0;
+  int c=0;
+  int p=0;
+  char fsword[4][10] = {"","","",""};
+  FILE* item;
+  char buffer[19];
+
+  /* Get the first 4 words from the filespec, for each word the first 9 charcters      */
+  /* This allows us to detect filenames with more than 8 characters and too many words */
+  for (w = 0; fileName[c] && w < 4; w++) {
+    /* Leading Spaces */
+    for (; fileName[c] && fileName[c] == ' '; c++);
+
+    /* Word */
+    for (p = 0; fileName[c] && p < 9 && fileName[c] != ' '; c++, p++)
+      fsword[w][p] = toupper(fileName[c]);
+    fsword[w][p] = 0;
+
+    /* Word Overspill */
+    for (; fileName[c] && fileName[c] != ' '; c++);
+  }
+
+  /* Basic Validation */
+  if (strlen(fsword[0])>8) return NULL;
+  if (strlen(fsword[0])==0) return NULL;
+  if (strlen(fsword[1])>8) return NULL;
+  if (strlen(fsword[2])>2) return NULL;
+  if (strlen(fsword[3])>0) return NULL;
+
+  item = GETGCCCRAB()->filehandles;
+
+  if (strlen(fsword[1]) == 0) {
+    /* Special files like PUNCH */
+    while (item) {
+      if (strcmp(item->fileid,fsword[0]) == 0) {
+        return item;
+      }
+      item = item->next;
+    }
+  }
+  else if (strcmp(fsword[2],"*") == 0) {
+    /* "*" for a disk */
+    sprintf(buffer,"%-8s%-8s", fsword[0], fsword[1]);
+    while (item) {
+      if (strncmp(item->fileid,buffer,16) == 0) {
+        return item;
+      }
+      item = item->next;
+    }
+  }
+  else {
+    /* File */
+    if (strlen(fsword[2])==0) {
+      /* Drive A is the default */
+      fsword[2][0]='A';
+      fsword[2][1]=0;
+    }
+    else fsword[2][1]=0; /* Ignore mode number */
+
+    sprintf(buffer,"%-8s%-8s%-1s", fsword[0], fsword[1], fsword[2]);
+    while (item) {
+      if (strncmp(item->fileid,buffer,17) == 0) {
+        return item;
+      }
+      item = item->next;
+    }
+  }
+
+  return 0;
+}
+
+/**************************************************************************************************/
+/* int fgetrecs(FILE * stream)                                                                    */
+/* Non-standard GCC CMS extention                                                                 */
+/*                                                                                                */
+/* Gets the number of records in a file                                                           */
+/*                                                                                                */
+/* Returns the number of records or EOF on error                                                  */
+/*                                                                                                */
+/**************************************************************************************************/
+int fgetrecs(FILE * stream) {
+  if (badfile(stream)) {errno = EINVAL; return EOF;}
+  return stream->records;
+}
+
+/**************************************************************************************************/
+/* int fgetlen(FILE * stream)                                                                     */
+/*                                                                                                */
+/* Non-standard GCC CMS extention                                                                 */
+/* Gets the number of bytes/characters in a file                                                  */
+/* Only works of fixed record length files                                                        */
+/*                                                                                                */
+/* Returns the number of bytes/characters or EOF on error                                         */
+/*                                                                                                */
+/**************************************************************************************************/
+int fgetlen(FILE * stream) {
+  int len;
+  if (badfile(stream)) {errno = EINVAL; return EOF;}
+
+  fflush(stream); /* TODO Need to consider if this should be done */
+
+  len = stream->device->getend_func(stream);
+  return len;
 }
 
 /**************************************************************************************************/
@@ -680,12 +846,16 @@ int fsetrec(FILE * file, const int recnum)
 {
   fpos_t position;
 
-  if (recnum > file->records) {
+  if (recnum > file->records+1) {
     errno = EINVAL;
     return 0;
   }
   if (recnum < 1) {
     errno = EINVAL;
+    return 0;
+  }
+  if (recnum > file->records) {
+    append(file);
     return 0;
   }
 
@@ -1299,7 +1469,7 @@ rewind(FILE * file)
   fflush(file);
   file->recpos = 0;
   if (file->recnum != -1) file->recnum = 0;
-  file->reclen = 0;
+  file->reclen = -1;
   file->ungetchar = -1;
   file->status &= 0xFFFF - STATUS_EOF - STATUS_DIRTY;
   file->error = 0;

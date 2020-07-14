@@ -27,18 +27,27 @@ static int open(char filespecwords[][10], FILE* theFile)
 {
   /* Am I the right driver? */
   if (filespecwords[1][0]) return -1; /* More than one word - nothing to do with me! */
-  if (strcmp(filespecwords[0],"CONSOLE")) return -1; /* Nothing to do with me */
+  if ( strcmp(filespecwords[0],"CONSOLE") &&
+       strcmp(filespecwords[0],"+CONSOLE+")   /* +CONSOLE+ is for stdin/out/err */
+     ) return -1; /* Nothing to do with me */
 
   if (theFile->access & ACCESS_READWRITE) {
     errno = EINVAL;
     return 0;
   }
 
+  if (strcmp(filespecwords[0],"+CONSOLE+")) { /* We don't check for duplicates for +CONSOLE+ */
+    if (_isopen(filespecwords[0])) {
+      errno = EEXIST;
+      return 0;
+    }
+  }
+
   theFile->filemaxreclen = 130;
   theFile->maxreclen = 130;
   theFile->buffer = malloc(theFile->filemaxreclen + 2); /* \n and NULL */
-  strcpy(theFile->name, "CONSOLE");
-  strcpy(theFile->fileid, "CONSOLE");
+  strcpy(theFile->name, filespecwords[0]);
+  strcpy(theFile->fileid, filespecwords[0]);
   theFile->reclen = -1; /* Empty Buffer */
   theFile->recpos = 0;
   theFile->recnum = -1;
