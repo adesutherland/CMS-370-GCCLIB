@@ -1,6 +1,6 @@
 GCCLIB Change LOG
 =================
-
+0.7.12- 14 July 2020
 F0028 - REXX ASSISTS:
           fateof() - is at the end of the file
           fgethandle() - if the file is open
