@@ -766,4 +766,17 @@ int fgetlen(FILE * stream);
 /**************************************************************************************************/
 void append(FILE * file);
 
+/**************************************************************************************************/
+/* int nextreclen(FILE * file)                                                                    */
+/*                                                                                                */
+/* This function returns the number of charcters the next fgets() will return                     */
+/* including the /n (for text mode) but excluding the null terminator                             */
+/* Non-standard GCC CMS extention - a REXX assist to a allow the input variable to be sized       */
+/*                                                                                                */
+/* Returns:                                                                                       */
+/*    number of bytes for the next record, 0 for EOF, -1 for error                                */
+/**************************************************************************************************/
+int nextrecLen(FILE * file);
+
+
 #endif

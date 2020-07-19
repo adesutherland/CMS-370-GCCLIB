@@ -817,6 +817,38 @@ static int append_t() {
 
 
 /**************************************************************************************************/
+/* int nextreclen(FILE * file)                                                                    */
+/*                                                                                                */
+/* This function returns the number of charcters the next fgets() will return                     */
+/* including the /n (for text mode) but excluding the null terminator                             */
+/* Non-standard GCC CMS extention - a REXX assist to a allow the input variable to be sized       */
+/*                                                                                                */
+/* Returns:                                                                                       */
+/*    number of bytes for the next record, 0 for EOF, -1 for error                                */
+/**************************************************************************************************/
+static void nextrecLen_t() {
+  FILE* test;
+  char buf[300];
+
+  SUB_STRT("nextrecLen() - text");
+  ASSERTNOTNULLP("fopen(CONSOLE,r)", test=fopen("CONSOLE","r"), test, );
+  CMSstackLine(TEST_STRING, CMS_STACKLIFO);
+  ASSERTNOTZERO("nextrecLen()", , nextrecLen(test)==strlen(TEST_STRING_NL), );
+  ASSERTNOTEOF("fgetc()", , fgetc(test), );
+  ASSERTNOTZERO("nextrecLen()", , nextrecLen(test)==strlen(TEST_STRING_NL)-1, );
+  ASSERTZEROP("fclose()", , fclose(test), );
+
+  SUB_STRT("nextrecLen() - binary");
+  ASSERTNOTNULLP("fopen(CONSOLE,rb)", test=fopen("CONSOLE","rb"), test, );
+  CMSstackLine(TEST_STRING, CMS_STACKLIFO);
+  ASSERTNOTZERO("nextrecLen()", , nextrecLen(test)==strlen(TEST_STRING), );
+  ASSERTNOTEOF("fgetc()", , fgetc(test), );
+  ASSERTNOTZERO("nextrecLen()", , nextrecLen(test)==strlen(TEST_STRING)-1, );
+  ASSERTZEROP("fclose()", , fclose(test), );
+}
+
+
+/**************************************************************************************************/
 /* Run Tests                                                                                      */
 /**************************************************************************************************/
 void IO_CON_T() {
@@ -848,4 +880,5 @@ void IO_CON_T() {
   fgetrecs_t();
   fgetlen_t();
   append_t();
+  nextrecLen_t();
 }

@@ -1,5 +1,10 @@
 GCCLIB Change LOG
 =================
+0.7.13- 19 July 2020
+F0029 - fgethandle() now ignores any lrecl or recfm information
+      - REXX Assist: nextrecLen()
+      - ftell() error code fix
+
 0.7.12- 14 July 2020
 F0028 - REXX ASSISTS:
           fateof() - is at the end of the file

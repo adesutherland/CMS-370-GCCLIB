@@ -696,13 +696,14 @@ FILE* fgethandle(char *fileName) {
   int w=0;
   int c=0;
   int p=0;
-  char fsword[4][10] = {"","","",""};
+  char fsword[3][10] = {"","",""};
   FILE* item;
   char buffer[19];
 
-  /* Get the first 4 words from the filespec, for each word the first 9 charcters      */
-  /* This allows us to detect filenames with more than 8 characters and too many words */
-  for (w = 0; fileName[c] && w < 4; w++) {
+  /* Get the first 3 words from the filespec, for each word the first 9 charcters      */
+  /* This allows us to detect filenames with more than 8 characters                    */
+  /* This function anly considers the first 3 words ignoring any recfm or lrecl stuff  */
+  for (w = 0; fileName[c] && w < 3; w++) {
     /* Leading Spaces */
     for (; fileName[c] && fileName[c] == ' '; c++);
 
@@ -720,7 +721,6 @@ FILE* fgethandle(char *fileName) {
   if (strlen(fsword[0])==0) return NULL;
   if (strlen(fsword[1])>8) return NULL;
   if (strlen(fsword[2])>2) return NULL;
-  if (strlen(fsword[3])>0) return NULL;
 
   item = GETGCCCRAB()->filehandles;
 
@@ -963,6 +963,47 @@ fgetc(FILE * file)
   return c;
 }
 
+/**************************************************************************************************/
+/* int nextreclen(FILE * file)                                                                    */
+/*                                                                                                */
+/* This function returns the number of charcters the next fgets() will return                     */
+/* including the /n (for text mode) but excluding the null terminator                             */
+/* Non-standard GCC CMS extention - a REXX assist to a allow the input variable to be sized       */
+/*                                                                                                */
+/* Returns:                                                                                       */
+/*    number of bytes for the next record, 0 for EOF, -1 for error                                */
+/**************************************************************************************************/
+int nextrecLen(FILE * file) {
+  int c;
+  int i=0;
+  int lrecl;
+
+  if (badfile(file)) {errno = EINVAL; return -1;}
+
+  if (!(file->access & ACCESS_READ)) {
+    file->error = 9;
+    errno = EBADF;
+    return -1;
+  }
+
+  if (file->access & ACCESS_TEXT) lrecl = file->reclen + 1;
+  else lrecl = file->reclen;
+
+  if (file->ungetchar >= 0) {  /* was a character pushed back onto the file? */
+    if (file->ungetchar == '\n') return 1;
+    else return lrecl - file->recpos + 1;
+  }
+
+  if ((file->recnum == 0) || (file->recpos >= lrecl)) {   /* empty buffer, read a new line */
+    if (file->recnum != -1) file->recnum++;
+    if (record_read(file)) return 0;
+    file->recpos = 0;
+    if (file->access & ACCESS_TEXT) lrecl = file->reclen + 1;
+    else lrecl = file->reclen;
+  }
+
+  return lrecl - file->recpos;
+}
 
 char *
 fgets(char * str, int num, FILE * file)
@@ -1031,7 +1072,6 @@ fgets(char * str, int num, FILE * file)
   file->recpos += num;
   return str;
 }
-
 
 int
 fputc(int c, FILE * file)
@@ -1378,7 +1418,7 @@ ftell(FILE * file)
 /*                                                                                                */
 /**************************************************************************************************/
 {
-  if (badfile(file)) {errno = EINVAL; return 1;}
+  if (badfile(file)) {errno = EINVAL; return -1;}
 
   return file->device->getpos_func(file);
 }
