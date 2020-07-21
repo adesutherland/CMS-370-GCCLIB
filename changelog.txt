@@ -1,5 +1,10 @@
 GCCLIB Change LOG
 =================
+F0030 - Fix r+ mode variable record files so the last record no
+        longer truncated to the exitsting max record
+        Fix fwrite() in text mode needs now processes newlines
+        Optimiser turned on again!
+
 0.7.13- 19 July 2020
 F0029 - fgethandle() now ignores any lrecl or recfm information
       - REXX Assist: nextrecLen()

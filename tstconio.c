@@ -463,13 +463,14 @@ static void fwriteread_t() {
   int i;
 
   SUB_STRT("fwrite() and fread()");
-  buffer = malloc(count * strlen(item));
-  buffer2 = malloc(count * strlen(item));
+  buffer =  malloc((count * strlen(item)) + 1);
+  buffer2 = malloc((count * strlen(item)) + 1);
   buffer[0] = 0;
   buffer2[0] = 0;
-  buffer2[count * strlen(item)] = 0;
+  buffer2[(count * strlen(item)) + 1] = 0;
 
   for (i=0; i<count; i++) strcat(buffer,item);
+
   ASSERTNOTNULLP("fopen(CONSOLE,wb)", test=fopen("CONSOLE","wb"), test, );
   system("CP SPOOL CONS * START");
   i = fwrite(buffer, strlen(item), count, test);
@@ -487,6 +488,26 @@ static void fwriteread_t() {
   ASSERTNOTZERO("fread()", ,fread(buffer2, strlen(item), count, test)==count, );
   ASSERTZERO("strcmp()", , strcmp(buffer,buffer2), );
   ASSERTZEROP("fclose()", , fclose(test), );
+
+
+  ASSERTNOTNULLP("fopen(CONSOLE,w)", test=fopen("CONSOLE","w"), test, );
+  system("CP SPOOL CONS * START");
+  i = fwrite(buffer, strlen(item), count, test);
+  fflush(test);
+  system("CP SPOOL CONS STOP CLOSE");
+  ASSERTNOTZERO("fwrite()", ,i == count, );
+  ASSERTZEROP("fclose()", , fclose(test), );
+  ASSERTNOTNULLP("fopen(READER132,r)", test=fopen("READER132","r"), test, );
+  ASSERTNOTZERO("fread()", ,fread(buffer2, strlen(item), count, test)==count, );
+  ASSERTZERO("strcmp()", , strcmp(buffer,buffer2), );
+  ASSERTZEROP("fclose()", , fclose(test), );
+  CMSstackLine(item, CMS_STACKLIFO);
+  ASSERTNOTNULLP("fopen(CONSOLE,r)", test=fopen("CONSOLE","r"), test, );
+  buffer2[strlen(item)] = 0;
+  ASSERTNOTZERO("fread()", ,fread(buffer2, strlen(item), 1, test)==1, );
+  ASSERTZERO("strcmp()", , strcmp(item,buffer2), );
+  ASSERTZEROP("fclose()", , fclose(test), );
+
   free(buffer);
   free(buffer2);
 }

@@ -394,6 +394,7 @@ static void fputs_t() {
 static void fwriteread_t() {
   FILE* test;
   const char *item = "1234567890abcdefghijklmnopqrstuvwxyz";
+  const char *item2 = "123456789\nfghijklmnopqrstuvwxyz";
   const int count = 20;
   char* buffer;
   char* buffer2;
@@ -414,6 +415,17 @@ static void fwriteread_t() {
   ASSERTNOTZERO("fread()", ,fread(buffer2, strlen(item), count, test)==count, );
   ASSERTZERO("strcmp()", , strcmp(buffer,buffer2), );
   ASSERTZEROP("fclose()", , fclose(test), );
+
+  buffer2[strlen(item2)] = 0;
+  system("cp spool punch to *");
+  ASSERTNOTNULLP("fopen(PUNCH,w)", test=fopen("PUNCH","w"), test, );
+  ASSERTNOTZERO("fwrite()", ,fwrite(item2, strlen(item2), 1, test)==1, );
+  ASSERTZEROP("fclose()", , fclose(test), );
+  ASSERTNOTNULLP("fopen(READER,r)", test=fopen("READER","r"), test, );
+  ASSERTNOTZERO("fread()", ,fread(buffer2, strlen(item2), 1, test)==1, );
+  ASSERTZERO("strcmp()", , strcmp(item2,buffer2), );
+  ASSERTZEROP("fclose()", , fclose(test), );
+
   free(buffer);
   free(buffer2);
 }

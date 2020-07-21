@@ -126,8 +126,8 @@ static int open(char filespecwords[][10], FILE* theFile)
 
     if (theFile->access & ACCESS_APPEND) recnum = existingFileState->numRecords + 1;
 
-    if ((theFile->access & ACCESS_APPEND) && (recfm == 'V')) {
-      /* If it is variable length and we are appending record length could be anything */
+    if ((theFile->access & ACCESS_WRITE) && (recfm == 'V')) {
+      /* If it is variable length and we are writing so record length could be anything */
       /* Check if a value was given in the paramoters */
       lrecl = 0;
       if (filespecwords[4][0]) {

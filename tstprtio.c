@@ -391,14 +391,15 @@ static void fputs_t() {
 static void fwriteread_t() {
   FILE* test;
   const char *item = "1234567890abcdefghijklmnopqrstuvwxyz";
+  const char *item2 = "1234567890efgh\nijklpqrstuvwxyz";
   const int count = 20;
   char* buffer;
   char* buffer2;
   int i;
 
   SUB_STRT("fwrite() and fread()");
-  buffer = malloc(count * strlen(item));
-  buffer2 = malloc(count * strlen(item));
+  buffer = malloc((count * strlen(item)) + 1);
+  buffer2 = malloc((count * strlen(item)) + 1);
   buffer[0] = 0;
   buffer2[0] = 0;
   buffer2[count * strlen(item)] = 0;
@@ -411,6 +412,17 @@ static void fwriteread_t() {
   ASSERTNOTZERO("fread()", ,fread(buffer2, strlen(item), count, test)==count, );
   ASSERTZERO("strcmp()", , strcmp(buffer,buffer2), );
   ASSERTZEROP("fclose()", , fclose(test), );
+
+  buffer2[strlen(item2)] = 0;
+  system("cp spool printer to *");
+  ASSERTNOTNULLP("fopen(PRINTER,w)", test=fopen("PRINTER","w"), test, );
+  ASSERTNOTZERO("fwrite()", ,fwrite(item2, strlen(item2), 1, test)==1, );
+  ASSERTZEROP("fclose()", , fclose(test), );
+  ASSERTNOTNULLP("fopen(READER132,r)", test=fopen("READER132","r"), test, );
+  ASSERTNOTZERO("fread()", ,fread(buffer2, strlen(item2), 1, test)==1, );
+  ASSERTZERO("strcmp()", , strcmp(item2,buffer2), );
+  ASSERTZEROP("fclose()", , fclose(test), );
+
   free(buffer);
   free(buffer2);
 }

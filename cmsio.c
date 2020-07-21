@@ -1445,10 +1445,62 @@ fwrite(const void * buffer, size_t size, size_t count, FILE * file)
 /*        new record is started.  Thus the file is treated as a stream of bytes.                  */
 /**************************************************************************************************/
 {
- if (badfile(file)) {errno = EINVAL; return EOF;}
+ int s;
+ int rc = 0;
+ char *str;
+ int len;
 
- if (write_data(buffer, size * count, file)) return 0;
- return count;
+ if (badfile(file)) {
+   errno = EINVAL;
+   return EOF;
+ }
+ if (!(file->access & ACCESS_WRITE)) {
+   file->error = 9;
+   errno = EBADF;
+   return EOF;
+ }
+
+ if (file->recnum == 0) {
+   file->recnum = 1;
+   if (file->device->postread_func) file->device->postread_func(file);
+ }
+
+ if (file->access & ACCESS_TEXT) {
+   /* In this case we have to break records at newlines */
+   str=buffer;
+   len = size * count;
+   while (1) {
+     /* find the next newline */
+     for (s=0; len && str[s]!='\n'; s++, len--);
+
+     /* Write this line out */
+     if (s) {
+       rc = write_data((void*)str, s, file);
+       if (rc) {
+         len += s;
+         break;
+       }
+     }
+
+     if (!len) break; /* Found the end of str */
+
+     /* Flush the line as it ended in a newline */
+     file->status |= STATUS_DIRTY; /* Force a flush of an empty line */
+     rc=record_write(file);
+     if (rc) break; /* Hard to say how much was written ... */
+     file->recpos = 0;
+     file->reclen = 0;
+     if (file->recnum != -1) file->recnum++;
+     str += s + 1;
+     len--;
+   }
+   return ((size*count)-len) / size;
+ }
+
+ else {
+   if (write_data(buffer, size * count, file)) return 0;
+   return count;
+ }
 }
 
 
