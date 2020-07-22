@@ -1,7 +1,9 @@
 GCCLIB Change LOG
 =================
+0.7.14- 22 July 2020
+F0031 - Fix to punchc parameters (thanks Bob Bolch)
 F0030 - Fix r+ mode variable record files so the last record no
-        longer truncated to the exitsting max record
+        longer truncated to the existing max record
         Fix fwrite() in text mode needs now processes newlines
         Optimiser turned on again!
 

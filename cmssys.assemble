@@ -1234,7 +1234,7 @@ PRINTLE  PRINTL (R6),(R4)
 ****
          ORG   PLSTAREA
          USING PUNCHCE,R9
-PUNCHCE  PRINTL (R6),(R4)
+PUNCHCE  PUNCHC (R6)
          DROP  R9
          B     PUNCHCND
 *
