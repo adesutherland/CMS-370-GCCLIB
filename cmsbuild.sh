@@ -24,11 +24,9 @@ netcat -q 0 localhost 3505 < tmp
 rm tmp
 herccontrol -w "HHCRD012I" -f $mark
 herccontrol "/" -w "RDR FILE"
-herccontrol "/read *" -w "^Ready;"
 
 # Prepare Source
-herccontrol "/yata -x -d f" -w "^Ready;" -t 120
-herccontrol "/erase yata txt a" -w "^Ready;"
+herccontrol "/yata -x -f READER -d f" -w "^Ready;" -t 120
 herccontrol "/fixrecfm" -w "^Ready;"
 
 # Make source tape and vmarc

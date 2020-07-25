@@ -1,0 +1,249 @@
+***********************************************************************
+* CMSVTAB generates the complete vector table for the memory-resident *
+* GCC runtime routines.                                               *
+*                                                                     *
+* Robert O'Hara, Redmond Washington, July 2010.                       *
+* Bob Bolch and Adrian Sutherland, July 2020.                         *
+***********************************************************************
+         MACRO
+         VTABLE  &TYPE
+         GBLA    &OFFSET
+         GBLC    &CODE
+&OFFSET  SETA    0
+&CODE    SETC    '&TYPE'
+***********************************************************************
+* Entry points in CMSSYSC C / CMSSYS H                                *
+***********************************************************************
+@@CMSCMD VTENTRY
+***********************************************************************
+* Entry points in CMSSYS ASSEMBLE                                     *
+***********************************************************************
+@@DEBUG  VTENTRY
+CMSSETFL VTENTRY
+CMSSETNU VTENTRY
+@@ARGSTR VTENTRY
+@@ATTN   VTENTRY
+@@SVC202 VTENTRY
+@@DMSFRE VTENTRY
+@@DMSFRT VTENTRY
+@@FSCLOS VTENTRY
+@@FSERAS VTENTRY
+@@FSOPEN VTENTRY
+@@FSPOIN VTENTRY
+@@FSREAD VTENTRY
+@@FSSTAT VTENTRY
+@@FSWRIT VTENTRY
+@@GETCLK VTENTRY
+@@PRINTL VTENTRY
+@@PUNCHC VTENTRY
+@@RDCARD VTENTRY
+* @@RDTAPE VTENTRY
+@@RDTERM VTENTRY
+@@RENAME VTENTRY
+@@STACKN VTENTRY
+* @@TAPCTL VTENTRY
+* @@WAITD  VTENTRY
+@@WAITT  VTENTRY
+* @@WRTAPE  TENTRY
+@@WRTERM VTENTRY
+***********************************************************************
+* Entry points in CMSJUMP ASSEMBLE / SETJMP H                         *
+***********************************************************************
+SETJMP   VTENTRY
+LONGJMP  VTENTRY
+***********************************************************************
+* Entry points in CMSRUNTM                                            *
+***********************************************************************
+@@CSTART VTENTRY
+MORESTAK VTENTRY
+LESSSTAK VTENTRY
+***********************************************************************
+* Entry points in CMSSTDIO C / STDIO H                                *
+***********************************************************************
+CLEARERR VTENTRY
+FCLOSE   VTENTRY
+FEOF     VTENTRY
+FERROR   VTENTRY
+FFLUSH   VTENTRY
+FGETC    VTENTRY
+FGETPOS  VTENTRY
+FGETS    VTENTRY
+FOPEN    VTENTRY
+FPRINTF  VTENTRY
+FPUTC    VTENTRY
+FPUTS    VTENTRY
+FREAD    VTENTRY
+FREOPEN  VTENTRY
+FSCANF   VTENTRY
+FSEEK    VTENTRY
+FSETPOS  VTENTRY
+FTELL    VTENTRY
+FWRITE   VTENTRY
+GETS     VTENTRY
+PERROR   VTENTRY
+PRINTF   VTENTRY
+PUTS     VTENTRY
+REMOVE   VTENTRY
+RENAME   VTENTRY
+REWIND   VTENTRY
+SCANF    VTENTRY
+SETBUF   VTENTRY
+SETVBUF  VTENTRY
+* SNPRINTF VTENTRY
+SPRINTF  VTENTRY
+SSCANF   VTENTRY
+TMPFILE  VTENTRY
+TMPNAM   VTENTRY
+UNGETC   VTENTRY
+VFPRINTF VTENTRY
+VSPRINTF VTENTRY
+FCACHEHI VTENTRY
+FGETREC VTENTRY
+FSETREC VTENTRY
+FATEOF VTENTRY
+FGETHAND VTENTRY
+FGETRECS VTENTRY
+FGETLEN VTENTRY
+APPEND VTENTRY
+NEXTRECL VTENTRY
+***********************************************************************
+* Entry points in CMSSTDLB C / STDLIB H                               *
+***********************************************************************
+ABORT    VTENTRY
+ABS      VTENTRY
+ATEXIT   VTENTRY
+ATOF     VTENTRY
+ATOI     VTENTRY
+ATOL     VTENTRY
+BSEARCH  VTENTRY
+DIV      VTENTRY
+EXIT     VTENTRY
+GETENV   VTENTRY
+LABS     VTENTRY
+LDIV     VTENTRY
+MBLEN    VTENTRY
+MBSTOWCS VTENTRY
+MBTOWC   VTENTRY
+QSORT    VTENTRY
+RAND     VTENTRY
+SRAND    VTENTRY
+STRTOD   VTENTRY
+STRTOL   VTENTRY
+STRTOUL  VTENTRY
+SYSTEM   VTENTRY
+WCSTOMBS VTENTRY
+WCTOMB   VTENTRY
+***********************************************************************
+* Entry points in MALLOC C / STDLIB H                                 *
+***********************************************************************
+CALLOC   VTENTRY
+FREE     VTENTRY
+MALLOC   VTENTRY
+REALLOC  VTENTRY
+MEMALIGN VTENTRY
+ICALLOC  VTENTRY
+ICOMALLO VTENTRY
+FOOTPRIN VTENTRY
+MFOOTPRI VTENTRY
+MALLINFO VTENTRY
+MALLOCUS VTENTRY
+MALLOCST VTENTRY
+MTRIM    VTENTRY
+MALLOPT  VTENTRY
+***********************************************************************
+* Entry points in ASSERT C / ASSERT H                                 *
+***********************************************************************
+@@ASSERT VTENTRY
+***********************************************************************
+* Entry points in CTYPE C / CTYPE H                                   *
+***********************************************************************
+ISALNUM  VTENTRY
+ISALPHA  VTENTRY
+ISCNTRL  VTENTRY
+ISDIGIT  VTENTRY
+ISGRAPH  VTENTRY
+ISLOWER  VTENTRY
+ISPRINT  VTENTRY
+ISPUNCT  VTENTRY
+ISSPACE  VTENTRY
+ISUPPER  VTENTRY
+ISXDIGIT VTENTRY
+TOLOWER  VTENTRY
+TOUPPER  VTENTRY
+***********************************************************************
+* Entry points in LOCALE C / LOCALE H                                 *
+***********************************************************************
+SETLOCAL VTENTRY
+LOCALECO VTENTRY
+***********************************************************************
+* Entry points in MATH C / MATH H                                     *
+***********************************************************************
+ACOS     VTENTRY
+ASIN     VTENTRY
+ATAN     VTENTRY
+ATAN2    VTENTRY
+CEIL     VTENTRY
+COS      VTENTRY
+COSH     VTENTRY
+EXP      VTENTRY
+FABS     VTENTRY
+FLOOR    VTENTRY
+FMOD     VTENTRY
+FREXP    VTENTRY
+LDEXP    VTENTRY
+LOG      VTENTRY
+LOG10    VTENTRY
+MODF     VTENTRY
+POW      VTENTRY
+SIN      VTENTRY
+SINH     VTENTRY
+SQRT     VTENTRY
+TAN      VTENTRY
+TANH     VTENTRY
+***********************************************************************
+* Entry points in SIGNAL C / SIGNAL H                                 *
+***********************************************************************
+RAISE    VTENTRY
+SIGNAL   VTENTRY
+***********************************************************************
+* Entry points in STRING C / STRING H                                 *
+***********************************************************************
+MEMCHR   VTENTRY
+MEMCMP   VTENTRY
+MEMCPY   VTENTRY
+MEMMOVE  VTENTRY
+MEMSET   VTENTRY
+STRCAT   VTENTRY
+STRCHR   VTENTRY
+STRCMP   VTENTRY
+STRCOLL  VTENTRY
+STRCPY   VTENTRY
+STRCSPN  VTENTRY
+STRERROR VTENTRY
+STRICMP  VTENTRY
+STRLEN   VTENTRY
+STRLWR   VTENTRY
+STRNCAT  VTENTRY
+STRNCMP  VTENTRY
+STRNCPY  VTENTRY
+STRPBRK  VTENTRY
+STRRCHR  VTENTRY
+STRSPN   VTENTRY
+STRSTR   VTENTRY
+STRTOK   VTENTRY
+STRUPR   VTENTRY
+STRXFRM  VTENTRY
+***********************************************************************
+* Entry points in TIME C / TIME H                                     *
+***********************************************************************
+ASCTIME  VTENTRY
+CLOCK    VTENTRY
+CTIME    VTENTRY
+DIFFTIME VTENTRY
+GMTIME   VTENTRY
+LOCALTIM VTENTRY
+MKTIME   VTENTRY
+STRFTIME VTENTRY
+TIME     VTENTRY
+*
+         MEND
