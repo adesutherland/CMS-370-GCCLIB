@@ -1,5 +1,10 @@
 GCCLIB Change LOG
 =================
+0.7.15- 25 July 2020
+F0032 - Remove EPLIST Magic Marker Hack! True fix by HRC402DS CMS Mod
+      - Move to builder tag image for builds
+      - Added Argument Test
+
 0.7.14- 22 July 2020
 F0031 - Fix to punchc parameters (thanks Bob Bolch)
 F0030 - Fix r+ mode variable record files so the last record no
@@ -18,7 +23,7 @@ F0028 - REXX ASSISTS:
           fgethandle() - if the file is open
           fgetrecs()
           fgetchars()
-          append() - e.g. oposite of rewind()
+          append() - the oposite of rewind()
 F0027 - Fix SIGTERM handler overwriting User Exit function
 F0026 - Automate Stub Build (C based builder MAKELIB)
       - Re-entrant version of CMSSYS (Thanks to Bob Bolch)

@@ -30,8 +30,6 @@ int __cstart(MAINFUNC* mainfunc, PLIST *plist, EPLIST *eplist)
   int rc;
   char ch;
   char messagebuffer[100];
-  GCCLIBPLIST *gcclibplist = 0;
-  EPLIST *magic_eplist = 0;
 
   /* Get GCCCRAB */
   gcccrab = GETGCCCRAB();
@@ -54,16 +52,8 @@ int __cstart(MAINFUNC* mainfunc, PLIST *plist, EPLIST *eplist)
   calltype = ((int)(plist) &  0xff000000) >> 24;
   plist = (PLIST*)((int)(plist) & 0xffffff);
 
-  /* MAGIC MARKER - NON-STANDARD - Designed to allow EPLIST to be found
-     if R0 (the eplist parameter) is corrupted - So see if the magic eplist marker exists */
-  gcclibplist = (GCCLIBPLIST*)((int)plist - (int)&(gcclibplist->plist));
-  if (!strcmp(EPLISTMARKER, gcclibplist->marker)) {
-    magic_eplist = &(gcclibplist->eplist);
-    eplist = magic_eplist;
-  }
-
   /* Process Arguments - note 6 word eplist (for calltype 5) not implemented */
-  if ((calltype == 5 && magic_eplist) || calltype == 1 || calltype == 11)
+  if (calltype == 5 || calltype == 1 || calltype == 11)
   {
     /* Function name  */
     a=0;

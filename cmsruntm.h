@@ -71,7 +71,6 @@ struct CMSCRAB {
 /* Call parameters */
 #define MAXEPLISTARGS 32
 #define MAXPLISTARGS 16
-#define TRUNCPLISTARGS MAXPLISTARGS-8 /* Truncated PLIST: 8 = fence + marker + 6 block eplist */
 #define ARGBUFFERLEN 300
 
 typedef char PLIST[8]; /* 8 char block */
@@ -99,16 +98,6 @@ typedef struct EPLIST {
   ADLEN *ArgLlist;          /* FUNCTION ARGUMENT LIST - Calltype 5 only */
   EVALBLOK *FunctionReturn; /* RETURN OF FUNCTION - Calltype 5 only */
 } EPLIST;
-
-#define EPLISTMARKER "*EPLIST" /* Includes the terminating null */
-
-/* The structure used by GCCLIB designed so that we can find the EPLIST
-   when R0 is corrupted */
-typedef struct GCCLIBPLIST {
-  PLIST plist[TRUNCPLISTARGS + 1];
-  char marker[8];
-  EPLIST eplist;
-} GCCLIBPLIST;
 
 /* Startup Functions */
 int __cstub(PLIST *plist , EPLIST *eplist);

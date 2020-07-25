@@ -20,40 +20,22 @@ int __SVC202(PLIST *plist , EPLIST *eplist, int calltype);
 /* Worker Function - create PLIST / EPLIST and call __svc202 */
 static int cmd_with_plist(char *command, int calltype)
 {
- int i, j, len, args, maxargs;
- int useEplist = 0;
- GCCLIBPLIST gcclibplist;
- PLIST *plist = &gcclibplist.plist;
- EPLIST *eplist;
+  int i, j, len, args;
+  PLIST plist[MAXPLISTARGS + 1];
+  EPLIST eplist;
 
- /* NOTE: calltype 5 - 6 Word EPLIST not implemented yet */
- if (calltype == 5 || calltype == 1 || calltype == 11) useEplist = 1;
+  memset((void*)plist, ' ', sizeof(plist));
+  eplist.Command = 0;
+  eplist.BeginArgs = 0;
+  eplist.EndArgs = 0;
+  eplist.CallContext = 0;
+  eplist.ArgLlist = 0;
+  eplist.FunctionReturn = 0;
 
- /* Setup gcclibplist */
- if (useEplist)
- {
-   eplist = &gcclibplist.eplist;
-   strcpy(gcclibplist.marker, EPLISTMARKER);
-   memset((void*)plist, ' ', sizeof(gcclibplist.plist));
-   eplist->Command = 0;
-   eplist->BeginArgs = 0;
-   eplist->EndArgs = 0;
-   eplist->CallContext = 0;
-   eplist->ArgLlist = 0;
-   eplist->FunctionReturn = 0;
-   maxargs = TRUNCPLISTARGS;
- }
- else
- {
-   memset((void*)plist, ' ', sizeof(gcclibplist));
-   eplist = 0;
-   maxargs = MAXPLISTARGS;
- }
-
- len = strlen(command);
- args = -1;
- for (i=0; i<len; i++)
- {
+  len = strlen(command);
+  args = -1;
+  for (i=0; i<len; i++)
+  {
     /* Find start of next word */
     if (command[i]!=' ')
     {
@@ -62,7 +44,7 @@ static int cmd_with_plist(char *command, int calltype)
       if (args==1)
       {
         /* Start of args */
-        if (eplist) eplist->BeginArgs = command + i;
+        eplist.BeginArgs = command + i;
       }
       for (j=0; i<len && j<8; i++, j++)
       {
@@ -70,14 +52,11 @@ static int cmd_with_plist(char *command, int calltype)
         (plist[args])[j] = toupper(command[i]);
       }
       for (; i<len && command[i]!=' '; i++);
-      if (args>=maxargs) break;
+      if (args>=MAXPLISTARGS) break;
     }
   }
-  if (eplist)
-  {
-    if (eplist->BeginArgs) eplist->EndArgs = command + len;
-    eplist->Command = command;
-  }
+  if (eplist.BeginArgs) eplist.EndArgs = command + len;
+  eplist.Command = command;
 
   /* PLIST FENCE */
   args++;
@@ -86,7 +65,7 @@ static int cmd_with_plist(char *command, int calltype)
     (plist[args])[j] = 0xFF;
   }
 
-  return __SVC202(plist, eplist, calltype);
+  return __SVC202(plist, &eplist, calltype);
 }
 
 /* Main Function - has the search logic for call type 11 (CMS_CONSOLE) */
