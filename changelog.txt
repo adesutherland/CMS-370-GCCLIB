@@ -2,10 +2,11 @@ GCCLIB Change LOG
 =================
 
 0.7.15- 25 July 2020
+F0034 - Update to SYSPROF EXEC to initalise BREXX Anchor
 F0033 - Include Option for Alternative Stub Build (thanks Bob Bolch)
         See top of MKGCCLIB EXEC and KKGCCMAC EXEC for opton
       - Changed YATA option to read directly from READER. The archive had
-        too many records for the file system (an OMG moment!), it shows off the 
+        too many records for the file system (an OMG moment!), it shows off the
         new gcclib unix like stream handling, READER is just like any file :-)
 F0032 - Remove EPLIST Magic Marker Hack! True fix done by HRC402DS CMS Mod
       - Move to builder tag image for builds

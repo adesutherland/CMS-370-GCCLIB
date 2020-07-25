@@ -15,7 +15,7 @@ EXECUTIL QSTACK
 
 * Load the native GCC runtime library into memory.
 RESLIB LOAD GCCLIB (NAME GCCLIB
-&IF &RETCODE NE 0 &TYPE SYSPROF Error loading GCCLIB into memory!
+&IF &RETCODE NE 0 &TYPE SYSPROF Error loading GCCLIB with RESLIB
 &IF &RETCODE NE 0 &GOTO -DONE
 
 * Initiate / Register GCCLIB Anchor
@@ -24,7 +24,11 @@ GCCLIB
 * Now load bREXX into memory.
 GLOBAL TXTLIB GCCRES
 RESLIB LOAD BREXX (NAME DMSREX
-&IF &RETCODE NE 0 &TYPE SYSPROF Error loading bREXX into memory!
+&IF &RETCODE NE 0 &TYPE SYSPROF Error loading BREXX with RESLIB
+&IF &RETCODE NE 0 &GOTO -DONE
+
+* Initiate / Register BREXX Anchor
+DMSREX
 
 * Finally, restore the lines that were on the stack when we were invoked.
 -DONE
