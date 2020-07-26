@@ -1,5 +1,10 @@
 GCCLIB Change LOG
 =================
+0.7.16- 26 July 2020
+F0035 - Minor: Explict cast (int to void*) in resmain.c
+      - GIT Config to force LF file line endings
+      - Changed SYSPROF EXEC to fixed record format (Workaround for a argument
+        defect)
 
 0.7.15- 25 July 2020
 F0034 - Update to SYSPROF EXEC to initalise BREXX Anchor

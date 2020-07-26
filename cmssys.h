@@ -8,7 +8,7 @@
 #ifndef CMSSYS_INCLUDED
 #define CMSSYS_INCLUDED
 
-#define GCCLIB_VERSION "0.7.15"
+#define GCCLIB_VERSION "0.7.16"
 
 /**************************************************************************************************/
 /* CMSFILE maps the CMS FSCB (File System Control Block).                                         */

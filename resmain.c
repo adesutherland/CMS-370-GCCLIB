@@ -17,7 +17,7 @@ int main(int argc, char *argv[]) {
   */
 
   /* Register Address */
-  CMSSetNUCON(STUB_ANCHOR_ADDRESS,anchor_addr);
+  CMSSetNUCON((void*)STUB_ANCHOR_ADDRESS,anchor_addr);
 
   printf("GCCLIB Version %s\n", GCCLIB_VERSION);
   printf("GCC ANCHOR Address is %x saved in NUCON at %x\n", anchor_addr, STUB_ANCHOR_ADDRESS);
