@@ -19,6 +19,8 @@
 * Entry points in CMSSYS ASSEMBLE                                     *
 ***********************************************************************
 @@DEBUG  VTENTRY
+CMSPGALL VTENTRY
+CMSGETPG VTENTRY
 CMSSETFL VTENTRY
 CMSSETNU VTENTRY
 @@ARGSTR VTENTRY

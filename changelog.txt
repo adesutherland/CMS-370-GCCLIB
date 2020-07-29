@@ -1,5 +1,9 @@
 GCCLIB Change LOG
 =================
+
+0.7.16-  July 2020
+F0036 - Process Global Memory: CMSPGAll() & CMSGetPG()
+
 0.7.16- 26 July 2020
 F0035 - Minor: Explict cast (int to void*) in resmain.c
       - GIT Config to force LF file line endings
@@ -9,7 +13,7 @@ F0035 - Minor: Explict cast (int to void*) in resmain.c
 0.7.15- 25 July 2020
 F0034 - Update to SYSPROF EXEC to initalise BREXX Anchor
 F0033 - Include Option for Alternative Stub Build (thanks Bob Bolch)
-        See top of MKGCCLIB EXEC and KKGCCMAC EXEC for opton
+        See top of MKGCCLIB EXEC and MKGCCMAC EXEC for opton
       - Changed YATA option to read directly from READER. The archive had
         too many records for the file system (an OMG moment!), it shows off the
         new gcclib unix like stream handling, READER is just like any file :-)

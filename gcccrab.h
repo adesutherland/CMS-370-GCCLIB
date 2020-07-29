@@ -43,6 +43,7 @@ struct GCCCRAB {
    USEREXIT **userexits;
    FILE* filehandles;
    char *strtok_old;
+   void *process_global;
 };
 
 /* To get the addresses of the crab */

@@ -16,6 +16,8 @@
 * Entry points in CMSSYS ASSEMBLE                                     *
 ***********************************************************************
 @@DEBUG
+CMSPGALL
+CMSGETPG
 CMSSETFL
 CMSSETNU
 @@ARGSTR

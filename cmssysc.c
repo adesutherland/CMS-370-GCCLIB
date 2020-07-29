@@ -9,6 +9,7 @@
 /* Released to the public domain.                                                                 */
 /**************************************************************************************************/
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
 #include <cmssys.h>
@@ -130,4 +131,38 @@ int __CMSCMD(char *command, int calltype)
 
   /* If not call type 11 just try the command naked */
   else return cmd_with_plist(command, calltype);
+}
+
+/**************************************************************************************************/
+/* Two functions to help C programs avoid having any non-const static or global                   */
+/* variables. For programs planning to be run from a shared segment the program they will be      */
+/* running in read-only memory and the CMS linker does not allow global variables to be placed in */
+/* another segment.                                                                               */
+/*                                                                                                */
+/* IBM calls these programs (ones that don't write to their TEXT segment) reentrant programs.     */
+/* I have coined this memory - Process Global Memory.                                             */
+/*                                                                                                */
+/* void* CMSPGAll(size_t size) - Allocate / Reallocate Process Global Memory Block                */
+/* void* CMSGetPG(void) - Get the address of the Process Global Memory Block                      */
+/*                                                                                                */
+/* Note: that this area is freed automatically on normal program termination.                     */
+/*                                                                                                */
+/**************************************************************************************************/
+void* CMSPGAll(size_t size) {
+  GCCCRAB *crab;
+
+  crab = GETGCCCRAB();
+
+  if (crab->process_global) free (crab->process_global);
+
+  if (size) crab->process_global = malloc(size);
+  else crab->process_global = 0;
+
+  return crab->process_global;
+}
+
+void* CMSGetPG(void) {
+  GCCCRAB *crab;
+  crab = GETGCCCRAB();
+  return crab->process_global;
 }

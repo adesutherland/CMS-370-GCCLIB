@@ -169,6 +169,9 @@ exit(int status)
   /* Close files */
   _clfiles();
 
+  /* Free Process Global Memory */
+  if (theCRAB->process_global) free(theCRAB->process_global);
+
   /* Call exit_stage2 under the aux stack */
   __CLVSTK(theCRAB->auxstack, exit_stage2, status);
 }
@@ -501,4 +504,4 @@ if (s != NULL) {
    return 1;
    }
 else return 0;
-}                        
+}

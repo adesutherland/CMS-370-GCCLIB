@@ -46,6 +46,7 @@ int __cstub(PLIST *plist , EPLIST *eplist)
   gcccrab.userexits = userexits;
   gcccrab.filehandles = NULL;
   gcccrab.strtok_old = NULL;
+  gcccrab.process_global = NULL;
 
   return(__cstart(main, plist, eplist));
 }

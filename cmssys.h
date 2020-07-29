@@ -8,7 +8,9 @@
 #ifndef CMSSYS_INCLUDED
 #define CMSSYS_INCLUDED
 
-#define GCCLIB_VERSION "0.7.16"
+#define GCCLIB_VERSION "F0036"
+
+#include <stddef.h>
 
 /**************************************************************************************************/
 /* CMSFILE maps the CMS FSCB (File System Control Block).                                         */
@@ -51,6 +53,24 @@ typedef struct {
 /**************************************************************************************************/
 #define TRACEFLAG 0x1
 #define HALTFLAG 0x10
+
+/**************************************************************************************************/
+/* Two functions to help C programs avoid having any non-const static or global                   */
+/* variables. For programs planning to be run from a shared segment the program they will be      */
+/* running in read-only memory and the CMS linker does not allow global variables to be placed in */
+/* another segment.                                                                               */
+/*                                                                                                */
+/* IBM calls these programs (ones that don't write to their TEXT segment) reentrant programs.     */
+/* I have coined this memory - Process Global Memory.                                             */
+/*                                                                                                */
+/* void* CMSPGAll(size_t size) - Allocate / Reallocate Process Global Memory Block                */
+/* void* CMSGetPG(void) - Get the address of the Process Global Memory Block                      */
+/*                                                                                                */
+/* Note: that this area is freed automatically on normal program termination.                     */
+/*                                                                                                */
+/**************************************************************************************************/
+void* CMSPGAll(size_t size);
+void* CMSGetPG(void);
 
 /**************************************************************************************************/
 /* int CMSGetFlag(int flag)                                                                       */

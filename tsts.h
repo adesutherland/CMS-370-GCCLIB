@@ -66,6 +66,7 @@ int FGETS_T(FILE* test, int lrecl);
 int FPUTS_T(FILE* test);
 int FPUTC_T(FILE* test);
 
+void CMSSYS_T();
 void IO_CON_T();
 void IO_PUN_T();
 void IO_PRT_T();

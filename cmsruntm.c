@@ -149,6 +149,9 @@ int __cstart(MAINFUNC* mainfunc, PLIST *plist, EPLIST *eplist)
   /* Close Files */
   _clfiles();
 
+   /* Free Process Global Memory */
+   if (gcccrab->process_global) free(gcccrab->process_global);
+
   /* Deallocate Stack */
   lessstak(gcccrab->dynamicstack);
   free(gcccrab->dynamicstack);

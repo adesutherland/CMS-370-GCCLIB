@@ -37,6 +37,7 @@ HANFLERS DS    F              SIGHANDLER **handlers;
 USREXITS DS    F              USEREXIT **userexits;
 FILEHNDL DS    F              FILE* filehandles;
 STRTOKOL DS    F              char *strtok_old;
+PGLOBAL  DS    F              void *process_global;
          SPACE
 GCCGLEN  EQU   *-GCCCRAB      length of the CRAB / Global Area
          MEND

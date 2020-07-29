@@ -18,7 +18,7 @@
 
 /* Main Test Entry */
 int main(int argc, char *argv[]) {
-
+  CMSSYS_T();
   IO_CON_T();
   IO_PUN_T();
   IO_PRT_T();
