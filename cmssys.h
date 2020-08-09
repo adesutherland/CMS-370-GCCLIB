@@ -8,9 +8,38 @@
 #ifndef CMSSYS_INCLUDED
 #define CMSSYS_INCLUDED
 
-#define GCCLIB_VERSION "F0036"
+#define GCCLIB_VERSION "F0037"
 
 #include <stddef.h>
+
+/**************************************************************************************************/
+/* CMS Call Structures                                                                            */
+/**************************************************************************************************/
+typedef char PLIST[8]; /* 8 char block */
+
+typedef struct EVALBLOK EVALBLOK;
+
+struct EVALBLOK {
+  EVALBLOK *Next;  /* Reserved - but obvious what the intention was! */
+  int BlokSize;    /* Total block size in DW's */
+  int Len;         /* length of data in bytes */
+  int Pad;         /* (reserved) */
+  char Data[];     /* the data... */
+};
+
+typedef struct ADLEN {
+  char *Data;    /* data... */
+  int Len;       /* length of data in bytes */
+} ADLEN;
+
+typedef struct EPLIST {
+  char *Command;
+  char *BeginArgs;          /* start of Argstring */
+  char *EndArgs;            /* character after end of the Argstring */
+  void *CallContext;        /* Extention Point - IBM points it to a FBLOCK */
+  ADLEN *ArgList;          /* FUNCTION ARGUMENT LIST - Calltype 5 only */
+  EVALBLOK **FunctionReturn;/* RETURN OF FUNCTION - Calltype 5 only */
+} EPLIST;
 
 /**************************************************************************************************/
 /* CMSFILE maps the CMS FSCB (File System Control Block).                                         */
@@ -189,7 +218,29 @@ int __cmscmd(char * cmdLine, int cmdFlag);
 #define CMScommand(s1, i1) (__cmscmd((s1),(i1)))
 #define CMS_COMMAND  1
 #define CMS_CONSOLE 11
-#define CMS_FUNCTION 0
+
+/**************************************************************************************************/
+/* Call Type 5 (function) call                                                                    */
+/* int __CMSFUNC(char *physical, char *logical, int is_proc, int argc, char *argv[],              */
+/*               char **ret_val)                                                                  */
+/* Args: physical - physical function name (used to find the function and in the PLIST)           */
+/*       logical  - logical function name ("as entered by the user" used in the EPLIST)           */
+/*       is_proc  - 0 - if the routine is called as a function                                    */
+/*                  1 - if the routine is called as a subroutine                                  */
+/*       argc     - Number of arguments                                                           */
+/*       argv     - Array of argument strings                                                     */
+/*       ret_val  - pointer to pointer (handle) of the returned value                             */
+/*                  if this is zero no return value is processed                                  */
+/*                  On error or if there is no return value the pointer is set to zero            */
+/*                  otherwise it is set to a char* buffer (the called must free() this memory)    */
+/*                                                                                                */
+/* returns 0 success                                                                              */
+/*         -1 invalid arguments                                                                   */
+/*         -2 error dmsfret error                                                                 */
+/*         Other rc from svc202 / called function                                                 */
+/**************************************************************************************************/
+int __CMSFNC(char *physical, char *logical, int is_proc, int argc, char *argv[], char **ret_val);
+#define CMSfunction(s1, s2, s3, s4, s5 , s6) (__cmsfunc((s1),(s2),(s3),(s4),(s5),(s6)))
 
 /**************************************************************************************************/
 /* int CMSconsoleRead(char * line)                                                                */
@@ -517,8 +568,8 @@ void * __dmsfre(int bytes, int type);
 /*    1.  If you allocate NUCLEUS memory, your program must be generated with the SYSTEM option.  */
 /*        Note that if such a program abnormally terminates, CMS does not release this memory.    */
 /**************************************************************************************************/
-int __dmsfrt(void * memory);
-#define CMSmemoryFree(s1) (__dmsfrt((s1)))
+int __dmsfrt(void * memory, int doublewords);
+#define CMSmemoryFree(s1, s2) (__dmsfrt((s1),(s2))
 
 /**************************************************************************************************/
 /* int CMSprintLine(char * line)                                                                  */

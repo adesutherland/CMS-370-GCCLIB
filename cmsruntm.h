@@ -73,32 +73,6 @@ struct CMSCRAB {
 #define MAXPLISTARGS 16
 #define ARGBUFFERLEN 300
 
-typedef char PLIST[8]; /* 8 char block */
-
-typedef struct EVALBLOK EVALBLOK;
-
-struct EVALBLOK {
-  EVALBLOK *Next;  /* Reserved - but obvious what the intention was! */
-  int BlokSize;    /* Total block size in DW's */
-  int Len;         /* length of data in bytes */
-  int Pad;         /* (reserved) */
-  char Data[];     /* the data... */
-};
-
-typedef struct ADLEN {
-  char *Data;    /* data... */
-  int Len;       /* length of data in bytes */
-} ADLEN;
-
-typedef struct EPLIST {
-  char *Command;
-  char *BeginArgs;          /* start of Argstring */
-  char *EndArgs;            /* character after end of the Argstring */
-  void *CallContext;        /* Extention Point - IBM points it to a FBLOCK */
-  ADLEN *ArgLlist;          /* FUNCTION ARGUMENT LIST - Calltype 5 only */
-  EVALBLOK *FunctionReturn; /* RETURN OF FUNCTION - Calltype 5 only */
-} EPLIST;
-
 /* Startup Functions */
 int __cstub(PLIST *plist , EPLIST *eplist);
 int __cstart(MAINFUNC* mainfunc, PLIST *plist , EPLIST *eplist);

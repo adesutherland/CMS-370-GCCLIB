@@ -1,7 +1,8 @@
 GCCLIB Change LOG
 =================
 
-0.7.16-  July 2020
+0.7.17-  August 2020
+F0037 - CMSfunction() - call type 5
 F0036 - Process Global Memory: CMSPGAll() & CMSGetPG()
 
 0.7.16- 26 July 2020
