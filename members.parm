@@ -12,7 +12,16 @@
 * Entry points in CMSSYSC C / CMSSYS H                                *
 ***********************************************************************
 @@CMSCMD
+@@CMSFNA
 @@CMSFNC
+@@ARGV
+@@ARGC
+@@PLIST
+@@EPLIST
+@@CALLTP
+@@ISPROC
+@@RETVAL
+@@RETINT
 ***********************************************************************
 * Entry points in CMSSYS ASSEMBLE                                     *
 ***********************************************************************
@@ -21,7 +30,6 @@ CMSPGALL
 CMSGETPG
 CMSSETFL
 CMSSETNU
-@@ARGSTR
 @@ATTN
 @@SVC202
 @@DMSFRE

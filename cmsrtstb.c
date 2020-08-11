@@ -47,6 +47,14 @@ int __cstub(PLIST *plist , EPLIST *eplist)
   gcccrab.filehandles = NULL;
   gcccrab.strtok_old = NULL;
   gcccrab.process_global = NULL;
+  gcccrab.argv = NULL;
+  gcccrab.argbuffer = NULL;
+  gcccrab.plist = plist;
+  gcccrab.eplist = eplist;
+  gcccrab.calltype = -1;
+  gcccrab.evalblok = NULL;
+  gcccrab.isproc = 0;
+  gcccrab.argc = 0;
 
-  return(__cstart(main, plist, eplist));
+  return(__cstart(main));
 }

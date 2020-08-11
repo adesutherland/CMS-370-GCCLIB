@@ -2,7 +2,6 @@
 * CMSSYS contains C interfaces to CMS system services:                *
 *    @@DEBUG  A dummy routine callable from C (set breakpoint here).  *
 *    @@ATTN   Place a line on the CMS console stack.                  *
-*    @@ARGSTR Return the program argument string.                     *
 *    @@SVC202 Invoke a CMS system service or command.                 *
 *    @@DMSFRE Allocate free memory.                                   *
 *    @@DMSFRT Release allocated memory.                               *
@@ -121,31 +120,6 @@ SETFOFF  DS    0H
 SETFDONE DS    0H
          SPKA  0(R2)
          SSM   =X'FF'
-         L     R14,12(R13)    restore our return address
-         LM    R0,R12,20(R13) restore the registers
-         BR    R14            return to our caller
-         EJECT
-***********************************************************************
-* @@ARGSTR  Entry Point                                               *
-* Return the program argument string.                                 *
-*                                                                     *
-* Syntax is:                                                          *
-*    char * __ARGSTR(void)                                            *
-* returns:                                                            *
-*    (char *)  A pointer to the argument string.                      *
-***********************************************************************
-         ENTRY @@ARGSTR
-@@ARGSTR DS    0H
-         STM   R14,R12,12(R13)
-         LA    R15,@@ARGSTR-CMSSYS
-         SLR   R12,R15
-*        USING CMSCRAB,R13    map the save area
-*        L     R2,GCCCRABA
-*        DROP  R13
-*        USING CMSCRAB,R2     Map the CRAB<---This is the GCCCRAB?
-         SR    R15,R15        * TODO Return Zero for the moment *
-*        LA    R15,ARGSTRING  Get the Argument String address
-*        DROP  R2
          L     R14,12(R13)    restore our return address
          LM    R0,R12,20(R13) restore the registers
          BR    R14            return to our caller

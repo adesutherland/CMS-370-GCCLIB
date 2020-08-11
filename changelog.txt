@@ -2,6 +2,12 @@ GCCLIB Change LOG
 =================
 
 0.7.17-  August 2020
+F0038 - Add support for being called via a type 5 call
+      - Assist to turn main() return int into a calltype 5 return EVALBLOK string
+      - Functions to set return evalblok
+      - Functions to access PLIST, EPLIST, argv, argc, callype and func/subroutine values
+      - Parameters passed in an array or passed as a variable number of parameters supported
+      - Simple Call Macros CMSsimplefuntion() CMSsimpleprocedure()
 F0037 - CMSfunction() - call type 5
 F0036 - Process Global Memory: CMSPGAll() & CMSGetPG()
 

@@ -8,9 +8,10 @@
 #ifndef CMSSYS_INCLUDED
 #define CMSSYS_INCLUDED
 
-#define GCCLIB_VERSION "F0037"
+#define GCCLIB_VERSION "F0038"
 
 #include <stddef.h>
+#include <stdarg.h>
 
 /**************************************************************************************************/
 /* CMS Call Structures                                                                            */
@@ -136,18 +137,6 @@ void CMSSETNU(void *address, int value);
 #define CMSGetNUCON(address)   ((*(int*)(address)))
 
 /**************************************************************************************************/
-/* char * CMSargstring(void)                                                                      */
-/*                                                                                                */
-/* Return the unedited argument string passed to the user program when it was invoked as a CMS    */
-/* command.                                                                                       */
-/*                                                                                                */
-/* Returns:                                                                                       */
-/*    a pointer to the argument string.                                                           */
-/**************************************************************************************************/
-char *__argstr(void);
-#define CMSargstring() (__argstr())
-
-/**************************************************************************************************/
 /* int CMScardPunch(char * line)                                                                  */
 /*                                                                                                */
 /* Write a line to the virtual card punch.                                                        */
@@ -221,8 +210,9 @@ int __cmscmd(char * cmdLine, int cmdFlag);
 
 /**************************************************************************************************/
 /* Call Type 5 (function) call                                                                    */
-/* int __CMSFUNC(char *physical, char *logical, int is_proc, int argc, char *argv[],              */
-/*               char **ret_val)                                                                  */
+/* __CMSFNA()                                                                                     */
+/* int CMSfunctionArray(char *physical, char *logical, int is_proc, char **ret_val                */
+/*              int argc, char *argv[])                                                           */
 /* Args: physical - physical function name (used to find the function and in the PLIST)           */
 /*       logical  - logical function name ("as entered by the user" used in the EPLIST)           */
 /*       is_proc  - 0 - if the routine is called as a function                                    */
@@ -239,8 +229,53 @@ int __cmscmd(char * cmdLine, int cmdFlag);
 /*         -2 error dmsfret error                                                                 */
 /*         Other rc from svc202 / called function                                                 */
 /**************************************************************************************************/
-int __CMSFNC(char *physical, char *logical, int is_proc, int argc, char *argv[], char **ret_val);
-#define CMSfunction(s1, s2, s3, s4, s5 , s6) (__cmsfunc((s1),(s2),(s3),(s4),(s5),(s6)))
+int __CMSFNA(char *physical, char *logical, int is_proc, char **ret_val, int argc, char *argv[]);
+#define CMSfunctionArray(s1, s2, s3, s4, s5 , s6) (__CMSFNA((s1),(s2),(s3),(s4),(s5),(s6)))
+
+/**************************************************************************************************/
+/* Call Type 5 (function) call                                                                    */
+/* __CMSFNC()                                                                                     */
+/* int CMSfunction(char *physical, char *logical, int is_proc, char **ret_val, int argc, ...)     */
+/*                                                                                                */
+/* Args: physical - physical function name (used to find the function and in the PLIST)           */
+/*       logical  - logical function name ("as entered by the user" used in the EPLIST)           */
+/*       is_proc  - 0 - if the routine is called as a function                                    */
+/*                  1 - if the routine is called as a subroutine                                  */
+/*       ret_val  - pointer to pointer (handle) of the returned value                             */
+/*                  if this is zero no return value is processed                                  */
+/*                  On error or if there is no return value the pointer is set to zero            */
+/*                  otherwise it is set to a char* buffer (the called must free() this memory)    */
+/*       argc     - number of arguments                                                           */
+/*       ...      - Arguments                                                                     */
+/*                                                                                                */
+/* returns 0 success                                                                              */
+/*         -1 invalid arguments                                                                   */
+/*         -2 error dmsfret error                                                                 */
+/*         Other rc from svc202 / called function                                                 */
+/**************************************************************************************************/
+int __CMSFNC(char *physical, char *logical, int is_proc, char **ret_val, int argc, ...);
+#define CMSfunction(s1, s2, s3, s4, s5, ...) (__CMSFNC((s1),(s2),(s3),(s4),(s5),__VA_ARGS__))
+
+/**************************************************************************************************/
+/* Call Type 5 (function) call - simple macros                                                    */
+/* int CMSsimplefunction(char *function, char **ret_val, int argc, ...)                           */
+/* int CMSsimpleprocedure(char *function, int argc, ...)                                          */
+/*                                                                                                */
+/* Args: function - function name                                                                 */
+/*       ret_val  - pointer to pointer (handle) of the returned value                             */
+/*                  if this is zero no return value is processed                                  */
+/*                  On error or if there is no return value the pointer is set to zero            */
+/*                  otherwise it is set to a char* buffer (the called must free() this memory)    */
+/*       argc     - number of arguments                                                           */
+/*       ...      - Arguments                                                                     */
+/*                                                                                                */
+/* returns 0 success                                                                              */
+/*         -1 invalid arguments                                                                   */
+/*         -2 error dmsfret error                                                                 */
+/*         Other rc from svc202 / called function                                                 */
+/**************************************************************************************************/
+#define CMSsimplefunction(f, r, c, ...) (__CMSFNC((f),(f),0,(r),(c),__VA_ARGS__))
+#define CMSsimpleprocedure(f, c, ...) (__CMSFNC((f),(f),1,0,(c),__VA_ARGS__))
 
 /**************************************************************************************************/
 /* int CMSconsoleRead(char * line)                                                                */
@@ -625,5 +660,72 @@ int __attn(char * line, int order);
 /**************************************************************************************************/
 int __stackn(void);
 #define CMSstackQuery() (__stackn())
+
+/**************************************************************************************************/
+/* Get Program ARGV Vector (vector of arguments)                                                  */
+/* __ARGV()                                                                                       */
+/* char **CMSargv(void)                                                                           */
+/**************************************************************************************************/
+char **__ARGV(void);
+#define CMSargv() (__ARGV())
+
+/**************************************************************************************************/
+/* Get Program ARGC value (number of arguments)                                                   */
+/* __ARGC()                                                                                       */
+/* char *CMSargc(void)                                                                            */
+/**************************************************************************************************/
+char *__ARGC(void);
+#define CMSargc() (__ARGC())
+
+/**************************************************************************************************/
+/* Get Program PLIST Structure                                                                    */
+/* __PLIST()                                                                                      */
+/* PLIST *CMSplist(void)                                                                          */
+/**************************************************************************************************/
+PLIST *__PLIST(void);
+#define CMSplist() (__PLIST())
+
+/**************************************************************************************************/
+/* Get Program EPLIST Structure                                                                   */
+/* __EPLIST()                                                                                     */
+/* EPLIST *CMSeplist(void)                                                                        */
+/**************************************************************************************************/
+EPLIST *__EPLIST(void);
+#define CMSeplist() (__EPLIST())
+
+/**************************************************************************************************/
+/* Get Program Call Type                                                                          */
+/* __CALLTP()                                                                                     */
+/* int CMScalltype(void)                                                                          */
+/**************************************************************************************************/
+int __CALLTP(void);
+#define CMScalltype() (__CALLTP())
+
+/**************************************************************************************************/
+/* Returns 1 if the calltype 5 procedure/subroutine flag was set (a return value is not required) */
+/* __ISPROC()                                                                                     */
+/* int CMSisproc(void)                                                                            */
+/**************************************************************************************************/
+int __ISPROC(void);
+#define CMSisproc() (__ISPROC())
+
+/**************************************************************************************************/
+/* Sets the return value (string). This is only valid if the program is called via calltype 5     */
+/* __RETVAL(char*)                                                                                */
+/* int CMSreturnvalue(char*)                                                                      */
+/* returns 0 on success or 1 if the calltype is not 5, or the return value has already been set   */
+/**************************************************************************************************/
+int __RETVAL(char* value);
+#define CMSreturnvalue(a1) (__RETVAL((a1)))
+
+/**************************************************************************************************/
+/* Sets the return value (int). This is only valid if the program is called via calltype 5        */
+/* __RETINT(int)                                                                                  */
+/* int CMSreturnvalint(int)                                                                       */
+/* Returns 0 on success or input rc if the calltype is not 5, or the return value has already     */
+/* been set                                                                                       */
+/**************************************************************************************************/
+int __RETINT(int value);
+#define CMSreturnvalint(a1) (__RETINT((a1)))
 
 #endif

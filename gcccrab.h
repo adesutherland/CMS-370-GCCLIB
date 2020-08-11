@@ -11,6 +11,7 @@
 #ifndef GCCCRAB_INCLUDED
 #define GCCCRAB_INCLUDED
 #include <stdio.h>
+#include <cmssys.h>
 
 #ifndef __SIZE_T_DEFINED
 #define __SIZE_T_DEFINED
@@ -44,6 +45,14 @@ struct GCCCRAB {
    FILE* filehandles;
    char *strtok_old;
    void *process_global;
+   char **argv;
+   char *argbuffer;
+   PLIST *plist;
+   EPLIST *eplist;
+   int calltype;
+   EVALBLOK *evalblok;
+   int isproc;
+   int argc;
 };
 
 /* To get the addresses of the crab */

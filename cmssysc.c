@@ -10,6 +10,7 @@
 /**************************************************************************************************/
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdarg.h>
 #include <string.h>
 #include <ctype.h>
 #include <cmssys.h>
@@ -18,6 +19,7 @@
 /* Low Level Assembler functions */
 int __SVC202(PLIST *plist , EPLIST *eplist, int calltype);
 int _DMSFRET(void *address, int doublewords);
+void* _DMSFREE(int doublewords);
 
 /* Worker Function - create PLIST / EPLIST and call __svc202 */
 static int cmd_with_plist(char *command, int calltype)
@@ -170,8 +172,9 @@ void* CMSGetPG(void) {
 
 /**************************************************************************************************/
 /* Call Type 5 (function) call                                                                    */
-/* int __CMSFUNC(char *physical, char *logical, int is_proc, int argc, char *argv[],              */
-/*               char **ret_val)                                                                  */
+/* __CMSFNA()                                                                                     */
+/* int CMSfunctionArray(char *physical, char *logical, int is_proc, char **ret_val                */
+/*              int argc, char *argv[])                                                           */
 /* Args: physical - physical function name (used to find the function and in the PLIST)           */
 /*       logical  - logical function name ("as entered by the user" used in the EPLIST)           */
 /*       is_proc  - 0 - if the routine is called as a function                                    */
@@ -188,7 +191,7 @@ void* CMSGetPG(void) {
 /*         -2 error dmsfret error                                                                 */
 /*         Other rc from svc202 / called function                                                 */
 /**************************************************************************************************/
-int __CMSFNC(char *physical, char *logical, int is_proc, int argc, char *argv[], char **ret_val)
+int __CMSFNA(char *physical, char *logical, int is_proc, char **ret_val, int argc, char *argv[])
 {
   int i, j, len, a, rc;
   PLIST plist[MAXPLISTARGS + 1];
@@ -208,7 +211,7 @@ int __CMSFNC(char *physical, char *logical, int is_proc, int argc, char *argv[],
   eplist.CallContext = 0;
   eplist.ArgList = 0;
   eplist.FunctionReturn = &evalblock;
-
+  evalblock = 0;
   *ret_val = 0;
 
   /* Process the physical string */
@@ -281,10 +284,14 @@ int __CMSFNC(char *physical, char *logical, int is_proc, int argc, char *argv[],
   rc = __SVC202(plist, pointer_eplist, 5);
 
   /* Handle return value */
-  if (evalblock) {
+  if (evalblock && ret_val) {
     *ret_val = malloc(evalblock->Len + 1);
     memcpy(*ret_val,evalblock->Data, evalblock->Len);
     (*ret_val)[evalblock->Len] = 0;
+  }
+
+  /* Release evalblok memory */
+  if (evalblock) {
     if (_DMSFRET((void*)evalblock, evalblock->BlokSize)) {
       /* Free allocated memory */
       free(eplist.ArgList);
@@ -292,8 +299,158 @@ int __CMSFNC(char *physical, char *logical, int is_proc, int argc, char *argv[],
     };
   }
 
+
   /* Free allocated memory */
   free(eplist.ArgList);
 
   return rc;
+}
+
+/**************************************************************************************************/
+/* Call Type 5 (function) call                                                                    */
+/* __CMSFNC()                                                                                     */
+/* int CMSfunction(char *physical, char *logical, int is_proc, char **ret_val, int argc, ...)     */
+/*                                                                                                */
+/* Args: physical - physical function name (used to find the function and in the PLIST)           */
+/*       logical  - logical function name ("as entered by the user" used in the EPLIST)           */
+/*       is_proc  - 0 - if the routine is called as a function                                    */
+/*                  1 - if the routine is called as a subroutine                                  */
+/*       ret_val  - pointer to pointer (handle) of the returned value                             */
+/*                  if this is zero no return value is processed                                  */
+/*                  On error or if there is no return value the pointer is set to zero            */
+/*                  otherwise it is set to a char* buffer (the called must free() this memory)    */
+/*       argc     - number of arguments                                                           */
+/*       ...      - Arguments                                                                     */
+/*                                                                                                */
+/* returns 0 success                                                                              */
+/*         -1 invalid arguments                                                                   */
+/*         -2 error dmsfret error                                                                 */
+/*         Other rc from svc202 / called function                                                 */
+/**************************************************************************************************/
+int __CMSFNC(char *physical, char *logical, int is_proc, char **ret_val, int argc, ...) {
+  va_list valist;
+  int rc;
+  int i;
+  char **argv;
+
+  /* initialize */
+  va_start(valist, argc);
+  argv = malloc(argc * sizeof(char*));
+
+  /* Set up arguments */
+  for (i = 0; i < argc; i++) {
+    argv[i] = va_arg(valist, char*);
+  }
+
+  rc = __CMSFNA(physical, logical, is_proc, ret_val, argc, argv);
+
+  /* release memory */
+  va_end(valist);
+  free(argv);
+
+  return rc;
+}
+
+/**************************************************************************************************/
+/* Get Program ARGV Vector (vector of arguments)                                                  */
+/* __ARGV()                                                                                       */
+/* char **CMSargv(void)                                                                           */
+/**************************************************************************************************/
+char **__ARGV(void) {
+  return GETGCCCRAB()->argv;
+}
+
+/**************************************************************************************************/
+/* Get Program ARGC value (number of arguments)                                                   */
+/* __ARGC()                                                                                       */
+/* char *CMSargv(void)                                                                            */
+/**************************************************************************************************/
+char *__ARGC(void) {
+  return GETGCCCRAB()->argc;
+}
+
+/**************************************************************************************************/
+/* Get Program PLIST Structure                                                                    */
+/* __PLIST()                                                                                      */
+/* PLIST *CMSplist(void)                                                                          */
+/**************************************************************************************************/
+PLIST *__PLIST(void) {
+  return GETGCCCRAB()->plist;
+}
+
+/**************************************************************************************************/
+/* Get Program EPLIST Structure                                                                   */
+/* __EPLIST()                                                                                     */
+/* EPLIST *CMSeplist(void)                                                                        */
+/**************************************************************************************************/
+EPLIST *__EPLIST(void) {
+  return GETGCCCRAB()->eplist;
+}
+
+/**************************************************************************************************/
+/* Get Program Call Type                                                                          */
+/* __CALLTP()                                                                                     */
+/* int CMScalltype(void)                                                                          */
+/**************************************************************************************************/
+int __CALLTP(void) {
+  return GETGCCCRAB()->calltype;
+}
+
+/**************************************************************************************************/
+/* Returns 1 if the calltype 5 procedure/subroutine flag was set (a return value is not required) */
+/* __ISPROC()                                                                                     */
+/* int CMSisproc(void)                                                                            */
+/**************************************************************************************************/
+int __ISPROC(void) {
+  return GETGCCCRAB()->isproc;
+}
+
+/**************************************************************************************************/
+/* Sets the return value (string). This is only valid if the program is called via calltype 5     */
+/* __RETVAL(char*)                                                                                */
+/* int CMSreturnvalue(char*)                                                                      */
+/* returns 0 on success or 1 if the calltype is not 5, or the return value has already been set   */
+/**************************************************************************************************/
+int __RETVAL(char* value) {
+  GCCCRAB *gcccrab;
+  int ret_size;
+  gcccrab = GETGCCCRAB();
+
+  if ((gcccrab->calltype == 5) && !gcccrab->evalblok && gcccrab->eplist->FunctionReturn) {
+    ret_size = strlen(value);
+    /* integer roundup -> "add the divisor minus one to the dividend" */
+    int db_size=(sizeof(EVALBLOK) + ret_size + (4-1) ) / 4;
+    gcccrab->evalblok = _DMSFREE(db_size);
+    gcccrab->evalblok->BlokSize = db_size;
+    gcccrab->evalblok->Len = ret_size;
+    strcpy(gcccrab->evalblok->Data, value);
+    *(gcccrab->eplist->FunctionReturn) = gcccrab->evalblok;
+    return 0;
+  }
+  else return 1;
+}
+
+/**************************************************************************************************/
+/* Sets the return value (int). This is only valid if the program is called via calltype 5        */
+/* __RETINT(int)                                                                                  */
+/* int CMSreturnvalint(int rc)                                                                    */
+/* Returns 0 on success or input rc if the calltype is not 5, or the return value has already     */
+/* been set                                                                                       */
+/**************************************************************************************************/
+int __RETINT(int value) {
+  GCCCRAB *gcccrab;
+  int ret_size = 11;
+  gcccrab = GETGCCCRAB();
+
+  if ((gcccrab->calltype == 5) && !gcccrab->evalblok && gcccrab->eplist->FunctionReturn) {
+    /* integer roundup -> "add the divisor minus one to the dividend" */
+    int db_size=(sizeof(EVALBLOK) + ret_size + (4-1) ) / 4;
+    gcccrab->evalblok = _DMSFREE(db_size);
+    gcccrab->evalblok->BlokSize = db_size;
+    sprintf(gcccrab->evalblok->Data,"%d",value);
+    gcccrab->evalblok->Len = strlen(gcccrab->evalblok->Data);
+    *(gcccrab->eplist->FunctionReturn) = gcccrab->evalblok;
+    return 0;
+  }
+  else return value;
 }

@@ -15,7 +15,16 @@
 * Entry points in CMSSYSC C / CMSSYS H                                *
 ***********************************************************************
 @@CMSCMD VTENTRY
+@@CMSFNA VTENTRY
 @@CMSFNC VTENTRY
+@@ARGV   VTENTRY
+@@ARGC   VTENTRY
+@@PLIST  VTENTRY
+@@EPLIST VTENTRY
+@@CALLTP VTENTRY
+@@ISPROC VTENTRY
+@@RETVAL VTENTRY
+@@RETINT VTENTRY
 ***********************************************************************
 * Entry points in CMSSYS ASSEMBLE                                     *
 ***********************************************************************
@@ -24,7 +33,6 @@ CMSPGALL VTENTRY
 CMSGETPG VTENTRY
 CMSSETFL VTENTRY
 CMSSETNU VTENTRY
-@@ARGSTR VTENTRY
 @@ATTN   VTENTRY
 @@SVC202 VTENTRY
 @@DMSFRE VTENTRY

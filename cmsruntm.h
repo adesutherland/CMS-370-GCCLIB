@@ -75,7 +75,7 @@ struct CMSCRAB {
 
 /* Startup Functions */
 int __cstub(PLIST *plist , EPLIST *eplist);
-int __cstart(MAINFUNC* mainfunc, PLIST *plist , EPLIST *eplist);
+int __cstart(MAINFUNC* mainfunc);
 
 /*
   creat_msp creates, updates GCCCRAB, and returns a new independent space
