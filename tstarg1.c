@@ -56,6 +56,7 @@ int main(int argc, char *argv[]) {
   }
   if (ret) free(ret);
 
+
   rc = CMSfunction("TSTARG2", "TSTARG2 isproc", 1, &ret, 3, "Argument 1", "Argument 2", "Argument 3" );
   if (rc==1 && ret && strcmp(ret,"1")==0) printf(" - Call type 5 (proc) OK\n");
   else {
@@ -65,6 +66,7 @@ int main(int argc, char *argv[]) {
   }
   if (ret) free(ret);
 
+
   rc = CMSfunction("TSTARG2", "TSTARG2 isfunc", 0, &ret, 3, "Argument 1", "Argument 2", "Argument 3" );
   if (rc==1 && ret && strcmp(ret,"1")==0) printf(" - Call type 5 (func) OK\n");
   else {
@@ -73,6 +75,7 @@ int main(int argc, char *argv[]) {
     else printf(" - No Return String\n");
   }
   if (ret) free(ret);
+
 
   return 0;
 }
