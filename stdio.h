@@ -11,7 +11,6 @@
 #ifndef STDIO_INCLUDED
 #define STDIO_INCLUDED
 
-#include <cmssys.h>
 #include <stdarg.h>
 #include <string.h>
 
@@ -38,9 +37,9 @@ typedef struct FPOS_T fpos_t;
 
 /**************************************************************************************************/
 /* FILE - open stream file block                                                                  */
-/* Specified in cmsruntm.h                                                                        */
 /**************************************************************************************************/
 typedef struct FILE FILE;
+/* FILE Structure Specified in cmssys.h */
 
 /* Stdlib Public Global Variables */
 #include <gcccrab.h>

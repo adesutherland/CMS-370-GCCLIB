@@ -10,8 +10,6 @@
 
 #ifndef GCCCRAB_INCLUDED
 #define GCCCRAB_INCLUDED
-#include <stdio.h>
-#include <cmssys.h>
 
 #ifndef __SIZE_T_DEFINED
 #define __SIZE_T_DEFINED
@@ -36,21 +34,21 @@ struct GCCCRAB {
    EXITFUNC *exitfunc;
    void* dlmspace; /* For DLMALLOC */
    size_t startmemoryusage;
-   FILE *gstdin;
-   FILE *gstdout;
-   FILE *gstderr;
+   struct FILE *gstdin;
+   struct FILE *gstdout;
+   struct FILE *gstderr;
    int gerrno;
    SIGHANDLER **handlers;
    USEREXIT **userexits;
-   FILE* filehandles;
+   struct FILE* filehandles;
    char *strtok_old;
    void *process_global;
    char **argv;
    char *argbuffer;
-   PLIST *plist;
-   EPLIST *eplist;
+   char (*plist)[8];
+   struct EPLIST *eplist;
    int calltype;
-   EVALBLOK *evalblok;
+   struct EVALBLOK *evalblok;
    int isproc;
    int argc;
 };

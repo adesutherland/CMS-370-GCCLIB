@@ -30,7 +30,6 @@
 ***********************************************************************
 @@DEBUG  VTENTRY
 CMSPGALL VTENTRY
-CMSGETPG VTENTRY
 CMSSETFL VTENTRY
 CMSSETNU VTENTRY
 @@ATTN   VTENTRY

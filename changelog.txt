@@ -1,6 +1,11 @@
 GCCLIB Change LOG
 =================
 
+0.7.18- 28 August 2020
+F0039 - Reoranised header files a bit to *reduce* circular dependancies
+      - Changed CMSGetPG() to macro - performance
+
+
 0.7.17- 11 August 2020
 F0038 - Add support for being called via a type 5 call
       - Assist to turn main() return int into a calltype 5 return EVALBLOK string

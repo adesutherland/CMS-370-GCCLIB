@@ -8,7 +8,7 @@
 #ifndef CMSSYS_INCLUDED
 #define CMSSYS_INCLUDED
 
-#define GCCLIB_VERSION "0.7.17"
+#define GCCLIB_VERSION "0.7.18"
 
 #include <stddef.h>
 #include <stdarg.h>
@@ -58,6 +58,30 @@ typedef struct {
    int bytesRead;                                                /* number of bytes actually read */
    } CMSFILE;
 
+struct FILE {
+   char validator1;                                               /* Marks a valid FILE structure */
+   char name[21];                                                  /* File name used for messages */
+   char fileid[19];                                                     /* Null terminated FILEID */
+   struct FILE* next;                                               /* Next file in the file list */
+   struct FILE* prev;                                           /* Previous file in the file list */
+   int access;                                   /* type of access mode flags (read, write, etc.) */
+   int status;           /* status flags (error, eof, dirty record buffer, read/write mode, etc.) */
+   int error;                             /* error code from last I/O operation against this file */
+   int ungetchar;                                                              /* Unget Character */
+   int recpos;   /* char position in record buffer, next unread byte, next byte position to write */
+   int recnum;   /* Record number (1 base) of the record in the buffer, -1 nonblock device,
+                                                                         0 no record loaded */
+   int reclen;                        /* Current Record length excluding any trailing \n and null */
+   int maxreclen;       /* Max Record length for curren record excluding any trailing \n and null */
+   int filemaxreclen;     /* Max Record length / Buffer Length excluding any trailing \n and null */
+   int records;                                     /* Number of records or -1 for non-block file */
+   struct CMSDRIVER *device;                                      /* device driver (console, disk, etc.) */
+   char *buffer;                                                                 /* record buffer */
+   struct CMSFILECACHE *cache;                                                             /* File cache */
+   CMSFILE fscb;                      /* the CMS File System Control Block (if it is a disk file) */
+   char validator2;                                               /* Marks a valid FILE structure */
+};
+
 /**************************************************************************************************/
 /* CMSFILEINFO maps the CMS FST (File Status Table).                                              */
 /**************************************************************************************************/
@@ -100,7 +124,8 @@ typedef struct {
 /*                                                                                                */
 /**************************************************************************************************/
 void* CMSPGAll(size_t size);
-void* CMSGetPG(void);
+#include <gcccrab.h>
+#define CMSGetPG() (GETGCCCRAB()->process_global)
 
 /**************************************************************************************************/
 /* int CMSGetFlag(int flag)                                                                       */

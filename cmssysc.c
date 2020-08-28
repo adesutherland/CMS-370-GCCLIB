@@ -146,7 +146,7 @@ int __CMSCMD(char *command, int calltype)
 /* I have coined this memory - Process Global Memory.                                             */
 /*                                                                                                */
 /* void* CMSPGAll(size_t size) - Allocate / Reallocate Process Global Memory Block                */
-/* void* CMSGetPG(void) - Get the address of the Process Global Memory Block                      */
+/* void* CMSGetPG(void) - Get the address of the Process Global Memory *** MACRO in cmssys.h ***  */
 /*                                                                                                */
 /* Note: that this area is freed automatically on normal program termination.                     */
 /*                                                                                                */
@@ -161,12 +161,6 @@ void* CMSPGAll(size_t size) {
   if (size) crab->process_global = malloc(size);
   else crab->process_global = 0;
 
-  return crab->process_global;
-}
-
-void* CMSGetPG(void) {
-  GCCCRAB *crab;
-  crab = GETGCCCRAB();
   return crab->process_global;
 }
 

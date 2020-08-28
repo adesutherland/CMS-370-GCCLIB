@@ -9,7 +9,9 @@
 /* Released to the public domain.                                                                 */
 /**************************************************************************************************/
 #include <cmsruntm.h>
+#include <cmssys.h>
 #include <stdio.h>
+#include <cmssys.h>
 #include <signal.h>
 #include <stdlib.h>
 

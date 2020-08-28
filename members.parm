@@ -27,7 +27,6 @@
 ***********************************************************************
 @@DEBUG
 CMSPGALL
-CMSGETPG
 CMSSETFL
 CMSSETNU
 @@ATTN

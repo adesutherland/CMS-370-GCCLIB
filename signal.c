@@ -11,6 +11,7 @@
 /*********************************************************************/
 
 #include <cmsruntm.h>
+#include <cmssys.h>
 #include <signal.h>
 #include <stdlib.h>
 #include <stdio.h>

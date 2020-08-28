@@ -10,7 +10,6 @@
 
 #ifndef CMSRUNTM_INCLUDED
 #define CMSRUNTM_INCLUDED
-#include <stdio.h>
 
 #ifndef __SIZE_T_DEFINED
 #define __SIZE_T_DEFINED
@@ -38,7 +37,7 @@ struct CMSCRAB {
   CMSCRAB *backchain;                                  /*  backchain to previous save area +04 */
   CMSCRAB *forward;                                     /* forward chain to next save area +08 */
   void *regsavearea[15];                      /* register save area and save area chaining +12 */
-  GCCCRAB *gcccrab;                               /* GCC C Runtime Anchor Block (GCCCRAB)  +72 */
+  struct GCCCRAB *gcccrab;                               /* GCC C Runtime Anchor Block (GCCCRAB)  +72 */
   void *stackNext;                                     /* next available byte in the stack +76 */
   void *numconv;                                              /* numeric conversion buffer +80 */
   void *funcrslt;                                                /* function result buffer +84 */
@@ -74,7 +73,6 @@ struct CMSCRAB {
 #define ARGBUFFERLEN 300
 
 /* Startup Functions */
-int __cstub(PLIST *plist , EPLIST *eplist);
 int __cstart(MAINFUNC* mainfunc);
 
 /*
@@ -139,30 +137,7 @@ typedef struct CMSDRIVER CMSDRIVER;
 typedef struct CMSDRIVERS CMSDRIVERS;
 typedef struct CMSFILECACHE CMSFILECACHE;
 typedef struct CMSCACHEENTRY CMSCACHEENTRY;
-
-struct FILE {
-   char validator1;                                               /* Marks a valid FILE structure */
-   char name[21];                                                  /* File name used for messages */
-   char fileid[19];                                                     /* Null terminated FILEID */
-   FILE* next;                                                      /* Next file in the file list */
-   FILE* prev;                                                  /* Previous file in the file list */
-   int access;                                   /* type of access mode flags (read, write, etc.) */
-   int status;           /* status flags (error, eof, dirty record buffer, read/write mode, etc.) */
-   int error;                             /* error code from last I/O operation against this file */
-   int ungetchar;                                                              /* Unget Character */
-   int recpos;   /* char position in record buffer, next unread byte, next byte position to write */
-   int recnum;   /* Record number (1 base) of the record in the buffer, -1 nonblock device,
-                                                                         0 no record loaded */
-   int reclen;                        /* Current Record length excluding any trailing \n and null */
-   int maxreclen;       /* Max Record length for curren record excluding any trailing \n and null */
-   int filemaxreclen;     /* Max Record length / Buffer Length excluding any trailing \n and null */
-   int records;                                     /* Number of records or -1 for non-block file */
-   CMSDRIVER *device;                                      /* device driver (console, disk, etc.) */
-   char *buffer;                                                                 /* record buffer */
-   CMSFILECACHE *cache;                                                             /* File cache */
-   CMSFILE fscb;                      /* the CMS File System Control Block (if it is a disk file) */
-   char validator2;                                               /* Marks a valid FILE structure */
-};
+/* FILE Structure Specified in cmssys.h */
 
 /* Status flags */
 #define STATUS_EOF         1
@@ -206,9 +181,9 @@ struct CMSCACHEENTRY {
 };
 
 /* IO Drivers */
-typedef int (CONTROL_FUNC)(FILE *stream);
-typedef int (OPEN_FUNC)(char filespecwords[][10], FILE* file);
-typedef int (SETPOS_FUNC)(FILE *stream, int recpos);
+typedef int (CONTROL_FUNC)(struct FILE *stream);
+typedef int (OPEN_FUNC)(char filespecwords[][10], struct FILE* file);
+typedef int (SETPOS_FUNC)(struct FILE *stream, int recpos);
 
 struct CMSDRIVER {
   OPEN_FUNC *open_func;
