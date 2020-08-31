@@ -1,10 +1,11 @@
 GCCLIB Change LOG
 =================
 
+0.7.19- 31 August 2020
 F0040 - Fix for calltype 5 returns where RC is auto-converted to the return
         string. The integer RC is set to zero as the call itself was successfull
         The return string has the 'correct' return code.
-      - Added 0x to the anchor address announcement  
+      - Added 0x to the anchor address announcement
 
 0.7.18- 28 August 2020
 F0039 - Reoranised header files a bit to *reduce* circular dependancies
