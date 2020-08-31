@@ -20,7 +20,7 @@ int main(int argc, char *argv[]) {
   CMSSetNUCON((void*)STUB_ANCHOR_ADDRESS,anchor_addr);
 
   printf("GCCLIB Version %s\n", GCCLIB_VERSION);
-  printf("GCC ANCHOR Address is %x saved in NUCON at %x\n", anchor_addr, STUB_ANCHOR_ADDRESS);
+  printf("GCC ANCHOR Address is 0x%x saved in NUCON at 0x%x\n", anchor_addr, STUB_ANCHOR_ADDRESS);
 
   return 0;
 }

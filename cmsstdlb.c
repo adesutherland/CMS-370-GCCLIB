@@ -174,7 +174,10 @@ exit(int status)
   if (theCRAB->process_global) free(theCRAB->process_global);
 
   /* Caltype 5 - int return to string assist */
-  if ((theCRAB->calltype == 5) && !theCRAB->evalblok) CMSreturnvalint(status);
+  if ((theCRAB->calltype == 5) && !theCRAB->evalblok) {
+    CMSreturnvalint(status);
+    status = 0;
+  }
 
   /* Free argument structures */
   if (theCRAB->argv) free(theCRAB->argv);

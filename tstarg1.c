@@ -23,7 +23,7 @@ int main(int argc, char *argv[]) {
 
 
   rc = CMSfunction("TSTARG2", "TSTARG2 tstarg2", 0, &ret, 3, "Argument 1", "Argument 2", "Argument 3" );
-  if (rc==1 && ret && strcmp(ret,"1")==0) printf(" - Call type 5 OK\n");
+  if (rc==0 && ret && strcmp(ret,"1")==0) printf(" - Call type 5 OK\n");
   else {
     printf(" - Call type 5 Error (rc=%d)\n",rc);
     if (ret) printf(" - Call return: %s\n", ret);
@@ -33,7 +33,7 @@ int main(int argc, char *argv[]) {
 
 
   rc = CMSsimplefunction("tstarg2", &ret, 3, "Argument 1", "Argument 2", "Argument 3" );
-  if (rc==1 && ret && strcmp(ret,"1")==0) printf(" - Call type 5 CMSsimplefunction() OK\n");
+  if (rc==0 && ret && strcmp(ret,"1")==0) printf(" - Call type 5 CMSsimplefunction() OK\n");
   else {
     printf(" - Call type 5 Error CMSsimplefunction() (rc=%d)\n",rc);
     if (ret) printf(" - Call return: %s\n", ret);
@@ -43,7 +43,7 @@ int main(int argc, char *argv[]) {
 
 
   rc = CMSsimpleprocedure("tstarg2", 3, "Argument 1", "Argument 2", "Argument 3" );
-  if (rc==1) printf(" - Call type 5 CMSsimpleprocedure() OK\n");
+  if (rc==0) printf(" - Call type 5 CMSsimpleprocedure() OK\n");
   else printf(" - Call type 5 Error CMSsimpleprocedure() (rc=%d)\n",rc);
 
 
@@ -58,7 +58,7 @@ int main(int argc, char *argv[]) {
 
 
   rc = CMSfunction("TSTARG2", "TSTARG2 isproc", 1, &ret, 3, "Argument 1", "Argument 2", "Argument 3" );
-  if (rc==1 && ret && strcmp(ret,"1")==0) printf(" - Call type 5 (proc) OK\n");
+  if (rc==0 && ret && strcmp(ret,"1")==0) printf(" - Call type 5 (proc) OK\n");
   else {
     printf(" - Call type 5 Error (proc) (rc=%d)\n",rc);
     if (ret) printf(" - Call return: %s\n", ret);
@@ -68,7 +68,7 @@ int main(int argc, char *argv[]) {
 
 
   rc = CMSfunction("TSTARG2", "TSTARG2 isfunc", 0, &ret, 3, "Argument 1", "Argument 2", "Argument 3" );
-  if (rc==1 && ret && strcmp(ret,"1")==0) printf(" - Call type 5 (func) OK\n");
+  if (rc==0 && ret && strcmp(ret,"1")==0) printf(" - Call type 5 (func) OK\n");
   else {
     printf(" - Call type 5 Error (func) (rc=%d)\n",rc);
     if (ret) printf(" - Call return: %s\n", ret);

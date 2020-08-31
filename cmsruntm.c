@@ -221,7 +221,10 @@ int __cstart(MAINFUNC* mainfunc)
   }
 
   /* Caltype 5 - int return to string assist */
-  if ((gcccrab->calltype == 5) && !gcccrab->evalblok) CMSreturnvalint(rc);
+  if ((gcccrab->calltype == 5) && !gcccrab->evalblok) {
+    CMSreturnvalint(rc);
+    rc = 0;
+  }
 
   /* Close Files */
   _clfiles();
