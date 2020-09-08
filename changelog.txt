@@ -1,6 +1,8 @@
 GCCLIB Change LOG
 =================
 
+F0041 - REXXSAA RexxVariablePool
+
 0.7.19- 31 August 2020
 F0040 - Fix for calltype 5 returns where RC is auto-converted to the return
         string. The integer RC is set to zero as the call itself was successfull
