@@ -1,6 +1,9 @@
 GCCLIB Change LOG
 =================
 
+F0042 - Fix for Calltype 5 without a return buffer
+        Fix for CMSargc() return type
+        Fix for tstarg2 CMSplist() casting
 F0041 - REXXSAA RexxVariablePool
 
 0.7.19- 31 August 2020

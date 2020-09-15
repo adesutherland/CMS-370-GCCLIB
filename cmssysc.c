@@ -206,7 +206,7 @@ int __CMSFNA(char *physical, char *logical, int is_proc, char **ret_val, int arg
   eplist.ArgList = 0;
   eplist.FunctionReturn = &evalblock;
   evalblock = 0;
-  *ret_val = 0;
+  if (ret_val) *ret_val = 0;
 
   /* Process the physical string */
   len = strlen(physical);
@@ -357,9 +357,9 @@ char **__ARGV(void) {
 /**************************************************************************************************/
 /* Get Program ARGC value (number of arguments)                                                   */
 /* __ARGC()                                                                                       */
-/* char *CMSargv(void)                                                                            */
+/* int CMSargc(void)                                                                              */
 /**************************************************************************************************/
-char *__ARGC(void) {
+int __ARGC(void) {
   return GETGCCCRAB()->argc;
 }
 
