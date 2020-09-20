@@ -1165,10 +1165,14 @@ WRTRM2PL EQU   *-WRTRM2P
          USING CMSSYS,R12
          LA    R1,DIAG0BUF
          LA    R0,40
-         DC    X'83100000'    Issue Diagnose instruction for
+         DC    X'83100000'     Issue Diagnose instruction for
 *                               code X'0000' to fetch CP info
+         LTR   R0,R0           Is R0 Positive?
+         BC    2,ZONE1         Yeah R0 > 0 so no time zone info
          L     R15,DIAG0BUF+32 Return the time zone offset
-         PDPEPIL
+         B     ZONE2
+ZONE1    SR    R15,R15
+ZONE2    PDPEPIL
          EJECT
 * ---------------------------------------------------------------------
 * Literal pool
