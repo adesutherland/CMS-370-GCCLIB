@@ -413,7 +413,7 @@ int __RETVAL(char* value) {
   if ((gcccrab->calltype == 5) && !gcccrab->evalblok && gcccrab->eplist->FunctionReturn) {
     ret_size = strlen(value);
     /* integer roundup -> "add the divisor minus one to the dividend" */
-    int db_size=(sizeof(EVALBLOK) + ret_size + (4-1) ) / 4;
+    int db_size=(sizeof(EVALBLOK) + ret_size + (8-1) ) / 8;
     gcccrab->evalblok = _DMSFREE(db_size);
     gcccrab->evalblok->BlokSize = db_size;
     gcccrab->evalblok->Len = ret_size;

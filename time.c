@@ -15,6 +15,11 @@
 #include "stdio.h"
 #include "stddef.h"
 
+/* CMS Time Zone function */
+#if defined(__CMS__)
+int __zone();
+#endif
+
 /* pdos and msdos use the same interface most of the time) */
 #ifdef __PDOS__
 #define __MSDOS__
@@ -218,11 +223,6 @@ char *ctime(const time_t *timer)
     return (asctime(localtime(timer)));
 }
 
-struct tm *gmtime(const time_t *timer)
-{
-    return (localtime(timer));
-}
-
 /* dow - written by Paul Edwards, 1993-01-31 */
 /* Released to the Public Domain */
 /* This routine will work over the range 1-01-01 to 32767-12-31.
@@ -243,30 +243,38 @@ struct tm *gmtime(const time_t *timer)
   (((((y)%4)==0) && (((y)%100)!=0)) || (((y)%400)==0)) \
   ? 5 : 6) : 0)) % 7)
 
-static struct tm tms;
-
 struct tm *localtime(const time_t *timer)
 {
-    unsigned yr, mo, da;
-    unsigned long secs;
-    unsigned long days;
+#if defined(__CMS__)
+  return (gmtime(timer) + __zone() );
+#else
+  return (gmtime(timer));
+#endif
+}
 
-    days = *timer / (60L*60*24);
-    secs = *timer % (60L*60*24);
-    scalar_to_ymd(days + ymd_to_scalar(1970, 1, 1), &yr, &mo, &da);
-    tms.tm_year = yr - 1900;
-    tms.tm_mon = mo - 1;
-    tms.tm_mday = da;
-    tms.tm_yday = (int)(ymd_to_scalar(tms.tm_year + 1900, mo, da)
-                  - ymd_to_scalar(tms.tm_year + 1900, 1, 1));
-    tms.tm_wday = dow(tms.tm_year + 1900, mo, da);
-    tms.tm_isdst = -1;
-    tms.tm_sec = (int)(secs % 60);
-    secs /= 60;
-    tms.tm_min = (int)(secs % 60);
-    secs /= 60;
-    tms.tm_hour = (int)secs;
-    return (&tms);
+struct tm *gmtime(const time_t *timer)
+{
+  static struct tm tms; /* TODO - ADD to GCCCRAB */
+  unsigned yr, mo, da;
+  unsigned long secs;
+  unsigned long days;
+
+  days = *timer / (60L*60*24);
+  secs = *timer % (60L*60*24);
+  scalar_to_ymd(days + ymd_to_scalar(1970, 1, 1), &yr, &mo, &da);
+  tms.tm_year = yr - 1900;
+  tms.tm_mon = mo - 1;
+  tms.tm_mday = da;
+  tms.tm_yday = (int)(ymd_to_scalar(tms.tm_year + 1900, mo, da)
+                - ymd_to_scalar(tms.tm_year + 1900, 1, 1));
+  tms.tm_wday = dow(tms.tm_year + 1900, mo, da);
+  tms.tm_isdst = -1;
+  tms.tm_sec = (int)(secs % 60);
+  secs /= 60;
+  tms.tm_min = (int)(secs % 60);
+  secs /= 60;
+  tms.tm_hour = (int)secs;
+  return (&tms);
 }
 
 /*

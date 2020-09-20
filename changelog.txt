@@ -1,6 +1,11 @@
 GCCLIB Change LOG
 =================
 
+F0043 - Fix for Calltype 5 allocation (double word not fullword)
+      - cmssys.assemble
+        __STACKN entry point to call the SENTRIES command provided by HRC406DS
+        __ZONE entry point to return the time zone offset from GMT in seconds
+      - time.c use __ZONE to get local time
 F0042 - Fix for Calltype 5 without a return buffer
         Fix for CMSargc() return type
         Fix for tstarg2 CMSplist() casting
