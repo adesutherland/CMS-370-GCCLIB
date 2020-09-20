@@ -246,7 +246,8 @@ char *ctime(const time_t *timer)
 struct tm *localtime(const time_t *timer)
 {
 #if defined(__CMS__)
-  return (gmtime(timer) + __zone() );
+  time_t local_timer = *timer + __zone();
+  return (gmtime( &local_timer ));
 #else
   return (gmtime(timer));
 #endif
