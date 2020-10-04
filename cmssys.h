@@ -8,7 +8,7 @@
 #ifndef CMSSYS_INCLUDED
 #define CMSSYS_INCLUDED
 
-#define GCCLIB_VERSION "0.7.19"
+#define GCCLIB_VERSION "0.8.0"
 
 #include <stddef.h>
 #include <stdarg.h>
@@ -697,9 +697,9 @@ char **__ARGV(void);
 /**************************************************************************************************/
 /* Get Program ARGC value (number of arguments)                                                   */
 /* __ARGC()                                                                                       */
-/* char *CMSargc(void)                                                                            */
+/* int CMSargc(void)                                                                              */
 /**************************************************************************************************/
-char *__ARGC(void);
+int __ARGC(void);
 #define CMSargc() (__ARGC())
 
 /**************************************************************************************************/

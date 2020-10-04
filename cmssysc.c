@@ -206,7 +206,7 @@ int __CMSFNA(char *physical, char *logical, int is_proc, char **ret_val, int arg
   eplist.ArgList = 0;
   eplist.FunctionReturn = &evalblock;
   evalblock = 0;
-  *ret_val = 0;
+  if (ret_val) *ret_val = 0;
 
   /* Process the physical string */
   len = strlen(physical);
@@ -357,9 +357,9 @@ char **__ARGV(void) {
 /**************************************************************************************************/
 /* Get Program ARGC value (number of arguments)                                                   */
 /* __ARGC()                                                                                       */
-/* char *CMSargv(void)                                                                            */
+/* int CMSargc(void)                                                                              */
 /**************************************************************************************************/
-char *__ARGC(void) {
+int __ARGC(void) {
   return GETGCCCRAB()->argc;
 }
 
@@ -413,7 +413,7 @@ int __RETVAL(char* value) {
   if ((gcccrab->calltype == 5) && !gcccrab->evalblok && gcccrab->eplist->FunctionReturn) {
     ret_size = strlen(value);
     /* integer roundup -> "add the divisor minus one to the dividend" */
-    int db_size=(sizeof(EVALBLOK) + ret_size + (4-1) ) / 4;
+    int db_size=(sizeof(EVALBLOK) + ret_size + (8-1) ) / 8;
     gcccrab->evalblok = _DMSFREE(db_size);
     gcccrab->evalblok->BlokSize = db_size;
     gcccrab->evalblok->Len = ret_size;

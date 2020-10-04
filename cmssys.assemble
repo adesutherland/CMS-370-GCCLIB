@@ -1041,11 +1041,20 @@ RENAMERT DS    0H
          LR    R12,R15
          LA    R15,@@STACKN-CMSSYS
          SLR   R12,R15
+         LA    R1,SENTRIES
+         SVC   202
+         DC    AL4(*+4)
+         LTR   R15,R15
+         BNM   STKDONE
          USING NUCON,R0
          LH    R15,NUMFINRD   put number of lines in stack in R15
+STKDONE  DS    0H
          L     R14,12(R13)    restore our return address
          LM    R0,R12,20(R13) restore the registers
          BR    R14            return to our caller
+SENTRIES DS    0D
+         DC    CL8'SENTRIES'
+         DC    8X'FF'
          EJECT
          ENTRY @@WAITT
 ***********************************************************************
@@ -1138,6 +1147,33 @@ WRTRM2P  WRTERM (6),(4),EDIT=NO
          B     WRTRM2ND
 WRTRM2PL EQU   *-WRTRM2P
          EJECT
+***********************************************************************
+* @@ZONE    Entry Point                                               *
+* Return the offset for the local time zone from GMT.                 *
+* It is the value set in DMSSYSTZ by the SYSTIME MACRO in DMKSYS.     *
+*                                                                     *
+* Syntax is:                                                          *
+*    int __ZONE()                                                     *
+* returns:                                                            *
+*    (int)     Time zone offset in seconds from GMT.                  *
+*              Negative values are west of GMT, positive values are   *
+*              east of GMT.                                           *
+***********************************************************************
+@@ZONE   PDPPRLG CINDEX=0,FRAME=CMSSVALN,BASER=12,ENTRY=YES
+         LA    R15,@@ZONE-CMSSYS
+         SLR   R12,R15
+         USING CMSSYS,R12
+         LA    R1,DIAG0BUF
+         LA    R0,40
+         DC    X'83100000'     Issue Diagnose instruction for
+*                               code X'0000' to fetch CP info
+         LTR   R0,R0           Is R0 Positive?
+         BC    2,ZONE1         Yeah R0 > 0 so no time zone info
+         L     R15,DIAG0BUF+32 Return the time zone offset
+         B     ZONE2
+ZONE1    SR    R15,R15
+ZONE2    PDPEPIL
+         EJECT
 * ---------------------------------------------------------------------
 * Literal pool
 * ---------------------------------------------------------------------
@@ -1211,6 +1247,9 @@ PRINTLE  PRINTL (R6),(R4)
 PUNCHCE  PUNCHC (R6)
          DROP  R9
          B     PUNCHCND
+*
+         ORG   PLSTAREA
+DIAG0BUF DS    5D             Diagnose X'00' buffer area
 *
          ORG   ,
 OUTBUF   DS    CL256          Terminal buffer

@@ -36,7 +36,7 @@ int main(int argc, char *argv[]) {
 
  if (CMSargv() != argv) return 16;
 
- if (strncmp(CMSplist(),"TSTARG2 ",8)) return 17;
+ if (strncmp((char*)CMSplist(),"TSTARG2 ",8)) return 17;
 
  if (CMScalltype() != 0) {
    if ( strncmp(CMSeplist()->Command,"TSTARG2",7) &&

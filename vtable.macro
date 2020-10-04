@@ -255,5 +255,9 @@ LOCALTIM VTENTRY
 MKTIME   VTENTRY
 STRFTIME VTENTRY
 TIME     VTENTRY
+***********************************************************************
+* Entry points in REXXSAA C / REXXSAA H                               *
+***********************************************************************
+RXVARPOL VTENTRY
 *
          MEND
