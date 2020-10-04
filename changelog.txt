@@ -1,6 +1,7 @@
 GCCLIB Change LOG
 =================
 
+0.8.0-  4 Oct 2020
 F0044 - Fix for __ZONE when HRC700DK not installed
 F0043 - Fix for Calltype 5 allocation (double word not fullword)
       - cmssys.assemble
