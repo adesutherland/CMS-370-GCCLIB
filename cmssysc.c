@@ -179,11 +179,13 @@ void* CMSPGAll(size_t size) {
 /*                  if this is zero no return value is processed                                  */
 /*                  On error or if there is no return value the pointer is set to zero            */
 /*                  otherwise it is set to a char* buffer (the called must free() this memory)    */
+/*                  The buffer is null terminated for C convenience                               */
 /*                                                                                                */
-/* returns 0 success                                                                              */
+/* returns >= 0 success, value is length of data returned                                         */
 /*         -1 invalid arguments                                                                   */
 /*         -2 error dmsfret error                                                                 */
-/*         Other rc from svc202 / called function                                                 */
+/*         -3 routine not found (from svc202)                                                     */
+/*         Other negative rc from svc202 / called function (a positive RC is make negative)       */
 /**************************************************************************************************/
 int __CMSFNA(char *physical, char *logical, int is_proc, char **ret_val, int argc, char *argv[])
 {
@@ -276,12 +278,14 @@ int __CMSFNA(char *physical, char *logical, int is_proc, char **ret_val, int arg
 
   /* Actual Call */
   rc = __SVC202(plist, pointer_eplist, 5);
+  if (rc>0) rc = 0 - rc;
 
   /* Handle return value */
   if (evalblock && ret_val) {
     *ret_val = malloc(evalblock->Len + 1);
     memcpy(*ret_val,evalblock->Data, evalblock->Len);
     (*ret_val)[evalblock->Len] = 0;
+    rc = evalblock->Len;
   }
 
   /* Release evalblok memory */
@@ -316,10 +320,11 @@ int __CMSFNA(char *physical, char *logical, int is_proc, char **ret_val, int arg
 /*       argc     - number of arguments                                                           */
 /*       ...      - Arguments                                                                     */
 /*                                                                                                */
-/* returns 0 success                                                                              */
+/* returns >= 0 success, value is length of data returned                                         */
 /*         -1 invalid arguments                                                                   */
 /*         -2 error dmsfret error                                                                 */
-/*         Other rc from svc202 / called function                                                 */
+/*         -3 routine not found (from svc202)                                                     */
+/*         Other negative rc from svc202 / called function (a positive RC is make negative)       */
 /**************************************************************************************************/
 int __CMSFNC(char *physical, char *logical, int is_proc, char **ret_val, int argc, ...) {
   va_list valist;
@@ -422,6 +427,29 @@ int __RETVAL(char* value) {
     return 0;
   }
   else return 1;
+}
+
+/**************************************************************************************************/
+/* Sets the return value (data). This is only valid if the program is called via calltype 5       */
+/* __RETDATA(void* data, int len)                                                                 */
+/* int CMSreturndata(void* data, int len)                                                         */
+/* returns 0 on success or 1 if the calltype is not 5, or the return value has already been set   */
+/**************************************************************************************************/
+int __RETDATA(void* data, int len) {
+    GCCCRAB *gcccrab;
+    gcccrab = GETGCCCRAB();
+
+    if ((gcccrab->calltype == 5) && !gcccrab->evalblok && gcccrab->eplist->FunctionReturn) {
+        /* integer roundup -> "add the divisor minus one to the dividend" */
+        int db_size=(sizeof(EVALBLOK) + len + (8-1) ) / 8;
+        gcccrab->evalblok = _DMSFREE(db_size);
+        gcccrab->evalblok->BlokSize = db_size;
+        gcccrab->evalblok->Len = len;
+        memcpy(gcccrab->evalblok->Data, data, len);
+        *(gcccrab->eplist->FunctionReturn) = gcccrab->evalblok;
+        return 0;
+    }
+    else return 1;
 }
 
 /**************************************************************************************************/

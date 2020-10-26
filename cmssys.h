@@ -8,7 +8,7 @@
 #ifndef CMSSYS_INCLUDED
 #define CMSSYS_INCLUDED
 
-#define GCCLIB_VERSION "0.8.0"
+#define GCCLIB_VERSION "F0045"
 
 #include <stddef.h>
 #include <stdarg.h>
@@ -249,10 +249,11 @@ int __cmscmd(char * cmdLine, int cmdFlag);
 /*                  On error or if there is no return value the pointer is set to zero            */
 /*                  otherwise it is set to a char* buffer (the called must free() this memory)    */
 /*                                                                                                */
-/* returns 0 success                                                                              */
+/* returns >= 0 success, value is length of data returned                                         */
 /*         -1 invalid arguments                                                                   */
 /*         -2 error dmsfret error                                                                 */
-/*         Other rc from svc202 / called function                                                 */
+/*         -3 routine not found (from svc202)                                                     */
+/*         Other negative rc from svc202 / called function (a positive RC is make negative)       */
 /**************************************************************************************************/
 int __CMSFNA(char *physical, char *logical, int is_proc, char **ret_val, int argc, char *argv[]);
 #define CMSfunctionArray(s1, s2, s3, s4, s5 , s6) (__CMSFNA((s1),(s2),(s3),(s4),(s5),(s6)))
@@ -273,16 +274,17 @@ int __CMSFNA(char *physical, char *logical, int is_proc, char **ret_val, int arg
 /*       argc     - number of arguments                                                           */
 /*       ...      - Arguments                                                                     */
 /*                                                                                                */
-/* returns 0 success                                                                              */
+/* returns >= 0 success, value is length of data returned                                         */
 /*         -1 invalid arguments                                                                   */
 /*         -2 error dmsfret error                                                                 */
-/*         Other rc from svc202 / called function                                                 */
+/*         -3 routine not found (from svc202)                                                     */
+/*         Other negative rc from svc202 / called function (a positive RC is make negative)       */
 /**************************************************************************************************/
 int __CMSFNC(char *physical, char *logical, int is_proc, char **ret_val, int argc, ...);
 #define CMSfunction(s1, s2, s3, s4, s5, ...) (__CMSFNC((s1),(s2),(s3),(s4),(s5),__VA_ARGS__))
 
 /**************************************************************************************************/
-/* Call Type 5 (function) call - simple macros                                                    */
+/* Call Type 5 (function) call - convenience macros                                               */
 /* int CMSsimplefunction(char *function, char **ret_val, int argc, ...)                           */
 /* int CMSsimpleprocedure(char *function, int argc, ...)                                          */
 /*                                                                                                */
@@ -294,10 +296,11 @@ int __CMSFNC(char *physical, char *logical, int is_proc, char **ret_val, int arg
 /*       argc     - number of arguments                                                           */
 /*       ...      - Arguments                                                                     */
 /*                                                                                                */
-/* returns 0 success                                                                              */
+/* returns >= 0 success, value is length of data returned                                         */
 /*         -1 invalid arguments                                                                   */
 /*         -2 error dmsfret error                                                                 */
-/*         Other rc from svc202 / called function                                                 */
+/*         -3 routine not found (from svc202)                                                     */
+/*         Other negative rc from svc202 / called function (a positive RC is make negative)       */
 /**************************************************************************************************/
 #define CMSsimplefunction(f, r, c, ...) (__CMSFNC((f),(f),0,(r),(c),__VA_ARGS__))
 #define CMSsimpleprocedure(f, c, ...) (__CMSFNC((f),(f),1,0,(c),__VA_ARGS__))
@@ -742,6 +745,15 @@ int __ISPROC(void);
 /**************************************************************************************************/
 int __RETVAL(char* value);
 #define CMSreturnvalue(a1) (__RETVAL((a1)))
+
+/**************************************************************************************************/
+/* Sets the return value (data). This is only valid if the program is called via calltype 5       */
+/* __RETDATA(void* data, int len)                                                                 */
+/* int CMSreturndata(void* data, int len)                                                         */
+/* returns 0 on success or 1 if the calltype is not 5, or the return value has already been set   */
+/**************************************************************************************************/
+int __RETDATA(void* data, int len);
+#define CMSreturndata(a1,a2) (__RETDATA((a1),(a2)))
 
 /**************************************************************************************************/
 /* Sets the return value (int). This is only valid if the program is called via calltype 5        */

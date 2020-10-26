@@ -25,6 +25,7 @@
 @@ISPROC VTENTRY
 @@RETVAL VTENTRY
 @@RETINT VTENTRY
+@@RETDAT VTENTRY
 ***********************************************************************
 * Entry points in CMSSYS ASSEMBLE                                     *
 ***********************************************************************

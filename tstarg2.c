@@ -3,6 +3,8 @@
 #include <cmssys.h>
 
 int main(int argc, char *argv[]) {
+ char *binary="BINARY\x00ZZZ";
+
  if (argc != 4) return 2;
  if (CMScalltype() == 0) {
    if (strcmp(argv[0],"TSTARG2")) return 3;
@@ -16,6 +18,9 @@ int main(int argc, char *argv[]) {
    if (strcmp(argv[3],"Argument 3")) return 9;
    if (!strcmp(argv[0],"stringreturn")) {
      CMSreturnvalue("text return value");
+   }
+   else if (!strcmp(argv[0],"binaryreturn")) {
+     CMSreturndata(binary,10);
    }
    else if (!strcmp(argv[0],"isproc")) {
       if (!CMSisproc()) return 20;
