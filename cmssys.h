@@ -8,7 +8,7 @@
 #ifndef CMSSYS_INCLUDED
 #define CMSSYS_INCLUDED
 
-#define GCCLIB_VERSION "F0045"
+#define GCCLIB_VERSION "F0046"
 
 #include <stddef.h>
 #include <stdarg.h>
@@ -232,6 +232,34 @@ int __cmscmd(char * cmdLine, int cmdFlag);
 #define CMScommand(s1, i1) (__cmscmd((s1),(i1)))
 #define CMS_COMMAND  1
 #define CMS_CONSOLE 11
+
+/**************************************************************************************************/
+/* Call Type 5 (function) call                                                                    */
+/* __CMSFND()                                                                                     */
+/* int CMSfunctionDataArray(char *physical, char *logical, int is_proc, char **ret_val            */
+/*              int argc, char *argv[], int lenv[])                                               */
+/* Args: physical - physical function name (used to find the function and in the PLIST)           */
+/*       logical  - logical function name ("as entered by the user" used in the EPLIST)           */
+/*       is_proc  - 0 - if the routine is called as a function                                    */
+/*                  1 - if the routine is called as a subroutine                                  */
+/*       argc     - Number of arguments                                                           */
+/*       argv     - Array of argument strings                                                     */
+/*       lenv     - Array of argument lengths                                                     */
+/*       ret_val  - pointer to pointer (handle) of the returned value                             */
+/*                  if this is zero no return value is processed                                  */
+/*                  On error or if there is no return value the pointer is set to zero            */
+/*                  otherwise it is set to a char* buffer (the called must free() this memory)    */
+/*                  The buffer is null terminated for C convenience                               */
+/*                                                                                                */
+/* returns >= 0 success, value is length of data returned                                         */
+/*         -1 invalid arguments                                                                   */
+/*         -2 error dmsfret error                                                                 */
+/*         -3 routine not found (from svc202)                                                     */
+/*         Other negative rc from svc202 / called function (a positive RC is make negative)       */
+/**************************************************************************************************/
+int __CMSFND(char *physical, char *logical, int is_proc, char **ret_val, int argc,
+             char *argv[], int lenv[]);
+#define CMSfunctionDataArray(s1, s2, s3, s4, s5, s6, s7) (__CMSFND((s1),(s2),(s3),(s4),(s5),(s6),(s7)))
 
 /**************************************************************************************************/
 /* Call Type 5 (function) call                                                                    */

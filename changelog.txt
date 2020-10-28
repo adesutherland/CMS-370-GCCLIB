@@ -1,7 +1,8 @@
 GCCLIB Change LOG
 =================
 
-
+F0046 - FIX - fwrite() crashed when size or count are zero
+      - Implemented CMSfunctionDataArray() for binary arguments for calltype 5 calls
 F0045 - Theme - make calltype 5 handle binary data
       - Implement CMSreturndata()
       - Change CMSfunction calltype family of functions to return the returned data length

@@ -1439,11 +1439,6 @@ fwrite(const void * buffer, size_t size, size_t count, FILE * file)
 /* Returns:                                                                                       */
 /*    the number of objects written.                                                              */
 /*                                                                                                */
-/* Notes:                                                                                         */
-/*    1.  Use fwrite for writing binary data.  Newlines in the output stream are treated as any   */
-/*        other character.                                                                        */
-/*    2.  When the record length for the file is reached, that record is written to disk and a    */
-/*        new record is started.  Thus the file is treated as a stream of bytes.                  */
 /**************************************************************************************************/
 {
  int s;
@@ -1455,6 +1450,7 @@ fwrite(const void * buffer, size_t size, size_t count, FILE * file)
    errno = EINVAL;
    return EOF;
  }
+
  if (!(file->access & ACCESS_WRITE)) {
    file->error = 9;
    errno = EBADF;
@@ -1466,10 +1462,12 @@ fwrite(const void * buffer, size_t size, size_t count, FILE * file)
    if (file->device->postread_func) file->device->postread_func(file);
  }
 
+ len = size * count;
+ if (len == 0) return 0;
+
  if (file->access & ACCESS_TEXT) {
    /* In this case we have to break records at newlines */
    str=buffer;
-   len = size * count;
    while (1) {
      /* find the next newline */
      for (s=0; len && str[s]!='\n'; s++, len--);
@@ -1495,11 +1493,11 @@ fwrite(const void * buffer, size_t size, size_t count, FILE * file)
      str += s + 1;
      len--;
    }
-   return ((size*count)-len) / size;
+   return ((size*count)-len) / size; /* note as len<>0 then size<>0 */
  }
 
  else {
-   if (write_data(buffer, size * count, file)) return 0;
+   if (write_data(buffer, len, file)) return 0;
    return count;
  }
 }
