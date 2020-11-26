@@ -17,6 +17,7 @@
 @@CMSCMD VTENTRY
 @@CMSFNA VTENTRY
 @@CMSFNC VTENTRY
+@@CMSFND VTENTRY
 @@ARGV   VTENTRY
 @@ARGC   VTENTRY
 @@PLIST  VTENTRY
@@ -25,6 +26,7 @@
 @@ISPROC VTENTRY
 @@RETVAL VTENTRY
 @@RETINT VTENTRY
+@@RETDAT VTENTRY
 ***********************************************************************
 * Entry points in CMSSYS ASSEMBLE                                     *
 ***********************************************************************

@@ -1,6 +1,16 @@
 GCCLIB Change LOG
 =================
 
+0.8.1 - 26 Nov 2020
+F0046 - FIX - fwrite() crashed when size or count are zero
+      - Implemented CMSfunctionDataArray() for binary arguments for calltype 5 calls
+F0045 - Theme - make calltype 5 handle binary data
+      - Implement CMSreturndata()
+      - Change CMSfunction calltype family of functions to return the returned data length
+        on success
+      - Updated tests
+      - Updated local build script (cp2vm370.sh) for MacOS/Linux
+
 0.8.0-  4 Oct 2020
 F0044 - Fix for __ZONE when HRC700DK not installed
 F0043 - Fix for Calltype 5 allocation (double word not fullword)

@@ -166,6 +166,147 @@ void* CMSPGAll(size_t size) {
 
 /**************************************************************************************************/
 /* Call Type 5 (function) call                                                                    */
+/* __CMSFND()                                                                                     */
+/* int CMSfunctionDataArray(char *physical, char *logical, int is_proc, char **ret_val            */
+/*              int argc, char *argv[], int lenv[])                                               */
+/* Args: physical - physical function name (used to find the function and in the PLIST)           */
+/*       logical  - logical function name ("as entered by the user" used in the EPLIST)           */
+/*       is_proc  - 0 - if the routine is called as a function                                    */
+/*                  1 - if the routine is called as a subroutine                                  */
+/*       argc     - Number of arguments                                                           */
+/*       argv     - Array of argument strings                                                     */
+/*       lenv     - Array of argument lengths                                                     */
+/*       ret_val  - pointer to pointer (handle) of the returned value                             */
+/*                  if this is zero no return value is processed                                  */
+/*                  On error or if there is no return value the pointer is set to zero            */
+/*                  otherwise it is set to a char* buffer (the called must free() this memory)    */
+/*                  The buffer is null terminated for C convenience                               */
+/*                                                                                                */
+/* returns >= 0 success, value is length of data returned                                         */
+/*         -1 invalid arguments                                                                   */
+/*         -2 error dmsfret error                                                                 */
+/*         -3 routine not found (from svc202)                                                     */
+/*         Other negative rc from svc202 / called function (a positive RC is make negative)       */
+/**************************************************************************************************/
+int __CMSFND(char *physical, char *logical, int is_proc, char **ret_val, int argc,
+             char *argv[], int lenv[])
+{
+    int i, j, len, a, rc;
+    PLIST plist[MAXPLISTARGS + 1];
+    EPLIST eplist;
+    EPLIST *pointer_eplist;
+    EVALBLOK *evalblock;
+
+    /* Validate args */
+    if ( !(physical && strlen(physical)) ) return -1;
+    if ( !(logical && strlen(logical)) ) logical = physical;
+
+    /* Clear Structures */
+    memset((void*)plist, ' ', sizeof(plist));
+    eplist.Command = 0;
+    eplist.BeginArgs = 0;
+    eplist.EndArgs = 0;
+    eplist.CallContext = 0;
+    eplist.ArgList = 0;
+    eplist.FunctionReturn = &evalblock;
+    evalblock = 0;
+    if (ret_val) *ret_val = 0;
+
+    /* Process the physical string */
+    len = strlen(physical);
+    a = -1;
+    for (i=0; i<len; i++)
+    {
+        /* Find start of next word */
+        if (physical[i]!=' ')
+        {
+            /* Process word */
+            a++;
+            for (j=0; i<len && j<8; i++, j++)
+            {
+                if (physical[i]==' ') break;
+                (plist[a])[j] = toupper(physical[i]);
+            }
+            for (; i<len && physical[i]!=' '; i++);
+            if (a>=MAXPLISTARGS) break;
+        }
+    }
+    /* Add the PLIST fence */
+    a++;
+    for (j=0; j<8; j++)
+    {
+        (plist[a])[j] = 0xFF;
+    }
+
+    /* Process the logical string */
+    len = strlen(logical);
+    a = -1;
+    for (i=0; i<len; i++)
+    {
+        /* Find start of next word */
+        if (logical[i]!=' ')
+        {
+            /* Process word */
+            a++;
+            if (a == 0) {
+                eplist.Command = logical + i;
+                for (; i<len; i++) if (logical[i]==' ') break;
+            }
+            else
+            {
+                /* Start of a */
+                eplist.BeginArgs = logical + i;
+                break;
+            }
+        }
+    }
+    if (eplist.BeginArgs) eplist.EndArgs = logical + len;
+
+    /* Process Arguments */
+    eplist.ArgList = (ADLEN *)malloc((argc + 1) * sizeof(ADLEN));
+    for (a=0; a<argc; a++) {
+        eplist.ArgList[a].Data = argv[a];
+        eplist.ArgList[a].Len = lenv[a];
+    }
+    eplist.ArgList[a].Data = -1;
+    eplist.ArgList[a].Len = -1;
+
+    /* Process is_proc */
+    pointer_eplist = &eplist;
+    if (is_proc) {
+        /* if a proc (subroutine) sets register 0 (EPLIST) Bit 0 (MSB) */
+        (int)pointer_eplist |= 0x80000000;
+    }
+
+    /* Actual Call */
+    rc = __SVC202(plist, pointer_eplist, 5);
+    if (rc>0) rc = 0 - rc;
+
+    /* Handle return value */
+    if (evalblock && ret_val) {
+        *ret_val = malloc(evalblock->Len + 1);
+        memcpy(*ret_val,evalblock->Data, evalblock->Len);
+        (*ret_val)[evalblock->Len] = 0;
+        rc = evalblock->Len;
+    }
+
+    /* Release evalblok memory */
+    if (evalblock) {
+        if (_DMSFRET((void*)evalblock, evalblock->BlokSize)) {
+            /* Free allocated memory */
+            free(eplist.ArgList);
+            return -2;
+        };
+    }
+
+    /* Free allocated memory */
+    free(eplist.ArgList);
+
+    return rc;
+}
+
+/**************************************************************************************************/
+/* Call Type 5 (function) call                                                                    */
 /* __CMSFNA()                                                                                     */
 /* int CMSfunctionArray(char *physical, char *logical, int is_proc, char **ret_val                */
 /*              int argc, char *argv[])                                                           */
@@ -179,125 +320,29 @@ void* CMSPGAll(size_t size) {
 /*                  if this is zero no return value is processed                                  */
 /*                  On error or if there is no return value the pointer is set to zero            */
 /*                  otherwise it is set to a char* buffer (the called must free() this memory)    */
+/*                  The buffer is null terminated for C convenience                               */
 /*                                                                                                */
-/* returns 0 success                                                                              */
+/* returns >= 0 success, value is length of data returned                                         */
 /*         -1 invalid arguments                                                                   */
 /*         -2 error dmsfret error                                                                 */
-/*         Other rc from svc202 / called function                                                 */
+/*         -3 routine not found (from svc202)                                                     */
+/*         Other negative rc from svc202 / called function (a positive RC is make negative)       */
 /**************************************************************************************************/
-int __CMSFNA(char *physical, char *logical, int is_proc, char **ret_val, int argc, char *argv[])
-{
-  int i, j, len, a, rc;
-  PLIST plist[MAXPLISTARGS + 1];
-  EPLIST eplist;
-  EPLIST *pointer_eplist;
-  EVALBLOK *evalblock;
+int __CMSFNA(char *physical, char *logical, int is_proc, char **ret_val, int argc, char *argv[]) {
+    int *lenv;
+    int rc, a;
 
-  /* Validate args */
-  if ( !(physical && strlen(physical)) ) return -1;
-  if ( !(logical && strlen(logical)) ) logical = physical;
-
-  /* Clear Structures */
-  memset((void*)plist, ' ', sizeof(plist));
-  eplist.Command = 0;
-  eplist.BeginArgs = 0;
-  eplist.EndArgs = 0;
-  eplist.CallContext = 0;
-  eplist.ArgList = 0;
-  eplist.FunctionReturn = &evalblock;
-  evalblock = 0;
-  if (ret_val) *ret_val = 0;
-
-  /* Process the physical string */
-  len = strlen(physical);
-  a = -1;
-  for (i=0; i<len; i++)
-  {
-    /* Find start of next word */
-    if (physical[i]!=' ')
-    {
-      /* Process word */
-      a++;
-      for (j=0; i<len && j<8; i++, j++)
-      {
-        if (physical[i]==' ') break;
-        (plist[a])[j] = toupper(physical[i]);
-      }
-      for (; i<len && physical[i]!=' '; i++);
-      if (a>=MAXPLISTARGS) break;
+    /* Process Arguments */
+    lenv = (int *) malloc(argc * sizeof(int));
+    for (a = 0; a < argc; a++) {
+        lenv[a] = strlen(argv[a]);
     }
-  }
-  /* Add the PLIST fence */
-  a++;
-  for (j=0; j<8; j++)
-  {
-    (plist[a])[j] = 0xFF;
-  }
 
-  /* Process the logical string */
-  len = strlen(logical);
-  a = -1;
-  for (i=0; i<len; i++)
-  {
-    /* Find start of next word */
-    if (logical[i]!=' ')
-    {
-      /* Process word */
-      a++;
-      if (a == 0) {
-        eplist.Command = logical + i;
-        for (; i<len; i++) if (logical[i]==' ') break;
-      }
-      else
-      {
-        /* Start of a */
-        eplist.BeginArgs = logical + i;
-        break;
-      }
-    }
-  }
-  if (eplist.BeginArgs) eplist.EndArgs = logical + len;
+    rc = __CMSFND(physical, logical, is_proc, ret_val, argc, argv, lenv);
 
-  /* Process Arguments */
-  eplist.ArgList = (ADLEN *)malloc((argc + 1) * sizeof(ADLEN));
-  for (a=0; a<argc; a++) {
-    eplist.ArgList[a].Data = argv[a];
-    eplist.ArgList[a].Len = strlen(argv[a]);
-  }
-  eplist.ArgList[a].Data = -1;
-  eplist.ArgList[a].Len = -1;
+    free(lenv);
 
-  /* Process is_proc */
-  pointer_eplist = &eplist;
-  if (is_proc) {
-    /* if a proc (subroutine) sets register 0 (EPLIST) Bit 0 (MSB) */
-    (int)pointer_eplist |= 0x80000000;
-  }
-
-  /* Actual Call */
-  rc = __SVC202(plist, pointer_eplist, 5);
-
-  /* Handle return value */
-  if (evalblock && ret_val) {
-    *ret_val = malloc(evalblock->Len + 1);
-    memcpy(*ret_val,evalblock->Data, evalblock->Len);
-    (*ret_val)[evalblock->Len] = 0;
-  }
-
-  /* Release evalblok memory */
-  if (evalblock) {
-    if (_DMSFRET((void*)evalblock, evalblock->BlokSize)) {
-      /* Free allocated memory */
-      free(eplist.ArgList);
-      return -2;
-    };
-  }
-
-
-  /* Free allocated memory */
-  free(eplist.ArgList);
-
-  return rc;
+    return rc;
 }
 
 /**************************************************************************************************/
@@ -316,10 +361,11 @@ int __CMSFNA(char *physical, char *logical, int is_proc, char **ret_val, int arg
 /*       argc     - number of arguments                                                           */
 /*       ...      - Arguments                                                                     */
 /*                                                                                                */
-/* returns 0 success                                                                              */
+/* returns >= 0 success, value is length of data returned                                         */
 /*         -1 invalid arguments                                                                   */
 /*         -2 error dmsfret error                                                                 */
-/*         Other rc from svc202 / called function                                                 */
+/*         -3 routine not found (from svc202)                                                     */
+/*         Other negative rc from svc202 / called function (a positive RC is make negative)       */
 /**************************************************************************************************/
 int __CMSFNC(char *physical, char *logical, int is_proc, char **ret_val, int argc, ...) {
   va_list valist;
@@ -422,6 +468,29 @@ int __RETVAL(char* value) {
     return 0;
   }
   else return 1;
+}
+
+/**************************************************************************************************/
+/* Sets the return value (data). This is only valid if the program is called via calltype 5       */
+/* __RETDATA(void* data, int len)                                                                 */
+/* int CMSreturndata(void* data, int len)                                                         */
+/* returns 0 on success or 1 if the calltype is not 5, or the return value has already been set   */
+/**************************************************************************************************/
+int __RETDATA(void* data, int len) {
+    GCCCRAB *gcccrab;
+    gcccrab = GETGCCCRAB();
+
+    if ((gcccrab->calltype == 5) && !gcccrab->evalblok && gcccrab->eplist->FunctionReturn) {
+        /* integer roundup -> "add the divisor minus one to the dividend" */
+        int db_size=(sizeof(EVALBLOK) + len + (8-1) ) / 8;
+        gcccrab->evalblok = _DMSFREE(db_size);
+        gcccrab->evalblok->BlokSize = db_size;
+        gcccrab->evalblok->Len = len;
+        memcpy(gcccrab->evalblok->Data, data, len);
+        *(gcccrab->eplist->FunctionReturn) = gcccrab->evalblok;
+        return 0;
+    }
+    else return 1;
 }
 
 /**************************************************************************************************/
