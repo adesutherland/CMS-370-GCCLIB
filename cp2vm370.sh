@@ -1,6 +1,9 @@
 #!/bin/sh
 # Copy and build source files to VM370
 
+# STOP MSYS2 rewriting directory paths in the docker container
+export MSYS2_ARG_CONV_EXCL="vm370:;/opt"
+
 docker kill vm370
 docker pull adriansutherland/vm370:builder
 docker run --rm -d -p 3270:3270 -p 8038:8038 -p 3505:3505 --name vm370 adriansutherland/vm370:builder

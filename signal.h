@@ -27,6 +27,7 @@ typedef int sig_atomic_t;
 #define SIGTERM 6
 
 void (*signal(int sig, void (*func)(int)))(int);
+
 int raise(int sig);
 
 #endif

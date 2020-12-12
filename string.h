@@ -16,40 +16,63 @@
 #ifndef __SIZE_T_DEFINED
 #define __SIZE_T_DEFINED
 #if (defined(__OS2__) || defined(__32BIT__) || defined(__MVS__) \
-    || defined(__CMS__))
+ || defined(__CMS__))
 typedef unsigned long size_t;
 #elif (defined(__MSDOS__) || defined(__DOS__) || defined(__POWERC) \
-    || defined(__WIN32__))
+ || defined(__WIN32__))
 typedef unsigned int size_t;
 #endif
 #endif
 
 #define NULL ((void *)0)
 
-void * memchr(const void *s, int c, size_t n);
-int    memcmp(const void *s1, const void *s2, size_t n);
-void * memcpy(void *s1, const void *s2, size_t n);
-void * memmove(void *s1, const void *s2, size_t n);
-void * memset(void *s, int c, size_t n);
-char * strcat(char *s1, const char *s2);
-char * strchr(const char *s, int c);
-int    strcmp(const char *s1, const char *s2);
-int    strcoll(const char *s1, const char *s2);
-char * strcpy(char *s1, const char *s2);
+void *memchr(const void *s, int c, size_t n);
+
+int memcmp(const void *s1, const void *s2, size_t n);
+
+void *memcpy(void *s1, const void *s2, size_t n);
+
+void *memmove(void *s1, const void *s2, size_t n);
+
+void *memset(void *s, int c, size_t n);
+
+char *strcat(char *s1, const char *s2);
+
+char *strchr(const char *s, int c);
+
+int strcmp(const char *s1, const char *s2);
+
+int strcoll(const char *s1, const char *s2);
+
+char *strcpy(char *s1, const char *s2);
+
 size_t strcspn(const char *s1, const char *s2);
-char * strerror(int errnum);
-int    stricmp(const char *s1, const char *s2); /* Robert O'Hara, 10/09 */
+
+char *strerror(int errnum);
+
+int stricmp(const char *s1, const char *s2); /* Robert O'Hara, 10/09 */
 size_t strlen(const char *s);
-char * strlwr(char *s1);
-char * strncat(char *s1, const char *s2, size_t n);
-int    strncmp(const char *s1, const char *s2, size_t n);
-char * strncpy(char *s1, const char *s2, size_t n);
-char * strpbrk(const char *s1, const char *s2);
-char * strrchr(const char *s, int c);
+
+char *strlwr(char *s1);
+
+char *strncat(char *s1, const char *s2, size_t n);
+
+int strncmp(const char *s1, const char *s2, size_t n);
+
+char *strncpy(char *s1, const char *s2, size_t n);
+
+char *strpbrk(const char *s1, const char *s2);
+
+char *strrchr(const char *s, int c);
+
 size_t strspn(const char *s1, const char *s2);
-char * strstr(const char *s1, const char *s2);
-char * strtok(char *s1, const char *s2);
-char * strupr(char *s1);
+
+char *strstr(const char *s1, const char *s2);
+
+char *strtok(char *s1, const char *s2);
+
+char *strupr(char *s1);
+
 size_t strxfrm(char *s1, const char *s2, size_t n);
 
 #ifdef __WATCOMC__
@@ -90,8 +113,8 @@ void * _Builtin __memmove(void *s1, const void *s2, size_t n);
 #endif
 
 #if defined (__GNUC__) && __GNUC__ >= 3
-#define memcpy(a,b,c) (__builtin_memcpy((a),(b),(c)))
-#define memcmp(s1,s2,n) (__builtin_memcmp((s1),(s2),(n)))
+#define memcpy(a, b, c) (__builtin_memcpy((a),(b),(c)))
+#define memcmp(s1, s2, n) (__builtin_memcmp((s1),(s2),(n)))
 #endif
 
 /* We don't activate these GCC builtins, because they

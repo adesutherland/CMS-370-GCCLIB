@@ -1,6 +1,10 @@
 GCCLIB Change LOG
 =================
 
+F0047 - Code reformatting
+        Added fake CMAKE so the IDEs can show code errors/warnings
+        Local Build - Stop MSYS2 rewriting directory paths in the docker container
+
 0.8.1 - 26 Nov 2020
 F0046 - FIX - fwrite() crashed when size or count are zero
       - Implemented CMSfunctionDataArray() for binary arguments for calltype 5 calls

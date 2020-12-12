@@ -10,17 +10,16 @@
 
 typedef unsigned long ULONG;
 typedef unsigned char UCHAR;
-typedef void* PVOID;
+typedef void *PVOID;
 
-typedef struct RXSTRING
-{
-  char* strptr;
-  ULONG strlength;
+typedef struct RXSTRING {
+    char *strptr;
+    ULONG strlength;
 } RXSTRING;
 typedef RXSTRING *PRXSTRING;
 
 #define APIRET ULONG
-#define MAKERXSTRING(x,c,l)   ((x).strptr=(c),(x).strlength=(l))
+#define MAKERXSTRING(x, c, l)   ((x).strptr=(c),(x).strlength=(l))
 #define RXNULLSTRING(x)       (!(x).strptr)
 #define RXSTRLEN(x)           ((x).strptr ? (x).strlength : 0UL)
 #define RXSTRPTR(x)           ((x).strptr)
@@ -48,19 +47,18 @@ typedef RXSTRING *PRXSTRING;
 #define RXSHV_NEXTV    'N'    /* Get next var in a NEXTV sequence */
 #define RXSHV_PRIV     'P'    /* Get private information */
 
-typedef struct SHVBLOCK
-{
-  struct SHVBLOCK *shvnext;      /* Ptr to next SHVBLOCK or 0 */
-  ULONG           shvnamelen;    /* Length of name buffer, RXSHV_NEXTV only */
-  UCHAR           shvcode;       /* Function code */
-  UCHAR           shvret;        /* Return code flags */
-  short           reserved;      /* 0 (16 bit) */
-  ULONG           shvvaluelen;   /* Length of the value buffer */
-  RXSTRING        shvname;       /* variable name */
-  RXSTRING        shvvalue;      /* Value */
+typedef struct SHVBLOCK {
+    struct SHVBLOCK *shvnext;      /* Ptr to next SHVBLOCK or 0 */
+    ULONG shvnamelen;    /* Length of name buffer, RXSHV_NEXTV only */
+    UCHAR shvcode;       /* Function code */
+    UCHAR shvret;        /* Return code flags */
+    short reserved;      /* 0 (16 bit) */
+    ULONG shvvaluelen;   /* Length of the value buffer */
+    RXSTRING shvname;       /* variable name */
+    RXSTRING shvvalue;      /* Value */
 } SHVBLOCK;
 
-typedef SHVBLOCK *PSHVBLOCK ;
+typedef SHVBLOCK *PSHVBLOCK;
 
 /******************************************************************************/
 /*
@@ -81,6 +79,7 @@ typedef SHVBLOCK *PSHVBLOCK ;
     -3 No EXECCOMM entry point found
 */
 APIRET RxVarPol(PSHVBLOCK RequestBlockList);
+
 #define RexxVariablePool(x) RxVarPol((x))
 #define REXXVARIABLEPOOL(x) RxVarPol((x))
 /******************************************************************************/

@@ -18,9 +18,9 @@
 #define __FPOS_T_DEFINED
 /* File Pos */
 struct FPOS_T {
-  struct FILE *file;
-  int recpos;
-  int recnum;
+    struct FILE *file;
+    int recpos;
+    int recnum;
 };
 typedef struct FPOS_T fpos_t;
 #endif
@@ -43,12 +43,13 @@ typedef struct FILE FILE;
 
 /* Stdlib Public Global Variables */
 #include <gcccrab.h>
+
 #define stdin ((GETGCCCRAB()->gstdin))
 #define stdout ((GETGCCCRAB()->gstdout))
 #define stderr ((GETGCCCRAB()->gstderr))
 
 void
-clearerr(FILE * stream);
+clearerr(FILE *stream);
 /**************************************************************************************************/
 /* void clearerr(FILE * stream)                                                                   */
 /*                                                                                                */
@@ -57,7 +58,7 @@ clearerr(FILE * stream);
 /**************************************************************************************************/
 
 int
-fclose(FILE * stream);
+fclose(FILE *stream);
 /**************************************************************************************************/
 /* int fclose(FILE * stream)                                                                      */
 /*                                                                                                */
@@ -69,7 +70,7 @@ fclose(FILE * stream);
 /**************************************************************************************************/
 
 int
-feof(FILE * stream);
+feof(FILE *stream);
 /**************************************************************************************************/
 /* int feof(FILE * stream)                                                                        */
 /*                                                                                                */
@@ -81,7 +82,7 @@ feof(FILE * stream);
 /**************************************************************************************************/
 
 int
-ferror(FILE * stream);
+ferror(FILE *stream);
 /**************************************************************************************************/
 /* int ferror(FILE * stream)                                                                      */
 /*                                                                                                */
@@ -93,7 +94,7 @@ ferror(FILE * stream);
 /**************************************************************************************************/
 
 int
-fflush(FILE * stream);
+fflush(FILE *stream);
 /**************************************************************************************************/
 /* int fflush(FILE * stream)                                                                      */
 /*                                                                                                */
@@ -107,7 +108,7 @@ fflush(FILE * stream);
 /**************************************************************************************************/
 
 int
-fgetc(FILE * stream);
+fgetc(FILE *stream);
 /**************************************************************************************************/
 /* int fgetc(FILE * stream)                                                                       */
 /*                                                                                                */
@@ -120,7 +121,7 @@ fgetc(FILE * stream);
 /**************************************************************************************************/
 
 int
-fgetpos(FILE * stream, fpos_t *position);
+fgetpos(FILE *stream, fpos_t *position);
 /**************************************************************************************************/
 /* int fgetpos(FILE * stream, fpos_t * position)                                                  */
 /*                                                                                                */
@@ -133,7 +134,7 @@ fgetpos(FILE * stream, fpos_t *position);
 /**************************************************************************************************/
 
 char *
-fgets(char * str, int num, FILE * stream);
+fgets(char *str, int num, FILE *stream);
 /**************************************************************************************************/
 /* char * fgets(char * str, int num, FILE * stream)                                               */
 /*                                                                                                */
@@ -150,7 +151,7 @@ fgets(char * str, int num, FILE * stream);
 /**************************************************************************************************/
 
 FILE *
-fopen(const char * filespec, const char * access);
+fopen(const char *filespec, const char *access);
 /**************************************************************************************************/
 /* FILE * fopen(const char * filespec, const char * access)                                       */
 /*                                                                                                */
@@ -192,7 +193,7 @@ fopen(const char * filespec, const char * access);
 /**************************************************************************************************/
 
 int
-fprintf(FILE * stream, const char * format, ...);
+fprintf(FILE *stream, const char *format, ...);
 /**************************************************************************************************/
 /* int fprintf(FILE * stream, const char * format, ...)                                           */
 /*                                                                                                */
@@ -208,7 +209,7 @@ fprintf(FILE * stream, const char * format, ...);
 /**************************************************************************************************/
 
 int
-fputc(int c, FILE * stream);
+fputc(int c, FILE *stream);
 /**************************************************************************************************/
 /* int fputc(int c, FILE * stream)                                                                */
 /*                                                                                                */
@@ -221,7 +222,7 @@ fputc(int c, FILE * stream);
 /**************************************************************************************************/
 
 int
-fputs(const char * str, FILE * stream);
+fputs(const char *str, FILE *stream);
 /**************************************************************************************************/
 /* int fputs(const char * str, FILE * stream)                                                     */
 /*                                                                                                */
@@ -234,7 +235,7 @@ fputs(const char * str, FILE * stream);
 /**************************************************************************************************/
 
 int
-fread(void * buffer, size_t size, size_t count, FILE * stream);
+fread(void *buffer, size_t size, size_t count, FILE *stream);
 /**************************************************************************************************/
 /* int fread(void * buffer, size_t size, size_t count, FILE * stream)                             */
 /*                                                                                                */
@@ -255,7 +256,7 @@ fread(void * buffer, size_t size, size_t count, FILE * stream);
 /**************************************************************************************************/
 
 FILE *
-freopen(const char * filespec, const char * access, FILE * stream);
+freopen(const char *filespec, const char *access, FILE *stream);
 /**************************************************************************************************/
 /* FILE * freopen(const char * filespec, const char * access, FILE * stream)                      */
 /*                                                                                                */
@@ -280,7 +281,7 @@ freopen(const char * filespec, const char * access, FILE * stream);
 /**************************************************************************************************/
 
 int
-fscanf(FILE * stream, const char * format, ...);
+fscanf(FILE *stream, const char *format, ...);
 /**************************************************************************************************/
 /* int fscanf(FILE * stream, const char * format, ...)                                            */
 /*                                                                                                */
@@ -297,7 +298,7 @@ fscanf(FILE * stream, const char * format, ...);
 /**************************************************************************************************/
 
 int
-fseek(FILE * stream, long offset, int origin);
+fseek(FILE *stream, long offset, int origin);
 /**************************************************************************************************/
 /* int fseek(FILE * stream, long offset, int origin)                                              */
 /*                                                                                                */
@@ -318,7 +319,7 @@ fseek(FILE * stream, long offset, int origin);
 #define SEEK_END 2
 
 int
-fsetpos(FILE * stream, const fpos_t * position);
+fsetpos(FILE *stream, const fpos_t *position);
 /**************************************************************************************************/
 /* int fsetpos(FILE * stream, fpos_t * position)                                                  */
 /*                                                                                                */
@@ -331,7 +332,7 @@ fsetpos(FILE * stream, const fpos_t * position);
 /**************************************************************************************************/
 
 long
-ftell(FILE * stream);
+ftell(FILE *stream);
 /**************************************************************************************************/
 /* long ftell(FILE * stream)                                                                      */
 /*                                                                                                */
@@ -344,7 +345,7 @@ ftell(FILE * stream);
 /**************************************************************************************************/
 
 int
-fwrite(const void * buffer, size_t size, size_t count, FILE * stream);
+fwrite(const void *buffer, size_t size, size_t count, FILE *stream);
 /**************************************************************************************************/
 /* int fwrite(const void * buffer, size_t size, size_t count, FILE * stream)                      */
 /*                                                                                                */
@@ -365,7 +366,7 @@ fwrite(const void * buffer, size_t size, size_t count, FILE * stream);
 /**************************************************************************************************/
 
 char *
-gets(char * str);
+gets(char *str);
 /**************************************************************************************************/
 /* char * gets(char * str)                                                                        */
 /*                                                                                                */
@@ -382,11 +383,11 @@ gets(char * str);
 /**************************************************************************************************/
 /* void perror( const char *str )                                                                 */
 /**************************************************************************************************/
-void perror( const char *str );
+void perror(const char *str);
 
 
 int
-printf(const char * format, ...);
+printf(const char *format, ...);
 /**************************************************************************************************/
 /* int printf(const char * format, ...)                                                           */
 /*                                                                                                */
@@ -402,7 +403,7 @@ printf(const char * format, ...);
 /**************************************************************************************************/
 
 int
-puts(char * str);
+puts(char *str);
 /**************************************************************************************************/
 /* int fputs(const char * str)                                                                    */
 /*                                                                                                */
@@ -414,7 +415,7 @@ puts(char * str);
 /**************************************************************************************************/
 
 int
-remove(const char * fname);
+remove(const char *fname);
 /**************************************************************************************************/
 /* int remove(const char * fname)                                                                 */
 /*                                                                                                */
@@ -430,7 +431,7 @@ remove(const char * fname);
 /**************************************************************************************************/
 
 int
-rename(const char * oldfname, const char * newfname);
+rename(const char *oldfname, const char *newfname);
 /**************************************************************************************************/
 /* int rename(const char * oldfname, const char * newfname)                                       */
 /*                                                                                                */
@@ -446,7 +447,7 @@ rename(const char * oldfname, const char * newfname);
 /**************************************************************************************************/
 
 void
-rewind(FILE * stream);
+rewind(FILE *stream);
 /**************************************************************************************************/
 /* void rewind(FILE * stream)                                                                     */
 /*                                                                                                */
@@ -456,7 +457,7 @@ rewind(FILE * stream);
 /**************************************************************************************************/
 
 int
-scanf(const char * format, ...);
+scanf(const char *format, ...);
 /**************************************************************************************************/
 /* int scanf(const char * format, ...)                                                            */
 /*                                                                                                */
@@ -472,7 +473,7 @@ scanf(const char * format, ...);
 /**************************************************************************************************/
 
 void
-setbuf(FILE * stream, char * buffer);
+setbuf(FILE *stream, char *buffer);
 /**************************************************************************************************/
 /* void setbuf(FILE * file, char *buffer)                                                         */
 /*                                                                                                */
@@ -487,7 +488,7 @@ setbuf(FILE * stream, char * buffer);
 /**************************************************************************************************/
 
 int
-setvbuf(FILE * stream, char * buffer, int mode, size_t size);
+setvbuf(FILE *stream, char *buffer, int mode, size_t size);
 /**************************************************************************************************/
 /* int setvbuf(FILE * file, char * buffer, int mode, size_t size)                                 */
 /*                                                                                                */
@@ -512,7 +513,7 @@ setvbuf(FILE * stream, char * buffer, int mode, size_t size);
 /**************************************************************************************************/
 
 int
-sprintf(char * buffer, const char * format, ...);
+sprintf(char *buffer, const char *format, ...);
 /**************************************************************************************************/
 /* int sprintf(char * buffer, const char *format, ...)                                            */
 /*                                                                                                */
@@ -528,7 +529,7 @@ sprintf(char * buffer, const char * format, ...);
 /**************************************************************************************************/
 
 int
-sscanf(const char * buffer, const char * format, ...);
+sscanf(const char *buffer, const char *format, ...);
 /**************************************************************************************************/
 /* int sscanf(const char * buffer, const char * format, ...)                                      */
 /*                                                                                                */
@@ -560,7 +561,7 @@ tmpfile(void);
 /**************************************************************************************************/
 
 char *
-tmpnam(char * name);
+tmpnam(char *name);
 /**************************************************************************************************/
 /* char * tmpnam(char * name)                                                                     */
 /*                                                                                                */
@@ -578,7 +579,7 @@ tmpnam(char * name);
 /**************************************************************************************************/
 
 int
-ungetc(int c, FILE * stream);
+ungetc(int c, FILE *stream);
 /**************************************************************************************************/
 /* int ungetc(int c, FILE * stream)                                                               */
 /*                                                                                                */
@@ -596,7 +597,7 @@ ungetc(int c, FILE * stream);
 /**************************************************************************************************/
 
 int
-vfprintf(FILE * stream, const char * format, va_list arg);
+vfprintf(FILE *stream, const char *format, va_list arg);
 /**************************************************************************************************/
 /* int vfprintf(FILE * stream, const char * format, va_list arg)                                  */
 /*                                                                                                */
@@ -611,7 +612,7 @@ vfprintf(FILE * stream, const char * format, va_list arg);
 /**************************************************************************************************/
 
 int
-vsprintf(char * buffer, const char * format, va_list arg);
+vsprintf(char *buffer, const char *format, va_list arg);
 /**************************************************************************************************/
 /* int vsprintf(char * buffer, const char * format, va_list arg)                                  */
 /*                                                                                                */
@@ -634,7 +635,7 @@ vsprintf(char * buffer, const char * format, va_list arg);
 /* Returns:                                                                                       */
 /*    Percentage of cache hits or -1 on error (device without a cache)                            */
 /**************************************************************************************************/
-int fcachehits(FILE * file);
+int fcachehits(FILE *file);
 
 /**************************************************************************************************/
 /* int fgetrec(FILE * stream)                                                  */
@@ -645,7 +646,7 @@ int fcachehits(FILE * file);
 /* Returns:                                                                                       */
 /*    record number or 0 on failure / not block device                                            */
 /**************************************************************************************************/
-int fgetrec(FILE * file);
+int fgetrec(FILE *file);
 
 /**************************************************************************************************/
 /* int fsetrec(FILE * stream, int recnum)                                                         */
@@ -656,7 +657,7 @@ int fgetrec(FILE * file);
 /* Returns:                                                                                       */
 /*    record number or 0 on failure / not block device                                            */
 /**************************************************************************************************/
-int fsetrec(FILE * file, const int recnum);
+int fsetrec(FILE *file, const int recnum);
 
 /**************************************************************************************************/
 /* int getc(FILE * stream)                                                                        */
@@ -697,7 +698,7 @@ int fsetrec(FILE * file, const int recnum);
 /* Returns:                                                                                       */
 /*    the character, or EOF if there is an error.                                                 */
 /**************************************************************************************************/
-#define putc(c,s) fputc((c),(s))
+#define putc(c, s) fputc((c),(s))
 
 /**************************************************************************************************/
 /* int putchar(int c)                                                                             */
@@ -718,7 +719,7 @@ int fsetrec(FILE * file, const int recnum);
 /* Returns 1 if at EOF, EOF on error, or 0 is not at EOF                                          */
 /*                                                                                                */
 /**************************************************************************************************/
-int fateof(FILE * stream);
+int fateof(FILE *stream);
 
 /**************************************************************************************************/
 /* FILE* fgethandle(char *fileName)                                                               */
@@ -730,7 +731,7 @@ int fateof(FILE * stream);
 /* Return the FILE handle or NULL if the file is not opened                                       */
 /*                                                                                                */
 /**************************************************************************************************/
-FILE* fgethandle(char *fileName);
+FILE *fgethandle(char *fileName);
 
 /**************************************************************************************************/
 /* int fgetrecs(FILE * stream)                                                                    */
@@ -741,7 +742,7 @@ FILE* fgethandle(char *fileName);
 /* Returns the number of records or EOF on error                                                  */
 /*                                                                                                */
 /**************************************************************************************************/
-int fgetrecs(FILE * stream);
+int fgetrecs(FILE *stream);
 
 /**************************************************************************************************/
 /* int fgetlen(FILE * stream)                                                                     */
@@ -753,7 +754,7 @@ int fgetrecs(FILE * stream);
 /* Returns the number of bytes/characters or EOF on error                                         */
 /*                                                                                                */
 /**************************************************************************************************/
-int fgetlen(FILE * stream);
+int fgetlen(FILE *stream);
 
 /**************************************************************************************************/
 /* void append(FILE * stream)                                                                     */
@@ -763,7 +764,7 @@ int fgetlen(FILE * stream);
 /* error and EOF flags associated with that stream. This is the oposite of rewind()               */
 /*    stream   a pointer to the open stream.                                                      */
 /**************************************************************************************************/
-void append(FILE * file);
+void append(FILE *file);
 
 /**************************************************************************************************/
 /* int nextreclen(FILE * file)                                                                    */
@@ -775,7 +776,7 @@ void append(FILE * file);
 /* Returns:                                                                                       */
 /*    number of bytes for the next record, 0 for EOF, -1 for error                                */
 /**************************************************************************************************/
-int nextrecLen(FILE * file);
+int nextrecLen(FILE *file);
 
 
 #endif

@@ -5,7 +5,7 @@
 #include <cmssys.h>
 
 /* Low Level Assembler functions */
-int __SVC202(PLIST *plist , EPLIST *eplist, int calltype);
+int __SVC202(PLIST *plist, EPLIST *eplist, int calltype);
 
 /*
   APIRET RexxVariablePool(PSHVBLOCK RequestBlockList)
@@ -34,13 +34,14 @@ int __SVC202(PLIST *plist , EPLIST *eplist, int calltype);
   - The fourth word points to a chain of request blocks
 */
 APIRET RxVarPol(PSHVBLOCK RequestBlockList) {
-  PLIST plist[2] = {"EXECCOMM", "\xFF" "\xFF" "\xFF" "\xFF" "\xFF" "\xFF" "\xFF" "\xFF"};
-  EPLIST eplist;
-  eplist.Command = plist;
-  eplist.BeginArgs = 0;
-  eplist.EndArgs = 0;
-  eplist.CallContext = RequestBlockList;
-  eplist.ArgList = 0;
-  eplist.FunctionReturn = 0;
-  return __SVC202(plist , &eplist, 0x02);
+    PLIST plist[2] = {"EXECCOMM",
+                      "\xFF" "\xFF" "\xFF" "\xFF" "\xFF" "\xFF" "\xFF" "\xFF"};
+    EPLIST eplist;
+    eplist.Command = plist;
+    eplist.BeginArgs = 0;
+    eplist.EndArgs = 0;
+    eplist.CallContext = RequestBlockList;
+    eplist.ArgList = 0;
+    eplist.FunctionReturn = 0;
+    return __SVC202(plist, &eplist, 0x02);
 }

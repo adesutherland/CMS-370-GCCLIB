@@ -43,6 +43,7 @@ struct lconv {
 #define LC_TIME 6
 
 char *setlocale(int category, const char *locale);
+
 struct lconv *localeconv(void);
 
 #endif

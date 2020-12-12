@@ -33,7 +33,9 @@ int __zone();
 #include <os2.h>
 #endif
 #ifdef __WIN32__
+
 #include <windows.h>
+
 #endif
 #ifdef __MSDOS__
 #ifdef __WATCOMC__
@@ -51,61 +53,54 @@ void CTYP __datetime(void *ptr);
 ** modified slightly by Paul Edwards
 */
 
-static int isleap(unsigned yr)
-{
-   return yr % 400 == 0 || (yr % 4 == 0 && yr % 100 != 0);
+static int isleap(unsigned yr) {
+    return yr % 400 == 0 || (yr % 4 == 0 && yr % 100 != 0);
 }
 
-static unsigned months_to_days(unsigned month)
-{
-   return (month * 3057 - 3007) / 100;
+static unsigned months_to_days(unsigned month) {
+    return (month * 3057 - 3007) / 100;
 }
 
-static long years_to_days (unsigned yr)
-{
-   return yr * 365L + yr / 4 - yr / 100 + yr / 400;
+static long years_to_days(unsigned yr) {
+    return yr * 365L + yr / 4 - yr / 100 + yr / 400;
 }
 
-static long ymd_to_scalar(unsigned yr, unsigned mo, unsigned day)
-{
-   long scalar;
+static long ymd_to_scalar(unsigned yr, unsigned mo, unsigned day) {
+    long scalar;
 
-   scalar = day + months_to_days(mo);
-   if ( mo > 2 )                         /* adjust if past February */
-      scalar -= isleap(yr) ? 1 : 2;
-   yr--;
-   scalar += years_to_days(yr);
-   return (scalar);
+    scalar = day + months_to_days(mo);
+    if (mo > 2)                         /* adjust if past February */
+        scalar -= isleap(yr) ? 1 : 2;
+    yr--;
+    scalar += years_to_days(yr);
+    return (scalar);
 }
 
 static void scalar_to_ymd(long scalar,
                           unsigned *pyr,
                           unsigned *pmo,
-                          unsigned *pday)
-{
-   unsigned n;                /* compute inverse of years_to_days() */
+                          unsigned *pday) {
+    unsigned n;                /* compute inverse of years_to_days() */
 
-   n = (unsigned)((scalar * 400L) / 146097L);
-   while (years_to_days(n) < scalar)
-   {
-      n++;
-   }
-   for ( n = (unsigned)((scalar * 400L) / 146097L); years_to_days(n) < scalar; )
-      n++;                          /* 146097 == years_to_days(400) */
-   *pyr = n;
-   n = (unsigned)(scalar - years_to_days(n-1));
-   if ( n > 59 ) {                       /* adjust if past February */
-      n += 2;
-      if ( isleap(*pyr) )
-         n -= n > 62 ? 1 : 2;
-   }
-   *pmo = (n * 100 + 3007) / 3057;  /* inverse of months_to_days() */
-   *pday = n - months_to_days(*pmo);
-   return;
+    n = (unsigned) ((scalar * 400L) / 146097L);
+    while (years_to_days(n) < scalar) {
+        n++;
+    }
+    for (n = (unsigned) ((scalar * 400L) / 146097L); years_to_days(n) < scalar;)
+        n++;                          /* 146097 == years_to_days(400) */
+    *pyr = n;
+    n = (unsigned) (scalar - years_to_days(n - 1));
+    if (n > 59) {                       /* adjust if past February */
+        n += 2;
+        if (isleap(*pyr))
+            n -= n > 62 ? 1 : 2;
+    }
+    *pmo = (n * 100 + 3007) / 3057;  /* inverse of months_to_days() */
+    *pday = n - months_to_days(*pmo);
+    return;
 }
 
-time_t time(time_t *timer)
-{
+time_t time(time_t *timer) {
     time_t tt;
 #ifdef __OS2__
     DATETIME dt;
@@ -160,33 +155,26 @@ time_t time(time_t *timer)
         tt = tt * 60 + dt.seconds;
     }
 #endif
-    if (timer != NULL)
-    {
+    if (timer != NULL) {
         *timer = tt;
     }
     return (tt);
 }
 
-clock_t clock(void)
-{
-    return ((clock_t)-1);
+clock_t clock(void) {
+    return ((clock_t) -1);
 }
 
-double difftime(time_t time1, time_t time0)
-{
-    return ((double)(time1 - time0));
+double difftime(time_t time1, time_t time0) {
+    return ((double) (time1 - time0));
 }
 
-time_t mktime(struct tm *timeptr)
-{
+time_t mktime(struct tm *timeptr) {
     time_t tt;
 
-    if ((timeptr->tm_year < 70) || (timeptr->tm_year > 120))
-    {
-        tt = (time_t)-1;
-    }
-    else
-    {
+    if ((timeptr->tm_year < 70) || (timeptr->tm_year > 120)) {
+        tt = (time_t) -1;
+    } else {
         tt = ymd_to_scalar(timeptr->tm_year + 1900,
                            timeptr->tm_mon + 1,
                            timeptr->tm_mday)
@@ -198,28 +186,26 @@ time_t mktime(struct tm *timeptr)
     return (tt);
 }
 
-char *asctime(const struct tm *timeptr)
-{
+char *asctime(const struct tm *timeptr) {
     static const char wday_name[7][3] = {
-          "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"
+            "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"
     };
     static const char mon_name[12][3] = {
-          "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-          "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+            "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+            "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
     };
     static char result[26];
 
     sprintf(result, "%.3s %.3s%3d %.2d:%.2d:%.2d %d\n",
-          wday_name[timeptr->tm_wday],
-          mon_name[timeptr->tm_mon],
-          timeptr->tm_mday, timeptr->tm_hour,
-          timeptr->tm_min, timeptr->tm_sec,
-          1900 + timeptr->tm_year);
+            wday_name[timeptr->tm_wday],
+            mon_name[timeptr->tm_mon],
+            timeptr->tm_mday, timeptr->tm_hour,
+            timeptr->tm_min, timeptr->tm_sec,
+            1900 + timeptr->tm_year);
     return result;
 }
 
-char *ctime(const time_t *timer)
-{
+char *ctime(const time_t *timer) {
     return (asctime(localtime(timer)));
 }
 
@@ -236,46 +222,44 @@ char *ctime(const time_t *timer)
    mainly to stop people playing silly buggers and causing
    the macro to crash on negative years. */
 
-#define dow(y,m,d) \
+#define dow(y, m, d) \
   ((((((m)+9)%12+1)<<4)%27 + (d) + 1 + \
   ((y)%400+400) + ((y)%400+400)/4 - ((y)%400+400)/100 + \
   (((m)<=2) ? ( \
   (((((y)%4)==0) && (((y)%100)!=0)) || (((y)%400)==0)) \
   ? 5 : 6) : 0)) % 7)
 
-struct tm *localtime(const time_t *timer)
-{
+struct tm *localtime(const time_t *timer) {
 #if defined(__CMS__)
-  time_t local_timer = *timer + __zone();
-  return (gmtime( &local_timer ));
+    time_t local_timer = *timer + __zone();
+    return (gmtime( &local_timer ));
 #else
-  return (gmtime(timer));
+    return (gmtime(timer));
 #endif
 }
 
-struct tm *gmtime(const time_t *timer)
-{
-  static struct tm tms; /* TODO - ADD to GCCCRAB */
-  unsigned yr, mo, da;
-  unsigned long secs;
-  unsigned long days;
+struct tm *gmtime(const time_t *timer) {
+    static struct tm tms; /* TODO - ADD to GCCCRAB */
+    unsigned yr, mo, da;
+    unsigned long secs;
+    unsigned long days;
 
-  days = *timer / (60L*60*24);
-  secs = *timer % (60L*60*24);
-  scalar_to_ymd(days + ymd_to_scalar(1970, 1, 1), &yr, &mo, &da);
-  tms.tm_year = yr - 1900;
-  tms.tm_mon = mo - 1;
-  tms.tm_mday = da;
-  tms.tm_yday = (int)(ymd_to_scalar(tms.tm_year + 1900, mo, da)
-                - ymd_to_scalar(tms.tm_year + 1900, 1, 1));
-  tms.tm_wday = dow(tms.tm_year + 1900, mo, da);
-  tms.tm_isdst = -1;
-  tms.tm_sec = (int)(secs % 60);
-  secs /= 60;
-  tms.tm_min = (int)(secs % 60);
-  secs /= 60;
-  tms.tm_hour = (int)secs;
-  return (&tms);
+    days = *timer / (60L * 60 * 24);
+    secs = *timer % (60L * 60 * 24);
+    scalar_to_ymd(days + ymd_to_scalar(1970, 1, 1), &yr, &mo, &da);
+    tms.tm_year = yr - 1900;
+    tms.tm_mon = mo - 1;
+    tms.tm_mday = da;
+    tms.tm_yday = (int) (ymd_to_scalar(tms.tm_year + 1900, mo, da)
+                         - ymd_to_scalar(tms.tm_year + 1900, 1, 1));
+    tms.tm_wday = dow(tms.tm_year + 1900, mo, da);
+    tms.tm_isdst = -1;
+    tms.tm_sec = (int) (secs % 60);
+    secs /= 60;
+    tms.tm_min = (int) (secs % 60);
+    secs /= 60;
+    tms.tm_hour = (int) secs;
+    return (&tms);
 }
 
 /*
@@ -292,25 +276,25 @@ struct tm *gmtime(const time_t *timer)
  */
 
 static char *aday[] = {
-    "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"
+        "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"
 };
 
 static char *day[] = {
-    "Sunday", "Monday", "Tuesday", "Wednesday",
-    "Thursday", "Friday", "Saturday"
+        "Sunday", "Monday", "Tuesday", "Wednesday",
+        "Thursday", "Friday", "Saturday"
 };
 
 static char *amonth[] = {
-    "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+        "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
 };
 
 static char *month[] = {
-    "January", "February", "March", "April", "May", "June",
-    "July", "August", "September", "October", "November", "December"
+        "January", "February", "March", "April", "May", "June",
+        "July", "August", "September", "October", "November", "December"
 };
 
-static char *__tzname[2] = { "" "" };
+static char *__tzname[2] = {"" ""};
 static char buf[26];
 
 static void strfmt(char *str, const char *fmt, ...);
@@ -381,151 +365,142 @@ static void strfmt(char *str, const char *fmt, ...);
  *
 **/
 
-size_t strftime(char *s, size_t maxs, const char *f, const struct tm *t)
-{
-      int w;
-      char *p, *q, *r;
+size_t strftime(char *s, size_t maxs, const char *f, const struct tm *t) {
+    int w;
+    char *p, *q, *r;
 
-      p = s;
-      q = s + maxs - 1;
-      while ((*f != '\0'))
-      {
-            if (*f++ == '%')
-            {
-                  r = buf;
-                  switch (*f++)
-                  {
-                  case '%' :
-                        r = "%";
-                        break;
+    p = s;
+    q = s + maxs - 1;
+    while ((*f != '\0')) {
+        if (*f++ == '%') {
+            r = buf;
+            switch (*f++) {
+                case '%' :
+                    r = "%";
+                    break;
 
-                  case 'a' :
-                        r = aday[t->tm_wday];
-                        break;
+                case 'a' :
+                    r = aday[t->tm_wday];
+                    break;
 
-                  case 'A' :
-                        r = day[t->tm_wday];
-                        break;
+                case 'A' :
+                    r = day[t->tm_wday];
+                    break;
 
-                  case 'b' :
-                        r = amonth[t->tm_mon];
-                        break;
+                case 'b' :
+                    r = amonth[t->tm_mon];
+                    break;
 
-                  case 'B' :
-                        r = month[t->tm_mon];
-                        break;
+                case 'B' :
+                    r = month[t->tm_mon];
+                    break;
 
-                  case 'c' :
-                        strfmt(r, "%0 %0 %2 %2:%2:%2 %4",
-                              aday[t->tm_wday], amonth[t->tm_mon],
-                              t->tm_mday,t->tm_hour, t->tm_min,
-                              t->tm_sec, t->tm_year+1900);
-                        break;
+                case 'c' :
+                    strfmt(r, "%0 %0 %2 %2:%2:%2 %4",
+                           aday[t->tm_wday], amonth[t->tm_mon],
+                           t->tm_mday, t->tm_hour, t->tm_min,
+                           t->tm_sec, t->tm_year + 1900);
+                    break;
 
-                  case 'd' :
-                        strfmt(r,"%2",t->tm_mday);
-                        break;
+                case 'd' :
+                    strfmt(r, "%2", t->tm_mday);
+                    break;
 
-                  case 'H' :
-                        strfmt(r,"%2",t->tm_hour);
-                        break;
+                case 'H' :
+                    strfmt(r, "%2", t->tm_hour);
+                    break;
 
-                  case 'I' :
-                        strfmt(r,"%2",(t->tm_hour%12)?t->tm_hour%12:12);
-                        break;
+                case 'I' :
+                    strfmt(r, "%2", (t->tm_hour % 12) ? t->tm_hour % 12 : 12);
+                    break;
 
-                  case 'j' :
-                        strfmt(r,"%3",t->tm_yday+1);
-                        break;
+                case 'j' :
+                    strfmt(r, "%3", t->tm_yday + 1);
+                    break;
 
-                  case 'm' :
-                        strfmt(r,"%2",t->tm_mon+1);
-                        break;
+                case 'm' :
+                    strfmt(r, "%2", t->tm_mon + 1);
+                    break;
 
-                  case 'M' :
-                        strfmt(r,"%2",t->tm_min);
-                        break;
+                case 'M' :
+                    strfmt(r, "%2", t->tm_min);
+                    break;
 
-                  case 'p' :
-                        r = (t->tm_hour>11)?"PM":"AM";
-                        break;
+                case 'p' :
+                    r = (t->tm_hour > 11) ? "PM" : "AM";
+                    break;
 
-                  case 'S' :
-                        strfmt(r,"%2",t->tm_sec);
-                        break;
+                case 'S' :
+                    strfmt(r, "%2", t->tm_sec);
+                    break;
 
-                  case 'U' :
-                        w = t->tm_yday/7;
-                        if (t->tm_yday%7 > t->tm_wday)
-                              w++;
-                        strfmt(r, "%2", w);
-                        break;
+                case 'U' :
+                    w = t->tm_yday / 7;
+                    if (t->tm_yday % 7 > t->tm_wday)
+                        w++;
+                    strfmt(r, "%2", w);
+                    break;
 
-                  case 'W' :
-                        w = t->tm_yday/7;
-                        if (t->tm_yday%7 > (t->tm_wday+6)%7)
-                              w++;
-                        strfmt(r, "%2", w);
-                        break;
+                case 'W' :
+                    w = t->tm_yday / 7;
+                    if (t->tm_yday % 7 > (t->tm_wday + 6) % 7)
+                        w++;
+                    strfmt(r, "%2", w);
+                    break;
 
-                  case 'w' :
-                        strfmt(r,"%1",t->tm_wday);
-                        break;
+                case 'w' :
+                    strfmt(r, "%1", t->tm_wday);
+                    break;
 
-                  case 'x' :
-                        strfmt(r, "%3s %3s %2 %4", aday[t->tm_wday],
-                              amonth[t->tm_mon], t->tm_mday, t->tm_year+1900);
-                        break;
+                case 'x' :
+                    strfmt(r, "%3s %3s %2 %4", aday[t->tm_wday],
+                           amonth[t->tm_mon], t->tm_mday, t->tm_year + 1900);
+                    break;
 
-                  case 'X' :
-                        strfmt(r, "%2:%2:%2", t->tm_hour,
-                              t->tm_min, t->tm_sec);
-                        break;
+                case 'X' :
+                    strfmt(r, "%2:%2:%2", t->tm_hour,
+                           t->tm_min, t->tm_sec);
+                    break;
 
-                  case 'y' :
-                        strfmt(r,"%2",t->tm_year%100);
-                        break;
+                case 'y' :
+                    strfmt(r, "%2", t->tm_year % 100);
+                    break;
 
-                  case 'Y' :
-                        strfmt(r,"%4",t->tm_year+1900);
-                        break;
+                case 'Y' :
+                    strfmt(r, "%4", t->tm_year + 1900);
+                    break;
 
-                  case 'Z' :
-                        r = (t->tm_isdst) ? __tzname[1] : __tzname[0];
-                        break;
+                case 'Z' :
+                    r = (t->tm_isdst) ? __tzname[1] : __tzname[0];
+                    break;
 
-                  default:
-                        buf[0] = '%';     /* reconstruct the format */
-                        buf[1] = f[-1];
-                        buf[2] = '\0';
-                        if (buf[1] == 0)
-                              f--;        /* back up if at end of string */
-                  }
-                  while (*r)
-                  {
-                        if (p == q)
-                        {
-                              *q = '\0';
-                              return 0;
-                        }
-                        *p++ = *r++;
-                  }
+                default:
+                    buf[0] = '%';     /* reconstruct the format */
+                    buf[1] = f[-1];
+                    buf[2] = '\0';
+                    if (buf[1] == 0)
+                        f--;        /* back up if at end of string */
             }
-            else
-            {
-                  if (p == q)
-                  {
-                        *q = '\0';
-                        return 0;
-                  }
-                  *p++ = f[-1];
+            while (*r) {
+                if (p == q) {
+                    *q = '\0';
+                    return 0;
+                }
+                *p++ = *r++;
             }
-      }
-      *p = '\0';
-      return (size_t)(p - s);
+        } else {
+            if (p == q) {
+                *q = '\0';
+                return 0;
+            }
+            *p++ = f[-1];
+        }
+    }
+    *p = '\0';
+    return (size_t) (p - s);
 }
 
-static int pow[5] = { 1, 10, 100, 1000, 10000 };
+static int pow[5] = {1, 10, 100, 1000, 10000};
 
 /**
  * static void strfmt(char *str, char *fmt);
@@ -540,36 +515,30 @@ static int pow[5] = { 1, 10, 100, 1000, 10000 };
  *
 **/
 
-static void strfmt(char *str, const char *fmt, ...)
-{
-      int ival, ilen;
-      char *sval;
-      va_list vp;
+static void strfmt(char *str, const char *fmt, ...) {
+    int ival, ilen;
+    char *sval;
+    va_list vp;
 
-      va_start(vp, fmt);
-      while (*fmt)
-      {
-            if (*fmt++ == '%')
+    va_start(vp, fmt);
+    while (*fmt) {
+        if (*fmt++ == '%') {
+            ilen = *fmt++ - '0';
+            if (ilen == 0)                /* zero means string arg */
             {
-                  ilen = *fmt++ - '0';
-                  if (ilen == 0)                /* zero means string arg */
-                  {
-                        sval = va_arg(vp, char*);
-                        while (*sval)
-                              *str++ = *sval++;
-                  }
-                  else                          /* always leading zeros */
-                  {
-                        ival = va_arg(vp, int);
-                        while (ilen)
-                        {
-                              ival %= pow[ilen--];
-                              *str++ = (char)('0' + ival / pow[ilen]);
-                        }
-                  }
+                sval = va_arg(vp, char*);
+                while (*sval)
+                    *str++ = *sval++;
+            } else                          /* always leading zeros */
+            {
+                ival = va_arg(vp, int);
+                while (ilen) {
+                    ival %= pow[ilen--];
+                    *str++ = (char) ('0' + ival / pow[ilen]);
+                }
             }
-            else  *str++ = fmt[-1];
-      }
-      *str = '\0';
-      va_end(vp);
+        } else *str++ = fmt[-1];
+    }
+    *str = '\0';
+    va_end(vp);
 }

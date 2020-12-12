@@ -18,161 +18,160 @@
 #include "tsts.h"
 
 char *S_INPUT[] = {
-    "OUTPUT Test String 1\n",
-    "OUTPUT Test String 2\n",
-    "OUTPUT Test String 3\n",
-    "OUTPUT Test String 4\n",
-    "OUTPUT Test String 5\n",
-    "OUTPUT Empty Line Next\n",
-    "\n",
-    "OUTPUT Empty Line Previous\n",
-    0
- };
+        "OUTPUT Test String 1\n",
+        "OUTPUT Test String 2\n",
+        "OUTPUT Test String 3\n",
+        "OUTPUT Test String 4\n",
+        "OUTPUT Test String 5\n",
+        "OUTPUT Empty Line Next\n",
+        "\n",
+        "OUTPUT Empty Line Previous\n",
+        0
+};
 
 char *L_INPUT =
-    "OUTPUT Long line [123456789+123456789+123456789+123456789+123456789+12345"
-    "6789+123456789+123456789+123456789+123456789+123456789+123456789+123456789+12345"
-    "6789+123456789+123456789+123456789+123456789+123456789+123456789+]";
+        "OUTPUT Long line [123456789+123456789+123456789+123456789+123456789+12345"
+        "6789+123456789+123456789+123456789+123456789+123456789+123456789+123456789+12345"
+        "6789+123456789+123456789+123456789+123456789+123456789+123456789+]";
 
-char* FGETC_RD(char* in, int len, FILE* test) {
-  int i;
-  int c;
-  for (i=0; i<len; i++) {
-    c=fgetc(test);
-    if (c == EOF) {
-      if (feof(test)) break; /* EOF is OK */
-      else return NULL; /* Report Error */
+char *FGETC_RD(char *in, int len, FILE *test) {
+    int i;
+    int c;
+    for (i = 0; i < len; i++) {
+        c = fgetc(test);
+        if (c == EOF) {
+            if (feof(test)) break; /* EOF is OK */
+            else return NULL; /* Report Error */
+        }
+        in[i] = (char) c;
+        if (c == '\n') {
+            i++;
+            break;
+        }
     }
-    in[i] = (char)c;
-    if (c == '\n') {
-      i++;
-      break;
-    }
-  }
-  in[i] = 0;
-  return in;
+    in[i] = 0;
+    return in;
 }
 
-int FPUTC_WR(char* out, FILE* test) {
-  int i;
-  for (i=0; out[i]; i++) {
-    if (fputc(out[i], test) == EOF) return EOF;
-  }
-  return 0;
+int FPUTC_WR(char *out, FILE *test) {
+    int i;
+    for (i = 0; out[i]; i++) {
+        if (fputc(out[i], test) == EOF) return EOF;
+    }
+    return 0;
 }
 
-int FGETS_T(FILE* test, int lrecl) {
-  int i = 0;
-  int l, r;
-  char line[400];
-  char buf[200];
-  int ok = 1;
+int FGETS_T(FILE *test, int lrecl) {
+    int i = 0;
+    int l, r;
+    char line[400];
+    char buf[200];
+    int ok = 1;
 
-  ok=1; TST_STRT("fgets - short lines");
-  while (S_INPUT[i]) {
-    if (fgets(buf, 200, test)) {
-      if (strcmp(buf, S_INPUT[i]))
-      {
-        TST_ERR(buf);
+    ok = 1;
+    TST_STRT("fgets - short lines");
+    while (S_INPUT[i]) {
+        if (fgets(buf, 200, test)) {
+            if (strcmp(buf, S_INPUT[i])) {
+                TST_ERR(buf);
+                ok = 0;
+            }
+        } else {
+            if (feof(test)) break;
+            TST_PERR();
+            ok = 0;
+            break;
+        }
+        i++;
+    }
+    if (ok) TST_OK();
+
+    ok = 1;
+    TST_STRT("fgets - long line");
+    l = strlen(L_INPUT);
+    i = 0;
+    while (i < l) {
+        r = lrecl;
+        if (r > l - i) r = l - i;
+
+        memcpy(line, L_INPUT + i, r);
+        line[r] = '\n';
+        line[r + 1] = 0;
+        i += r;
+
+        if (fgets(buf, 200, test)) {
+            if (strcmp(buf, line)) {
+                TST_ERR(buf);
+                ok = 0;
+            }
+        } else {
+            if (feof(test)) break;
+            TST_PERR();
+            ok = 0;
+            break;
+        }
+    }
+    if (ok) TST_OK();
+
+    ok = 1;
+    TST_STRT("fgets - short input buffer");
+    line[0] = 0;
+    while (fgets(buf, 10, test)) {
+
+        if (!strncmp("TEST", buf, 4)) { /* Detect end of TEST data */
+            while (fgets(buf, 10, test));
+            break;
+        }
+        strcat(line, buf);
+        r = strlen(line);
+        if (line[r - 1] == '\n') line[r - 1] = 0; /* remove newline */
+    }
+    if (!feof(test)) {
+        TST_PERR();
         ok = 0;
-      }
+    } else {
+        if (strcmp(L_INPUT, line)) {
+            TST_ERR(line);
+            ok = 0;
+        }
     }
-    else {
-      if (feof(test)) break;
-      TST_PERR();
-      ok = 0;
-      break;
-    }
-    i++;
-  }
-  if (ok) TST_OK();
-
-  ok=1; TST_STRT("fgets - long line");
-  l = strlen(L_INPUT);
-  i = 0;
-  while (i<l) {
-    r = lrecl;
-    if (r > l - i) r = l - i;
-
-    memcpy(line, L_INPUT+i, r);
-    line[r] = '\n';
-    line[ r + 1] = 0;
-    i += r;
-
-    if (fgets(buf, 200, test)) {
-      if (strcmp(buf, line)) {
-        TST_ERR(buf);
-        ok = 0;
-      }
-    }
-    else {
-      if (feof(test)) break;
-      TST_PERR();
-      ok = 0;
-      break;
-    }
-  }
-  if (ok) TST_OK();
-
-  ok=1; TST_STRT("fgets - short input buffer");
-  line[0]=0;
-  while (fgets(buf, 10, test)) {
-
-    if (!strncmp("TEST",buf,4)) { /* Detect end of TEST data */
-      while (fgets(buf, 10, test));
-      break;
-    }
-    strcat(line,buf);
-    r = strlen(line);
-    if (line[r-1] == '\n') line[r-1]=0; /* remove newline */
-  }
-  if (!feof(test)) {
-    TST_PERR();
-    ok = 0;
-  }
-  else {
-    if (strcmp(L_INPUT, line)) {
-      TST_ERR(line);
-      ok = 0;
-    }
-  }
-  if (ok) TST_OK();
+    if (ok) TST_OK();
 }
 
-int FPUTS_T(FILE* test) {
-  int i;
-  TST_STRT("fputs");
+int FPUTS_T(FILE *test) {
+    int i;
+    TST_STRT("fputs");
 
-  fputs("OUTPUT Test String 1\n", test);
-  fputs("OUTPUT Test String 2\n", test);
-  fputs("OUTPUT Test String 3\nOUTPUT Test String 4\n", test);
-  fputs("OUTPUT Test String", test);
-  fputs(" 5\n", test);
-  fputs("OUTPUT Empty Line Next\n\nOUTPUT Empty Line Previous\n", test);
-  fputs("OUTPUT Long line [", test);
-  for (i=0; i<20; i++) fputs("123456789+", test);
-  fputs("]\n", test);
-  fputs("OUTPUT Long line [" TEST_STRING TEST_STRING "]\n", test);
+    fputs("OUTPUT Test String 1\n", test);
+    fputs("OUTPUT Test String 2\n", test);
+    fputs("OUTPUT Test String 3\nOUTPUT Test String 4\n", test);
+    fputs("OUTPUT Test String", test);
+    fputs(" 5\n", test);
+    fputs("OUTPUT Empty Line Next\n\nOUTPUT Empty Line Previous\n", test);
+    fputs("OUTPUT Long line [", test);
+    for (i = 0; i < 20; i++) fputs("123456789+", test);
+    fputs("]\n", test);
+    fputs("OUTPUT Long line [" TEST_STRING TEST_STRING "]\n", test);
 
-  TST_OK();
+    TST_OK();
 }
 
-int FPUTC_T(FILE* test) {
-  int i;
-  TST_STRT("fputc");
+int FPUTC_T(FILE *test) {
+    int i;
+    TST_STRT("fputc");
 
-  FPUTC_WR("OUTPUT Test String 1\n", test);
-  FPUTC_WR("OUTPUT Test String 2\n", test);
-  FPUTC_WR("OUTPUT Test String 3\nOUTPUT Test String 4\n", test);
-  FPUTC_WR("OUTPUT Test String", test);
-  FPUTC_WR(" 5\n", test);
-  FPUTC_WR("OUTPUT Empty Line Next\n\nOUTPUT Empty Line Previous\n", test);
-  FPUTC_WR("OUTPUT Long line [", test);
-  for (i=0; i<20; i++) FPUTC_WR("123456789+", test);
-  FPUTC_WR("]\n", test);
-  FPUTC_WR("OUTPUT Long line [" TEST_STRING TEST_STRING "]\n", test);
+    FPUTC_WR("OUTPUT Test String 1\n", test);
+    FPUTC_WR("OUTPUT Test String 2\n", test);
+    FPUTC_WR("OUTPUT Test String 3\nOUTPUT Test String 4\n", test);
+    FPUTC_WR("OUTPUT Test String", test);
+    FPUTC_WR(" 5\n", test);
+    FPUTC_WR("OUTPUT Empty Line Next\n\nOUTPUT Empty Line Previous\n", test);
+    FPUTC_WR("OUTPUT Long line [", test);
+    for (i = 0; i < 20; i++) FPUTC_WR("123456789+", test);
+    FPUTC_WR("]\n", test);
+    FPUTC_WR("OUTPUT Long line [" TEST_STRING TEST_STRING "]\n", test);
 
-  TST_OK();
+    TST_OK();
 }
 
 
@@ -199,34 +198,39 @@ int FPUTC_T(FILE* test) {
 /*                                                                                                */
 /**************************************************************************************************/
 static void freopen_t() {
-  FILE* test;
-  const char *item = "1234567890abcdefghijklmnopqrstuvwxyz";
-  const int count = 20;
-  char* buffer;
-  char* buffer2;
-  int i;
+    FILE *test;
+    const char *item = "1234567890abcdefghijklmnopqrstuvwxyz";
+    const int count = 20;
+    char *buffer;
+    char *buffer2;
+    int i;
 
-  SUB_STRT("freopen_t()");
-  buffer = malloc(count * strlen(item));
-  buffer2 = malloc(count * strlen(item));
-  buffer[0] = 0;
-  buffer2[0] = 0;
-  buffer2[count * strlen(item)] = 0;
-  for (i=0; i<count; i++) strcat(buffer,item);
-  ASSERTNOTNULLP("fopen(TEST FILE A V,wb)", test=fopen("TEST FILE A V","wb"), test, );
-  ASSERTNOTZERO("fwrite()", ,fwrite(buffer, strlen(item), count, test)==count, );
-  ASSERTNOTNULLP("freopen()", , freopen(NULL,"rb",test), );
-  ASSERTNOTZERO("fread()", ,fread(buffer2, strlen(item), count, test)==count, );
-  ASSERTZERO("strcmp()", , strcmp(buffer,buffer2), );
-  system("cp spool punch to *");
-  ASSERTNOTNULLP("freopen(PUNCH)", , freopen("PUNCH","wb",test), );
-  ASSERTNOTZERO("fwrite()", ,fwrite(buffer, strlen(item), count, test)==count, );
-  ASSERTNOTNULLP("freopen(READER)", , freopen("READER","rb",test), );
-  ASSERTNOTZERO("fread()", ,fread(buffer2, strlen(item), count, test)==count, );
-  ASSERTZERO("strcmp()", , strcmp(buffer,buffer2), );
-  ASSERTZEROP("fclose()", , fclose(test), );
-  free(buffer);
-  free(buffer2);
+    SUB_STRT("freopen_t()");
+    buffer = malloc(count * strlen(item));
+    buffer2 = malloc(count * strlen(item));
+    buffer[0] = 0;
+    buffer2[0] = 0;
+    buffer2[count * strlen(item)] = 0;
+    for (i = 0; i < count; i++) strcat(buffer, item);
+    ASSERTNOTNULLP("fopen(TEST FILE A V,wb)",
+                   test = fopen("TEST FILE A V", "wb"), test,);
+    ASSERTNOTZERO("fwrite()", ,
+                  fwrite(buffer, strlen(item), count, test) == count,);
+    ASSERTNOTNULLP("freopen()", , freopen(NULL, "rb", test),);
+    ASSERTNOTZERO("fread()", ,
+                  fread(buffer2, strlen(item), count, test) == count,);
+    ASSERTZERO("strcmp()", , strcmp(buffer, buffer2),);
+    system("cp spool punch to *");
+    ASSERTNOTNULLP("freopen(PUNCH)", , freopen("PUNCH", "wb", test),);
+    ASSERTNOTZERO("fwrite()", ,
+                  fwrite(buffer, strlen(item), count, test) == count,);
+    ASSERTNOTNULLP("freopen(READER)", , freopen("READER", "rb", test),);
+    ASSERTNOTZERO("fread()", ,
+                  fread(buffer2, strlen(item), count, test) == count,);
+    ASSERTZERO("strcmp()", , strcmp(buffer, buffer2),);
+    ASSERTZEROP("fclose()", , fclose(test),);
+    free(buffer);
+    free(buffer2);
 }
 
 
@@ -244,28 +248,30 @@ static void freopen_t() {
 /*   On failure, NULL is returned.                                                                */
 /**************************************************************************************************/
 static void tmpfile_t() {
-  FILE* test;
-  const char *item = "1234567890abcdefghijklmnopqrstuvwxyz";
-  const int count = 20;
-  char* buffer;
-  char* buffer2;
-  int i;
+    FILE *test;
+    const char *item = "1234567890abcdefghijklmnopqrstuvwxyz";
+    const int count = 20;
+    char *buffer;
+    char *buffer2;
+    int i;
 
-  SUB_STRT("tmpfile_t()");
-  buffer = malloc(count * strlen(item));
-  buffer2 = malloc(count * strlen(item));
-  buffer[0] = 0;
-  buffer2[0] = 0;
-  buffer2[count * strlen(item)] = 0;
-  for (i=0; i<count; i++) strcat(buffer,item);
-  ASSERTNOTNULLP("tmpfile()", test=tmpfile(), test, );
-  ASSERTNOTZERO("fwrite()", ,fwrite(buffer, strlen(item), count, test)==count, );
-  rewind(test);
-  ASSERTNOTZERO("fread()", ,fread(buffer2, strlen(item), count, test)==count, );
-  ASSERTZERO("strcmp()", , strcmp(buffer,buffer2), );
-  ASSERTZEROP("fclose()", , fclose(test), );
-  free(buffer);
-  free(buffer2);
+    SUB_STRT("tmpfile_t()");
+    buffer = malloc(count * strlen(item));
+    buffer2 = malloc(count * strlen(item));
+    buffer[0] = 0;
+    buffer2[0] = 0;
+    buffer2[count * strlen(item)] = 0;
+    for (i = 0; i < count; i++) strcat(buffer, item);
+    ASSERTNOTNULLP("tmpfile()", test = tmpfile(), test,);
+    ASSERTNOTZERO("fwrite()", ,
+                  fwrite(buffer, strlen(item), count, test) == count,);
+    rewind(test);
+    ASSERTNOTZERO("fread()", ,
+                  fread(buffer2, strlen(item), count, test) == count,);
+    ASSERTZERO("strcmp()", , strcmp(buffer, buffer2),);
+    ASSERTZEROP("fclose()", , fclose(test),);
+    free(buffer);
+    free(buffer2);
 }
 
 /**************************************************************************************************/
@@ -284,44 +290,53 @@ static void tmpfile_t() {
 /*                                                                                                */
 /**************************************************************************************************/
 static void tmpnam_t() {
-  char name1[21];
-  char name2[21];
-  char name3[21];
-  char *pch;
-  int i = 1;
-  int bad = 0;
+    char name1[21];
+    char name2[21];
+    char name3[21];
+    char *pch;
+    int i = 1;
+    int bad = 0;
 
-  SUB_STRT("tmpnam()");
-  tmpnam(name1);
-  tmpnam(name2);
-  tmpnam(name3);
-  ASSERTNOTZERO("strcmp(name1,name2)", , strcmp(name1,name2), );
-  ASSERTNOTZERO("strcmp(name1,name3)", , strcmp(name1,name3), );
-  ASSERTNOTZERO("strcmp(name2,name3)", , strcmp(name2,name3), );
-  TST_STRT("tmpnam() format");
-  pch = strtok (name1," ");
-  while (pch != NULL && !bad)
-  {
-    if (i<3) {
-      if (strlen(pch)>8) {TST_ERR("Word 1 or 2 too long"); bad = 1;}
+    SUB_STRT("tmpnam()");
+    tmpnam(name1);
+    tmpnam(name2);
+    tmpnam(name3);
+    ASSERTNOTZERO("strcmp(name1,name2)", , strcmp(name1, name2),);
+    ASSERTNOTZERO("strcmp(name1,name3)", , strcmp(name1, name3),);
+    ASSERTNOTZERO("strcmp(name2,name3)", , strcmp(name2, name3),);
+    TST_STRT("tmpnam() format");
+    pch = strtok(name1, " ");
+    while (pch != NULL && !bad) {
+        if (i < 3) {
+            if (strlen(pch) > 8) {
+                TST_ERR("Word 1 or 2 too long");
+                bad = 1;
+            }
+        } else if (i == 3) {
+            if (strlen(pch) > 2) {
+                TST_ERR("Word 3 too long");
+                bad = 1;
+            }
+        } else {
+            TST_ERR("Too many words");
+            bad = 1;
+        }
+        i++;
+        pch = strtok(NULL, " ");
     }
-    else if (i==3) {
-      if (strlen(pch)>2) {TST_ERR("Word 3 too long"); bad = 1;}
+    if (i < 3) {
+        TST_ERR("Too few words");
+        bad = 1;
     }
-    else {TST_ERR("Too many words"); bad = 1;}
-    i++;
-    pch = strtok (NULL, " ");
-  }
-  if (i < 3) {TST_ERR("Too few words"); bad = 1;}
-  if (!bad) TST_OK();
+    if (!bad) TST_OK();
 }
 
 /**************************************************************************************************/
 /* Run Tests                                                                                      */
 /**************************************************************************************************/
 void IO_COM_T() {
-  SEC_STRT("IO Tests - Common");
-  freopen_t();
-  tmpfile_t();
-  tmpnam_t();
+    SEC_STRT("IO Tests - Common");
+    freopen_t();
+    tmpfile_t();
+    tmpnam_t();
 }
