@@ -17,7 +17,9 @@
 
 /* CMS Time Zone function */
 #if defined(__CMS__)
+
 int __zone();
+
 #endif
 
 /* pdos and msdos use the same interface most of the time) */
@@ -232,7 +234,7 @@ char *ctime(const time_t *timer) {
 struct tm *localtime(const time_t *timer) {
 #if defined(__CMS__)
     time_t local_timer = *timer + __zone();
-    return (gmtime( &local_timer ));
+    return (gmtime(&local_timer));
 #else
     return (gmtime(timer));
 #endif

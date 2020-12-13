@@ -324,7 +324,7 @@ rand(void)
 #if defined(__MVS__) || defined(__CMS__)
     /* This hack should be removed. It is to get around a bug in the GCC 3.2.3 MVS 3.0 optimizer. */
     myseed = myseed * 1103515245UL;
-    ret = (int)(((myseed + 12345) >> 16) & 0x8fff);
+    ret = (int) (((myseed + 12345) >> 16) & 0x8fff);
 #else
     myseed = myseed * 1103515245UL + 12345;
     ret = (int) ((myseed >> 16) & 0x8fff);

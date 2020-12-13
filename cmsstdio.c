@@ -340,8 +340,7 @@ dblcvt(double num, char cnvtype, size_t nwidth, size_t nprecision, char *result)
     if (num < 0) {
         b = -num;
         sign = '-';
-    }
-    else {
+    } else {
         b = num;
         sign = ' ';
     }

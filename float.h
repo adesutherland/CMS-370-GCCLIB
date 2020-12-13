@@ -63,16 +63,16 @@
 typedef union {
     unsigned short _HexVal[4];
     double _Dval;
-    float  _Fval;
+    float _Fval;
     long _Lval;
 } _HexFloat;
 
-static _HexFloat _FltMax =  {{0x7fff, 0xffff ,0xffff ,0xffff}};
-static _HexFloat _FltMin =  {{0x0010, 0x0000 ,0x0000 ,0x0000}};
-static _HexFloat _DblMax =  {{0x7fff ,0xffff ,0xffff ,0xffff}};
-static _HexFloat _DblMin =  {{0x0010 ,0x0000 ,0x0000 ,0x0000}};
-static _HexFloat _FltEps =  {{0x3C10 ,0x0000 ,0x0000 ,0x0000}};
-static _HexFloat _DblEps =  {{0x3410 ,0x0000 ,0x0000 ,0x0000}};
+static _HexFloat _FltMax = {{0x7fff, 0xffff, 0xffff, 0xffff}};
+static _HexFloat _FltMin = {{0x0010, 0x0000, 0x0000, 0x0000}};
+static _HexFloat _DblMax = {{0x7fff, 0xffff, 0xffff, 0xffff}};
+static _HexFloat _DblMin = {{0x0010, 0x0000, 0x0000, 0x0000}};
+static _HexFloat _FltEps = {{0x3C10, 0x0000, 0x0000, 0x0000}};
+static _HexFloat _DblEps = {{0x3410, 0x0000, 0x0000, 0x0000}};
 
 #define FLT_MAX _FltMax._Fval
 #define DBL_MAX _DblMax._Dval
@@ -85,7 +85,6 @@ static _HexFloat _DblEps =  {{0x3410 ,0x0000 ,0x0000 ,0x0000}};
 #define FLT_EPSILON _FltEps._Fval
 #define DBL_EPSILON _DblEps._Fval
 #define LDBL_EPSILON _DblEps._Fval
-
 
 
 #else

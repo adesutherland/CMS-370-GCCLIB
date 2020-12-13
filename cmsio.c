@@ -32,10 +32,10 @@ extern CMSDRIVER coniodrv;
 
 static CMSDRIVERS __iodrivers[] =
         {
-                {"File", &dskiodrv},
+                {"File",    &dskiodrv},
                 {"Printer", &prtiodrv},
-                {"Punch", &puniodrv},
-                {"Reader", &rdriodrv},
+                {"Punch",   &puniodrv},
+                {"Reader",  &rdriodrv},
                 {"Console", &coniodrv},
                 {0, NULL} /* End of drivers */
         };
