@@ -1,6 +1,7 @@
 GCCLIB Change LOG
 =================
 
+0.8.2 - 15 Dec 2020
 F0048 - Code reformatting
         Added -D__CMS__ to CMAKE so that the right #ifdefs work including code
         reformatting
