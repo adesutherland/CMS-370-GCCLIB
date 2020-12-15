@@ -8,7 +8,7 @@
 #ifndef CMSSYS_INCLUDED
 #define CMSSYS_INCLUDED
 
-#define GCCLIB_VERSION "0.8.1"
+#define GCCLIB_VERSION "0.8.2"
 
 #include <stddef.h>
 #include <stdarg.h>
@@ -21,86 +21,86 @@ typedef char PLIST[8]; /* 8 char block */
 typedef struct EVALBLOK EVALBLOK;
 
 struct EVALBLOK {
-  EVALBLOK *Next;  /* Reserved - but obvious what the intention was! */
-  int BlokSize;    /* Total block size in DW's */
-  int Len;         /* length of data in bytes */
-  int Pad;         /* (reserved) */
-  char Data[];     /* the data... */
+    EVALBLOK *Next;  /* Reserved - but obvious what the intention was! */
+    int BlokSize;    /* Total block size in DW's */
+    int Len;         /* length of data in bytes */
+    int Pad;         /* (reserved) */
+    char Data[];     /* the data... */
 };
 
 typedef struct ADLEN {
-  char *Data;    /* data... */
-  int Len;       /* length of data in bytes */
+    char *Data;    /* data... */
+    int Len;       /* length of data in bytes */
 } ADLEN;
 
 typedef struct EPLIST {
-  char *Command;
-  char *BeginArgs;          /* start of Argstring */
-  char *EndArgs;            /* character after end of the Argstring */
-  void *CallContext;        /* Extention Point - IBM points it to a FBLOCK */
-  ADLEN *ArgList;          /* FUNCTION ARGUMENT LIST - Calltype 5 only */
-  EVALBLOK **FunctionReturn;/* RETURN OF FUNCTION - Calltype 5 only */
+    char *Command;
+    char *BeginArgs;          /* start of Argstring */
+    char *EndArgs;            /* character after end of the Argstring */
+    void *CallContext;        /* Extention Point - IBM points it to a FBLOCK */
+    ADLEN *ArgList;          /* FUNCTION ARGUMENT LIST - Calltype 5 only */
+    EVALBLOK **FunctionReturn;/* RETURN OF FUNCTION - Calltype 5 only */
 } EPLIST;
 
 /**************************************************************************************************/
 /* CMSFILE maps the CMS FSCB (File System Control Block).                                         */
 /**************************************************************************************************/
 typedef struct {
-   char command[8];                                 /* command (note: no trailing NULL character) */
-   char filename[8];                               /* filename (note: no trailing NULL character) */
-   char filetype[8];                               /* filetype (note: no trailing NULL character) */
-   char filemode[2];                               /* filemode (note: no trailing NULL character) */
-   short recordNum;                                              /* relative record (item) number */
-   char * buffer;                                               /* address of read / write buffer */
-   int bufferSize;                                                            /* length of buffer */
-   char format[2];              /* record format: 'F ' or 'V ' (note: no trailing NULL character) */
-   short numRecords;                                        /* number of records to read or write */
-   int bytesRead;                                                /* number of bytes actually read */
-   } CMSFILE;
+    char command[8];                                 /* command (note: no trailing NULL character) */
+    char filename[8];                               /* filename (note: no trailing NULL character) */
+    char filetype[8];                               /* filetype (note: no trailing NULL character) */
+    char filemode[2];                               /* filemode (note: no trailing NULL character) */
+    short recordNum;                                              /* relative record (item) number */
+    char *buffer;                                               /* address of read / write buffer */
+    int bufferSize;                                                            /* length of buffer */
+    char format[2];              /* record format: 'F ' or 'V ' (note: no trailing NULL character) */
+    short numRecords;                                        /* number of records to read or write */
+    int bytesRead;                                                /* number of bytes actually read */
+} CMSFILE;
 
 struct FILE {
-   char validator1;                                               /* Marks a valid FILE structure */
-   char name[21];                                                  /* File name used for messages */
-   char fileid[19];                                                     /* Null terminated FILEID */
-   struct FILE* next;                                               /* Next file in the file list */
-   struct FILE* prev;                                           /* Previous file in the file list */
-   int access;                                   /* type of access mode flags (read, write, etc.) */
-   int status;           /* status flags (error, eof, dirty record buffer, read/write mode, etc.) */
-   int error;                             /* error code from last I/O operation against this file */
-   int ungetchar;                                                              /* Unget Character */
-   int recpos;   /* char position in record buffer, next unread byte, next byte position to write */
-   int recnum;   /* Record number (1 base) of the record in the buffer, -1 nonblock device,
+    char validator1;                                               /* Marks a valid FILE structure */
+    char name[21];                                                  /* File name used for messages */
+    char fileid[19];                                                     /* Null terminated FILEID */
+    struct FILE *next;                                               /* Next file in the file list */
+    struct FILE *prev;                                           /* Previous file in the file list */
+    int access;                                   /* type of access mode flags (read, write, etc.) */
+    int status;           /* status flags (error, eof, dirty record buffer, read/write mode, etc.) */
+    int error;                             /* error code from last I/O operation against this file */
+    int ungetchar;                                                              /* Unget Character */
+    int recpos;   /* char position in record buffer, next unread byte, next byte position to write */
+    int recnum;   /* Record number (1 base) of the record in the buffer, -1 nonblock device,
                                                                          0 no record loaded */
-   int reclen;                        /* Current Record length excluding any trailing \n and null */
-   int maxreclen;       /* Max Record length for curren record excluding any trailing \n and null */
-   int filemaxreclen;     /* Max Record length / Buffer Length excluding any trailing \n and null */
-   int records;                                     /* Number of records or -1 for non-block file */
-   struct CMSDRIVER *device;                                      /* device driver (console, disk, etc.) */
-   char *buffer;                                                                 /* record buffer */
-   struct CMSFILECACHE *cache;                                                             /* File cache */
-   CMSFILE fscb;                      /* the CMS File System Control Block (if it is a disk file) */
-   char validator2;                                               /* Marks a valid FILE structure */
+    int reclen;                        /* Current Record length excluding any trailing \n and null */
+    int maxreclen;       /* Max Record length for curren record excluding any trailing \n and null */
+    int filemaxreclen;     /* Max Record length / Buffer Length excluding any trailing \n and null */
+    int records;                                     /* Number of records or -1 for non-block file */
+    struct CMSDRIVER *device;                                      /* device driver (console, disk, etc.) */
+    char *buffer;                                                                 /* record buffer */
+    struct CMSFILECACHE *cache;                                                             /* File cache */
+    CMSFILE fscb;                      /* the CMS File System Control Block (if it is a disk file) */
+    char validator2;                                               /* Marks a valid FILE structure */
 };
 
 /**************************************************************************************************/
 /* CMSFILEINFO maps the CMS FST (File Status Table).                                              */
 /**************************************************************************************************/
 typedef struct {
-   char filename[8];                               /* filename (note: no trailing NULL character) */
-   char filetype[8];                               /* filetype (note: no trailing NULL character) */
-   short filedate;                                            /* date file was last written, MMDD */
-   short filetime;                                            /* time file was last written, HHMM */
-   short writePtr;                                                 /* write pointer (item) number */
-   short readptr;                                                   /* read pointer (item) number */
-   char filemode[2];           /* filemode (letter and number) (note: no trailing NULL character) */
-   short numRecords;                                                         /* number of records */
-   short chainLink;                                                   /* first chain link pointer */
-   char format;                                                    /* record format: 'F ' or 'V ' */
-   char flag;                                                                    /* FST flag byte */
-   int lrecl;                                                            /* logical record length */
-   short numBlocks;                                                 /* number of 800-bypte blocks */
-   short fileYear;                                                  /* year file was last written */
-   } CMSFILEINFO;
+    char filename[8];                               /* filename (note: no trailing NULL character) */
+    char filetype[8];                               /* filetype (note: no trailing NULL character) */
+    short filedate;                                            /* date file was last written, MMDD */
+    short filetime;                                            /* time file was last written, HHMM */
+    short writePtr;                                                 /* write pointer (item) number */
+    short readptr;                                                   /* read pointer (item) number */
+    char filemode[2];           /* filemode (letter and number) (note: no trailing NULL character) */
+    short numRecords;                                                         /* number of records */
+    short chainLink;                                                   /* first chain link pointer */
+    char format;                                                    /* record format: 'F ' or 'V ' */
+    char flag;                                                                    /* FST flag byte */
+    int lrecl;                                                            /* logical record length */
+    short numBlocks;                                                 /* number of 800-bypte blocks */
+    short fileYear;                                                  /* year file was last written */
+} CMSFILEINFO;
 
 /**************************************************************************************************/
 /* HI, TS, TE - Immediate flags                                                                   */
@@ -123,8 +123,10 @@ typedef struct {
 /* Note: that this area is freed automatically on normal program termination.                     */
 /*                                                                                                */
 /**************************************************************************************************/
-void* CMSPGAll(size_t size);
+void *CMSPGAll(size_t size);
+
 #include <gcccrab.h>
+
 #define CMSGetPG() (GETGCCCRAB()->process_global)
 
 /**************************************************************************************************/
@@ -144,6 +146,7 @@ void* CMSPGAll(size_t size);
 /* Args flag and value (0 or 1)                                                                   */
 /**************************************************************************************************/
 void CMSSETFL(int flag, int value);
+
 #define CMSSetFlag(s1, s2) (CMSSETFL((s1),(s2)))
 
 /**************************************************************************************************/
@@ -152,6 +155,7 @@ void CMSSETFL(int flag, int value);
 /* Set memory in NUCON                                                                            */
 /**************************************************************************************************/
 void CMSSETNU(void *address, int value);
+
 #define CMSSetNUCON(s1, s2) (CMSSETNU((s1),(s2)))
 
 /**************************************************************************************************/
@@ -177,7 +181,8 @@ void CMSSETNU(void *address, int value);
 /*    1.  Use the CP CLOSE command to close the virtual card punch.  You can issue this via the   */
 /*        CMScommand function.                                                                    */
 /**************************************************************************************************/
-int __punchc(char * line);
+int __punchc(char *line);
+
 #define CMScardPunch(s1) (__punchc((s1)))
 
 /**************************************************************************************************/
@@ -197,7 +202,8 @@ int __punchc(char * line);
 /*     5     Length not equal to requested length.                                                */
 /*   100     Punch not attached.                                                                  */
 /**************************************************************************************************/
-int __rdcard(char * line, int * len);
+int __rdcard(char *line, int *len);
+
 #define CMScardRead(s1, i2) (__rdcard((s1),(i2)))
 
 /**************************************************************************************************/
@@ -208,7 +214,8 @@ int __rdcard(char * line, int * len);
 /* Returns:                                                                                       */
 /*    (int)  The number of seconds since 1/1/1970.                                                */
 /**************************************************************************************************/
-int __getclk(void * clock);
+int __getclk(void *clock);
+
 #define CMSclock(s1) (__getclk((s1)))
 
 /**************************************************************************************************/
@@ -228,7 +235,8 @@ int __getclk(void * clock);
 /*    1.  Both a standard and extended parameter list (plist) are passed to the command.          */
 /*    2.  Be aware that the command invoked can potentially overlay your program in memory.       */
 /**************************************************************************************************/
-int __cmscmd(char * cmdLine, int cmdFlag);
+int __cmscmd(char *cmdLine, int cmdFlag);
+
 #define CMScommand(s1, i1) (__cmscmd((s1),(i1)))
 #define CMS_COMMAND  1
 #define CMS_CONSOLE 11
@@ -257,8 +265,10 @@ int __cmscmd(char * cmdLine, int cmdFlag);
 /*         -3 routine not found (from svc202)                                                     */
 /*         Other negative rc from svc202 / called function (a positive RC is make negative)       */
 /**************************************************************************************************/
-int __CMSFND(char *physical, char *logical, int is_proc, char **ret_val, int argc,
-             char *argv[], int lenv[]);
+int
+__CMSFND(char *physical, char *logical, int is_proc, char **ret_val, int argc,
+         char *argv[], int lenv[]);
+
 #define CMSfunctionDataArray(s1, s2, s3, s4, s5, s6, s7) (__CMSFND((s1),(s2),(s3),(s4),(s5),(s6),(s7)))
 
 /**************************************************************************************************/
@@ -283,8 +293,11 @@ int __CMSFND(char *physical, char *logical, int is_proc, char **ret_val, int arg
 /*         -3 routine not found (from svc202)                                                     */
 /*         Other negative rc from svc202 / called function (a positive RC is make negative)       */
 /**************************************************************************************************/
-int __CMSFNA(char *physical, char *logical, int is_proc, char **ret_val, int argc, char *argv[]);
-#define CMSfunctionArray(s1, s2, s3, s4, s5 , s6) (__CMSFNA((s1),(s2),(s3),(s4),(s5),(s6)))
+int
+__CMSFNA(char *physical, char *logical, int is_proc, char **ret_val, int argc,
+         char *argv[]);
+
+#define CMSfunctionArray(s1, s2, s3, s4, s5, s6) (__CMSFNA((s1),(s2),(s3),(s4),(s5),(s6)))
 
 /**************************************************************************************************/
 /* Call Type 5 (function) call                                                                    */
@@ -308,7 +321,10 @@ int __CMSFNA(char *physical, char *logical, int is_proc, char **ret_val, int arg
 /*         -3 routine not found (from svc202)                                                     */
 /*         Other negative rc from svc202 / called function (a positive RC is make negative)       */
 /**************************************************************************************************/
-int __CMSFNC(char *physical, char *logical, int is_proc, char **ret_val, int argc, ...);
+int
+__CMSFNC(char *physical, char *logical, int is_proc, char **ret_val, int argc,
+         ...);
+
 #define CMSfunction(s1, s2, s3, s4, s5, ...) (__CMSFNC((s1),(s2),(s3),(s4),(s5),__VA_ARGS__))
 
 /**************************************************************************************************/
@@ -343,7 +359,8 @@ int __CMSFNC(char *physical, char *logical, int is_proc, char **ret_val, int arg
 /* Returns:                                                                                       */
 /*    the length of the string placed in the buffer.                                              */
 /**************************************************************************************************/
-int __rdterm(char * line);
+int __rdterm(char *line);
+
 #define CMSconsoleRead(s1) (__rdterm((s1)))
 
 /**************************************************************************************************/
@@ -355,6 +372,7 @@ int __rdterm(char * line);
 /*    Return code from the WAITT function, always 0.                                              */
 /**************************************************************************************************/
 int __waitt(void);
+
 #define CMSconsoleWait() (__waitt())
 
 /**************************************************************************************************/
@@ -378,7 +396,9 @@ int __waitt(void);
 /**************************************************************************************************/
 #define CMS_EDIT 1
 #define CMS_NOEDIT 0
-int __wrterm(char * line, int edit);
+
+int __wrterm(char *line, int edit);
+
 #define CMSconsoleWrite(s1, i2) (__wrterm((s1),(i2)))
 
 /**************************************************************************************************/
@@ -392,6 +412,7 @@ int __wrterm(char * line, int edit);
 /*    (int)    as specified.                                                                      */
 /**************************************************************************************************/
 int __debug(int retcode);
+
 #define CMSdebug(i1) (__debug((i1)))
 
 /**************************************************************************************************/
@@ -404,7 +425,8 @@ int __debug(int retcode);
 /*     0     Success.                                                                             */
 /*     6     The file is not open.                                                                */
 /**************************************************************************************************/
-int __fsclos(CMSFILE* file);
+int __fsclos(CMSFILE *file);
+
 #define CMSfileClose(s1) (__fsclos((s1)))
 
 /**************************************************************************************************/
@@ -422,7 +444,8 @@ int __fsclos(CMSFILE* file);
 /*    28     The file was not found.                                                              */
 /*    36     Disk not accessed.                                                                   */
 /**************************************************************************************************/
-int __fseras(char * fileid);
+int __fseras(char *fileid);
+
 #define CMSfileErase(s1) (__fseras((s1)))
 
 /**************************************************************************************************/
@@ -461,8 +484,9 @@ int __fseras(char * fileid);
 /*    3. To overwrite an existing file with new records, call CMSfileErase to first erase the     */
 /*       file, then open the file and begin writing from record 1.                                */
 /**************************************************************************************************/
-int __fsopen(char * fileid, char * buffer, int bufferSize, char format,
-                int numRecords, int recordNum, CMSFILE * file);
+int __fsopen(char *fileid, char *buffer, int bufferSize, char format,
+             int numRecords, int recordNum, CMSFILE *file);
+
 #define CMSfileOpen(s1, s2, i3, c4, i5, i6, s7) (__fsopen((s1),(s2),(i3),(c4),(i5),(i6),(s7)))
 
 /**************************************************************************************************/
@@ -484,7 +508,8 @@ int __fsopen(char * fileid, char * buffer, int bufferSize, char format,
 /*    1. Pointing to an record number greater than the number of records in the file yields       */
 /*       unpredictable results.                                                                   */
 /**************************************************************************************************/
-int __fspoin(CMSFILE * file, int recordNum, int readWrite);
+int __fspoin(CMSFILE *file, int recordNum, int readWrite);
+
 #define CMSfilePoint(s1, i2, i3) (__fspoin((s1),(i2),(i3)))
 #define CMS_POINTREAD 0
 #define CMS_POINTWRITE 1
@@ -520,7 +545,8 @@ int __fspoin(CMSFILE * file, int recordNum, int readWrite);
 /*    1. The bytes read are placed in the buffer specified in the previous call to CMSfileOpen.   */
 /*       They are NOT terminated with a null character.                                           */
 /**************************************************************************************************/
-int __fsread(CMSFILE * file, int recordNum, int *bytesRead);
+int __fsread(CMSFILE *file, int recordNum, int *bytesRead);
+
 #define CMSfileRead(s1, i2, s3) (__fsread((s1),(i2),(s3)))
 
 /**************************************************************************************************/
@@ -546,7 +572,8 @@ int __fsread(CMSFILE * file, int recordNum, int *bytesRead);
 /*       Thus this function cannot be called from a C program executing in the transient area.    */
 /*    2. The RENAME command may issue error messages for certain errors.                          */
 /**************************************************************************************************/
-int __rename(char * oldFileid, char * newFileid);
+int __rename(char *oldFileid, char *newFileid);
+
 #define CMSfileRename(s1, s2) (__rename((s1),(s2)))
 
 /**************************************************************************************************/
@@ -569,7 +596,8 @@ int __rename(char * oldFileid, char * newFileid);
 /*    28     The file was not found.                                                              */
 /*    36     Disk not accessed.                                                                   */
 /**************************************************************************************************/
-int __fsstat(char * fileid, CMSFILEINFO **fileInfo);
+int __fsstat(char *fileid, CMSFILEINFO **fileInfo);
+
 #define CMSfileState(s1, s2) (__fsstat((s1),(s2)))
 
 /**************************************************************************************************/
@@ -619,7 +647,8 @@ int __fsstat(char * fileid, CMSFILEINFO **fileInfo);
 /*    2. To overwrite an existing file with new records, call CMSfileErase to first erase the     */
 /*       file, then open the file and begin writing from record 1.                                */
 /**************************************************************************************************/
-int __fswrit(CMSFILE * file, int recordNum, int recordLen);
+int __fswrit(CMSFILE *file, int recordNum, int recordLen);
+
 #define CMSfileWrite(s1, i2, i3) (__fswrit((s1),(i2),(i3)))
 
 /**************************************************************************************************/
@@ -636,7 +665,8 @@ int __fswrit(CMSFILE * file, int recordNum, int recordLen);
 /*    1.  If you allocate NUCLEUS memory, your program must be generated with the SYSTEM option.  */
 /*        Note that if such a program abnormally terminates, CMS does not release this memory.    */
 /**************************************************************************************************/
-void * __dmsfre(int bytes, int type);
+void *__dmsfre(int bytes, int type);
+
 #define CMSmemoryAlloc(i1, i2) (__dmsfre((i1),(i2)))
 #define CMS_NUCLEUS 0
 #define CMS_USER 1
@@ -659,7 +689,8 @@ void * __dmsfre(int bytes, int type);
 /*    1.  If you allocate NUCLEUS memory, your program must be generated with the SYSTEM option.  */
 /*        Note that if such a program abnormally terminates, CMS does not release this memory.    */
 /**************************************************************************************************/
-int __dmsfrt(void * memory, int doublewords);
+int __dmsfrt(void *memory, int doublewords);
+
 #define CMSmemoryFree(s1, s2) (__dmsfrt((s1),(s2))
 
 /**************************************************************************************************/
@@ -685,7 +716,8 @@ int __dmsfrt(void * memory, int doublewords);
 /*    1.  Use the CP CLOSE command to close the virtual printer.  You can issue this via the      */
 /*        CMScommand function.                                                                    */
 /**************************************************************************************************/
-int __printl(char * line);
+int __printl(char *line);
+
 #define CMSprintLine(s1) (__printl((s1)))
 
 /**************************************************************************************************/
@@ -701,7 +733,8 @@ int __printl(char * line);
 /* Returns:                                                                                       */
 /*    0                                                                                           */
 /**************************************************************************************************/
-int __attn(char * line, int order);
+int __attn(char *line, int order);
+
 #define CMSstackLine(s1, i2) (__attn((s1),(i2)))
 #define CMS_STACKLIFO 0
 #define CMS_STACKFIFO 1
@@ -715,6 +748,7 @@ int __attn(char * line, int order);
 /*    the number of lines currently on the console stack.                                         */
 /**************************************************************************************************/
 int __stackn(void);
+
 #define CMSstackQuery() (__stackn())
 
 /**************************************************************************************************/
@@ -723,6 +757,7 @@ int __stackn(void);
 /* char **CMSargv(void)                                                                           */
 /**************************************************************************************************/
 char **__ARGV(void);
+
 #define CMSargv() (__ARGV())
 
 /**************************************************************************************************/
@@ -731,6 +766,7 @@ char **__ARGV(void);
 /* int CMSargc(void)                                                                              */
 /**************************************************************************************************/
 int __ARGC(void);
+
 #define CMSargc() (__ARGC())
 
 /**************************************************************************************************/
@@ -739,6 +775,7 @@ int __ARGC(void);
 /* PLIST *CMSplist(void)                                                                          */
 /**************************************************************************************************/
 PLIST *__PLIST(void);
+
 #define CMSplist() (__PLIST())
 
 /**************************************************************************************************/
@@ -747,6 +784,7 @@ PLIST *__PLIST(void);
 /* EPLIST *CMSeplist(void)                                                                        */
 /**************************************************************************************************/
 EPLIST *__EPLIST(void);
+
 #define CMSeplist() (__EPLIST())
 
 /**************************************************************************************************/
@@ -755,6 +793,7 @@ EPLIST *__EPLIST(void);
 /* int CMScalltype(void)                                                                          */
 /**************************************************************************************************/
 int __CALLTP(void);
+
 #define CMScalltype() (__CALLTP())
 
 /**************************************************************************************************/
@@ -763,6 +802,7 @@ int __CALLTP(void);
 /* int CMSisproc(void)                                                                            */
 /**************************************************************************************************/
 int __ISPROC(void);
+
 #define CMSisproc() (__ISPROC())
 
 /**************************************************************************************************/
@@ -771,7 +811,8 @@ int __ISPROC(void);
 /* int CMSreturnvalue(char*)                                                                      */
 /* returns 0 on success or 1 if the calltype is not 5, or the return value has already been set   */
 /**************************************************************************************************/
-int __RETVAL(char* value);
+int __RETVAL(char *value);
+
 #define CMSreturnvalue(a1) (__RETVAL((a1)))
 
 /**************************************************************************************************/
@@ -780,8 +821,9 @@ int __RETVAL(char* value);
 /* int CMSreturndata(void* data, int len)                                                         */
 /* returns 0 on success or 1 if the calltype is not 5, or the return value has already been set   */
 /**************************************************************************************************/
-int __RETDATA(void* data, int len);
-#define CMSreturndata(a1,a2) (__RETDATA((a1),(a2)))
+int __RETDATA(void *data, int len);
+
+#define CMSreturndata(a1, a2) (__RETDATA((a1),(a2)))
 
 /**************************************************************************************************/
 /* Sets the return value (int). This is only valid if the program is called via calltype 5        */
@@ -791,6 +833,7 @@ int __RETDATA(void* data, int len);
 /* been set                                                                                       */
 /**************************************************************************************************/
 int __RETINT(int value);
+
 #define CMSreturnvalint(a1) (__RETINT((a1)))
 
 #endif

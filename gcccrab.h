@@ -28,29 +28,29 @@ typedef struct GCCCRAB GCCCRAB;
 /* M U S T   B E   S Y N C E D   W I T H   G C C C R A B   M A C R O                              */
 /**************************************************************************************************/
 struct GCCCRAB {
-   struct CMSCRAB *rootcmscrab;
-   struct CMSCRAB *auxstack;
-   struct CMSCRAB *dynamicstack;
-   EXITFUNC *exitfunc;
-   void* dlmspace; /* For DLMALLOC */
-   size_t startmemoryusage;
-   struct FILE *gstdin;
-   struct FILE *gstdout;
-   struct FILE *gstderr;
-   int gerrno;
-   SIGHANDLER **handlers;
-   USEREXIT **userexits;
-   struct FILE* filehandles;
-   char *strtok_old;
-   void *process_global;
-   char **argv;
-   char *argbuffer;
-   char (*plist)[8];
-   struct EPLIST *eplist;
-   int calltype;
-   struct EVALBLOK *evalblok;
-   int isproc;
-   int argc;
+    struct CMSCRAB *rootcmscrab;
+    struct CMSCRAB *auxstack;
+    struct CMSCRAB *dynamicstack;
+    EXITFUNC *exitfunc;
+    void *dlmspace; /* For DLMALLOC */
+    size_t startmemoryusage;
+    struct FILE *gstdin;
+    struct FILE *gstdout;
+    struct FILE *gstderr;
+    int gerrno;
+    SIGHANDLER **handlers;
+    USEREXIT **userexits;
+    struct FILE *filehandles;
+    char *strtok_old;
+    void *process_global;
+    char **argv;
+    char *argbuffer;
+    char (*plist)[8];
+    struct EPLIST *eplist;
+    int calltype;
+    struct EVALBLOK *evalblok;
+    int isproc;
+    int argc;
 };
 
 /* To get the addresses of the crab */

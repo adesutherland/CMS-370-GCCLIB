@@ -23,36 +23,38 @@
 /*         -1 if the driver does not support the filespec                                         */
 /*         1 success                                                                              */
 /**************************************************************************************************/
-static int open(char filespecwords[][10], FILE* theFile)
-{
-  /* Am I the right driver? */
-  if (filespecwords[1][0]) return -1; /* More than one word - nothing to do with me! */
-  if ( strcmp(filespecwords[0],"CONSOLE") &&
-       strcmp(filespecwords[0],"+CONSOLE+")   /* +CONSOLE+ is for stdin/out/err */
-     ) return -1; /* Nothing to do with me */
+static int open(char filespecwords[][10], FILE *theFile) {
+    /* Am I the right driver? */
+    if (filespecwords[1][0]) return -1; /* More than one word - nothing to do with me! */
+    if (strcmp(filespecwords[0], "CONSOLE") &&
+        strcmp(filespecwords[0],
+               "+CONSOLE+")   /* +CONSOLE+ is for stdin/out/err */
+            )
+        return -1; /* Nothing to do with me */
 
-  if (theFile->access & ACCESS_READWRITE) {
-    errno = EINVAL;
-    return 0;
-  }
-
-  if (strcmp(filespecwords[0],"+CONSOLE+")) { /* We don't check for duplicates for +CONSOLE+ */
-    if (_isopen(filespecwords[0])) {
-      errno = EEXIST;
-      return 0;
+    if (theFile->access & ACCESS_READWRITE) {
+        errno = EINVAL;
+        return 0;
     }
-  }
 
-  theFile->filemaxreclen = 130;
-  theFile->maxreclen = 130;
-  theFile->buffer = malloc(theFile->filemaxreclen + 2); /* \n and NULL */
-  strcpy(theFile->name, filespecwords[0]);
-  strcpy(theFile->fileid, filespecwords[0]);
-  theFile->reclen = -1; /* Empty Buffer */
-  theFile->recpos = 0;
-  theFile->recnum = -1;
-  theFile->records = -1;
-  return 1;
+    if (strcmp(filespecwords[0],
+               "+CONSOLE+")) { /* We don't check for duplicates for +CONSOLE+ */
+        if (_isopen(filespecwords[0])) {
+            errno = EEXIST;
+            return 0;
+        }
+    }
+
+    theFile->filemaxreclen = 130;
+    theFile->maxreclen = 130;
+    theFile->buffer = malloc(theFile->filemaxreclen + 2); /* \n and NULL */
+    strcpy(theFile->name, filespecwords[0]);
+    strcpy(theFile->fileid, filespecwords[0]);
+    theFile->reclen = -1; /* Empty Buffer */
+    theFile->recpos = 0;
+    theFile->recnum = -1;
+    theFile->records = -1;
+    return 1;
 }
 
 
@@ -60,13 +62,12 @@ static int open(char filespecwords[][10], FILE* theFile)
 /* close driver                                                                                   */
 /* returns 0 on success                                                                           */
 /**************************************************************************************************/
-static int close(FILE * file)
-{
-  if (file->buffer) {
-    free(file->buffer);
-    file->buffer = 0;
-  }
-  return 0;
+static int close(FILE *file) {
+    if (file->buffer) {
+        free(file->buffer);
+        file->buffer = 0;
+    }
+    return 0;
 }
 
 
@@ -74,25 +75,24 @@ static int close(FILE * file)
 /* write driver                                                                                   */
 /* returns 0 on success                                                                           */
 /**************************************************************************************************/
-static int write(FILE * file)
-{
-  file->buffer[file->reclen] = 0;
-  if (file->access & ACCESS_TEXT) CMSconsoleWrite(file->buffer, CMS_EDIT);
-  else CMSconsoleWrite(file->buffer, CMS_NOEDIT);
-  file->recnum = -1;
-  /* Always returns zero */
-  return 0;
+static int write(FILE *file) {
+    file->buffer[file->reclen] = 0;
+    if (file->access & ACCESS_TEXT) CMSconsoleWrite(file->buffer, CMS_EDIT);
+    else
+        CMSconsoleWrite(file->buffer, CMS_NOEDIT);
+    file->recnum = -1;
+    /* Always returns zero */
+    return 0;
 }
 
 
 /**************************************************************************************************/
 /* read (record) driver                                                                             */
 /**************************************************************************************************/
-static int read(FILE * file)
-{
-  file->reclen = CMSconsoleRead(file->buffer);
-  file->recnum = -1;
-  return 0;
+static int read(FILE *file) {
+    file->reclen = CMSconsoleRead(file->buffer);
+    file->recnum = -1;
+    return 0;
 }
 
 
@@ -100,10 +100,9 @@ static int read(FILE * file)
 /* getpos driver                                                                                  */
 /* returns position on success, -1 on error                                                       */
 /**************************************************************************************************/
-static int getpos(FILE * file)
-{
-  errno = EBADF;
-  return -1;
+static int getpos(FILE *file) {
+    errno = EBADF;
+    return -1;
 }
 
 
@@ -111,10 +110,9 @@ static int getpos(FILE * file)
 /* getend driver                                                                                  */
 /* returns position on success, -1 on error                                                       */
 /**************************************************************************************************/
-static int getend(FILE * file)
-{
-  errno = EBADF;
-  return -1;
+static int getend(FILE *file) {
+    errno = EBADF;
+    return -1;
 }
 
 
@@ -122,10 +120,9 @@ static int getend(FILE * file)
 /* setpos driver                                                                                  */
 /* returns position on success, -1 on error                                                       */
 /**************************************************************************************************/
-static int setpos(FILE * file, int pos)
-{
-  errno = EBADF;
-  return -1;
+static int setpos(FILE *file, int pos) {
+    errno = EBADF;
+    return -1;
 }
 
 

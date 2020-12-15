@@ -58,28 +58,43 @@
 /*        exists.                                                                                 */
 /**************************************************************************************************/
 static void fopen_t() {
-  FILE* f;
-  SUB_STRT("fopen()");
-  ASSERTNULL("fopen(PUNCH,r)", f=fopen("PUNCH","r"), f, if (f) fclose(f));
-  ASSERTNOTNULL("fopen(PUNCH,w)", f=fopen("PUNCH","w"), f, if (f) fclose(f));
-  ASSERTNOTNULL("fopen(PUNCH,a)", f=fopen("PUNCH","a"), f, if (f) fclose(f));
-  ASSERTNULL("fopen(PUNCH,rb)", f=fopen("PUNCH","rb"), f, if (f) fclose(f));
-  ASSERTNOTNULL("fopen(PUNCH,wb)", f=fopen("PUNCH","wb"), f, if (f) fclose(f));
-  ASSERTNOTNULL("fopen(PUNCH,ab)", f=fopen("PUNCH","ab"), f, if (f) fclose(f));
-  ASSERTNULL("fopen(PUNCH,r+)", f=fopen("PUNCH","r+"), f, if (f) fclose(f));
-  ASSERTNULL("fopen(PUNCH,w+)", f=fopen("PUNCH","w+"), f, if (f) fclose(f));
-  ASSERTNULL("fopen(PUNCH,a+)", f=fopen("PUNCH","a+"), f, if (f) fclose(f));
-  ASSERTNULL("fopen(PUNCH,rb+)", f=fopen("PUNCH","rb+"), f, if (f) fclose(f));
-  ASSERTNULL("fopen(PUNCH,wb+)", f=fopen("PUNCH","wb+"), f, if (f) fclose(f));
-  ASSERTNULL("fopen(PUNCH,ab+)", f=fopen("PUNCH","ab+"), f, if (f) fclose(f));
-  ASSERTNULL("fopen(PUNCH,r+b)", f=fopen("PUNCH","r+b"), f, if (f) fclose(f));
-  ASSERTNULL("fopen(PUNCH,w+b)", f=fopen("PUNCH","w+b"), f, if (f) fclose(f));
-  ASSERTNULL("fopen(PUNCH,a+b)", f=fopen("PUNCH","a+b"), f, if (f) fclose(f));
-  ASSERTNULL("fopen(PUNCH,x)", f=fopen("PUNCH","x"), f, if (f) fclose(f));
-  ASSERTNULL("fopen(PUNCH,+)", f=fopen("PUNCH","+"), f, if (f) fclose(f));
-  ASSERTNULL("fopen(PUNCH,b)", f=fopen("PUNCH","b"), f, if (f) fclose(f));
-  ASSERTNULL("fopen(PUNCH,)", f=fopen("PUNCH",""), f, if (f) fclose(f));
-  ASSERTNULL("fopen(PUNCH,r+bx)", f=fopen("PUNCH","r+bx"), f, if (f) fclose(f));
+    FILE *f;
+    SUB_STRT("fopen()");
+    ASSERTNULL("fopen(PUNCH,r)", f = fopen("PUNCH", "r"), f, if (f) fclose(f));
+    ASSERTNOTNULL("fopen(PUNCH,w)", f = fopen("PUNCH", "w"), f,
+                  if (f) fclose(f));
+    ASSERTNOTNULL("fopen(PUNCH,a)", f = fopen("PUNCH", "a"), f,
+                  if (f) fclose(f));
+    ASSERTNULL("fopen(PUNCH,rb)", f = fopen("PUNCH", "rb"), f,
+               if (f) fclose(f));
+    ASSERTNOTNULL("fopen(PUNCH,wb)", f = fopen("PUNCH", "wb"), f,
+                  if (f) fclose(f));
+    ASSERTNOTNULL("fopen(PUNCH,ab)", f = fopen("PUNCH", "ab"), f,
+                  if (f) fclose(f));
+    ASSERTNULL("fopen(PUNCH,r+)", f = fopen("PUNCH", "r+"), f,
+               if (f) fclose(f));
+    ASSERTNULL("fopen(PUNCH,w+)", f = fopen("PUNCH", "w+"), f,
+               if (f) fclose(f));
+    ASSERTNULL("fopen(PUNCH,a+)", f = fopen("PUNCH", "a+"), f,
+               if (f) fclose(f));
+    ASSERTNULL("fopen(PUNCH,rb+)", f = fopen("PUNCH", "rb+"), f,
+               if (f) fclose(f));
+    ASSERTNULL("fopen(PUNCH,wb+)", f = fopen("PUNCH", "wb+"), f,
+               if (f) fclose(f));
+    ASSERTNULL("fopen(PUNCH,ab+)", f = fopen("PUNCH", "ab+"), f,
+               if (f) fclose(f));
+    ASSERTNULL("fopen(PUNCH,r+b)", f = fopen("PUNCH", "r+b"), f,
+               if (f) fclose(f));
+    ASSERTNULL("fopen(PUNCH,w+b)", f = fopen("PUNCH", "w+b"), f,
+               if (f) fclose(f));
+    ASSERTNULL("fopen(PUNCH,a+b)", f = fopen("PUNCH", "a+b"), f,
+               if (f) fclose(f));
+    ASSERTNULL("fopen(PUNCH,x)", f = fopen("PUNCH", "x"), f, if (f) fclose(f));
+    ASSERTNULL("fopen(PUNCH,+)", f = fopen("PUNCH", "+"), f, if (f) fclose(f));
+    ASSERTNULL("fopen(PUNCH,b)", f = fopen("PUNCH", "b"), f, if (f) fclose(f));
+    ASSERTNULL("fopen(PUNCH,)", f = fopen("PUNCH", ""), f, if (f) fclose(f));
+    ASSERTNULL("fopen(PUNCH,r+bx)", f = fopen("PUNCH", "r+bx"), f,
+               if (f) fclose(f));
 }
 
 /**************************************************************************************************/
@@ -88,12 +103,12 @@ static void fopen_t() {
 /*    0 if all is well, EOF if there is an error.                                                 */
 /**************************************************************************************************/
 static void fclose_t() {
-  FILE* f;
-  SUB_STRT("fclose()");
-  ASSERTNOTNULL("fopen(PUNCH,w)", f=fopen("PUNCH","w"), f, );
-  ASSERTNOTEOF("fclose(f)", ,fclose(f), );
-  ASSERTEOF("fputs(SHOULD NOT SEE,f)", ,fputs("SHOULD NOT SEE\n",f), );
-  ASSERTEOF("fclose(f)", ,fclose(f), );
+    FILE *f;
+    SUB_STRT("fclose()");
+    ASSERTNOTNULL("fopen(PUNCH,w)", f = fopen("PUNCH", "w"), f,);
+    ASSERTNOTEOF("fclose(f)", , fclose(f),);
+    ASSERTEOF("fputs(SHOULD NOT SEE,f)", , fputs("SHOULD NOT SEE\n", f),);
+    ASSERTEOF("fclose(f)", , fclose(f),);
 }
 
 /**************************************************************************************************/
@@ -108,22 +123,22 @@ static void fclose_t() {
 /*    1.  If the stream is not open for output, fflush is a NOP.                                  */
 /**************************************************************************************************/
 static void fflush_t() {
-  FILE* test;
-  FILE* reader;
-  char buf[200];
+    FILE *test;
+    FILE *reader;
+    char buf[200];
 
-  SUB_STRT("fflush()");
-  ASSERTNOTNULLP("fopen(PUNCH,w)", test=fopen("PUNCH","w"), test, );
-  ASSERTNOTEOFP("fputc()", ,FPUTC_WR(TEST_SHORT_STRING,test), );
-  system("cp spool punch to *");
-  ASSERTZEROP("fflush()", , fflush(test), );
-  ASSERTZEROP("fclose()", , fclose(test), );
-  ASSERTNOTNULLP("fopen(READER,r)", reader = fopen("READER","r"), reader, );
-  ASSERTNOTNULLP("fgets(reader)", , fgets(buf, 200, reader), );
-  ASSERTZERO("strcmp()", , strcmp(buf, TEST_SHORT_STRING_NL), );
-  ASSERTNULL("fgets(reader)", , fgets(buf, 200, reader), );
-  ASSERTNOTZERO("feof(reader)", ,feof(reader), );
-  ASSERTZEROP("fclose(reader)", , fclose(reader), );
+    SUB_STRT("fflush()");
+    ASSERTNOTNULLP("fopen(PUNCH,w)", test = fopen("PUNCH", "w"), test,);
+    ASSERTNOTEOFP("fputc()", , FPUTC_WR(TEST_SHORT_STRING, test),);
+    system("cp spool punch to *");
+    ASSERTZEROP("fflush()", , fflush(test),);
+    ASSERTZEROP("fclose()", , fclose(test),);
+    ASSERTNOTNULLP("fopen(READER,r)", reader = fopen("READER", "r"), reader,);
+    ASSERTNOTNULLP("fgets(reader)", , fgets(buf, 200, reader),);
+    ASSERTZERO("strcmp()", , strcmp(buf, TEST_SHORT_STRING_NL),);
+    ASSERTNULL("fgets(reader)", , fgets(buf, 200, reader),);
+    ASSERTNOTZERO("feof(reader)", , feof(reader),);
+    ASSERTZEROP("fclose(reader)", , fclose(reader),);
 }
 
 /**************************************************************************************************/
@@ -136,13 +151,13 @@ static void fflush_t() {
 /*    the error status, or 0 if there is no error.                                                */
 /**************************************************************************************************/
 static void ferror_t() {
-  FILE* test;
+    FILE *test;
 
-  SUB_STRT("ferror()");
-  ASSERTNOTNULLP("fopen(PUNCH,w)", test=fopen("PUNCH","w"), test, );
-  ASSERTEOF("fgetc()", , fgetc(test), );
-  ASSERTNOTZERO("ferror()", , ferror(test), );
-  ASSERTZEROP("fclose()", , fclose(test), );
+    SUB_STRT("ferror()");
+    ASSERTNOTNULLP("fopen(PUNCH,w)", test = fopen("PUNCH", "w"), test,);
+    ASSERTEOF("fgetc()", , fgetc(test),);
+    ASSERTNOTZERO("ferror()", , ferror(test),);
+    ASSERTZEROP("fclose()", , fclose(test),);
 }
 
 /**************************************************************************************************/
@@ -152,14 +167,14 @@ static void ferror_t() {
 /*    stream   a pointer to the open input stream.                                                */
 /**************************************************************************************************/
 static void clearerr_t() {
-  FILE* test;
+    FILE *test;
 
-  SUB_STRT("clearerr()");
-  ASSERTNOTNULLP("fopen(PUNCH,w)", test=fopen("PUNCH","w"), test, );
-  ASSERTEOF("fgetc()", , fgetc(test), );
-  clearerr(test);
-  ASSERTZERO("ferror()", , ferror(test), );
-  ASSERTZEROP("fclose()", , fclose(test), );
+    SUB_STRT("clearerr()");
+    ASSERTNOTNULLP("fopen(PUNCH,w)", test = fopen("PUNCH", "w"), test,);
+    ASSERTEOF("fgetc()", , fgetc(test),);
+    clearerr(test);
+    ASSERTZERO("ferror()", , ferror(test),);
+    ASSERTZEROP("fclose()", , fclose(test),);
 }
 
 /**************************************************************************************************/
@@ -176,21 +191,23 @@ static void clearerr_t() {
 /*        files.                                                                                  */
 /**************************************************************************************************/
 static void fgetc_t() {
-  FILE* test;
+    FILE *test;
 
-  SUB_STRT("fgetc() - text");
-  ASSERTNULL("fopen(PUNCH,r)", test=fopen("PUNCH","r"), test, if (test) fclose(test));
-  ASSERTNOTNULLP("fopen(PUNCH,w)", test=fopen("PUNCH","w"), test, );
-  ASSERTEOF("fgetc()", , fgetc(test), );
-  ASSERTNOTZERO("ferror()", , ferror(test), );
-  ASSERTZEROP("fclose()", , fclose(test), );
+    SUB_STRT("fgetc() - text");
+    ASSERTNULL("fopen(PUNCH,r)", test = fopen("PUNCH", "r"), test,
+               if (test) fclose(test));
+    ASSERTNOTNULLP("fopen(PUNCH,w)", test = fopen("PUNCH", "w"), test,);
+    ASSERTEOF("fgetc()", , fgetc(test),);
+    ASSERTNOTZERO("ferror()", , ferror(test),);
+    ASSERTZEROP("fclose()", , fclose(test),);
 
-  SUB_STRT("fgetc() - binary");
-  ASSERTNULL("fopen(PUNCH,rb)", test=fopen("PUNCH","rb"), test, if (test) fclose(test));
-  ASSERTNOTNULLP("fopen(PUNCH,wb)", test=fopen("PUNCH","wb"), test, );
-  ASSERTEOF("fgetc()", , fgetc(test), );
-  ASSERTNOTZERO("ferror()", , ferror(test), );
-  ASSERTZEROP("fclose()", , fclose(test), );
+    SUB_STRT("fgetc() - binary");
+    ASSERTNULL("fopen(PUNCH,rb)", test = fopen("PUNCH", "rb"), test,
+               if (test) fclose(test));
+    ASSERTNOTNULLP("fopen(PUNCH,wb)", test = fopen("PUNCH", "wb"), test,);
+    ASSERTEOF("fgetc()", , fgetc(test),);
+    ASSERTNOTZERO("ferror()", , ferror(test),);
+    ASSERTZEROP("fclose()", , fclose(test),);
 }
 
 /**************************************************************************************************/
@@ -208,22 +225,24 @@ static void fgetc_t() {
 /*    1.  fgets is only appropriate for a text file.                                              */
 /**************************************************************************************************/
 static void fgets_t() {
-  FILE* test;
-  char buf[200];
+    FILE *test;
+    char buf[200];
 
-  SUB_STRT("fgets() - text");
-  ASSERTNULL("fopen(PUNCH,r)", test=fopen("PUNCH","r"), test, if (test) fclose(test));
-  ASSERTNOTNULLP("fopen(PUNCH,w)", test=fopen("PUNCH","w"), test, );
-  ASSERTNULL("fgets()", , fgets(buf,200,test), );
-  ASSERTNOTZERO("ferror()", , ferror(test), );
-  ASSERTZEROP("fclose()", , fclose(test), );
+    SUB_STRT("fgets() - text");
+    ASSERTNULL("fopen(PUNCH,r)", test = fopen("PUNCH", "r"), test,
+               if (test) fclose(test));
+    ASSERTNOTNULLP("fopen(PUNCH,w)", test = fopen("PUNCH", "w"), test,);
+    ASSERTNULL("fgets()", , fgets(buf, 200, test),);
+    ASSERTNOTZERO("ferror()", , ferror(test),);
+    ASSERTZEROP("fclose()", , fclose(test),);
 
-  SUB_STRT("fgets() - binary");
-  ASSERTNULL("fopen(PUNCH,rb)", test=fopen("PUNCH","rb"), test, if (test) fclose(test));
-  ASSERTNOTNULLP("fopen(PUNCH,wb)", test=fopen("PUNCH","wb"), test, );
-  ASSERTNULL("fgets()", , fgets(buf,200,test), );
-  ASSERTNOTZERO("ferror()", , ferror(test), );
-  ASSERTZEROP("fclose()", , fclose(test), );
+    SUB_STRT("fgets() - binary");
+    ASSERTNULL("fopen(PUNCH,rb)", test = fopen("PUNCH", "rb"), test,
+               if (test) fclose(test));
+    ASSERTNOTNULLP("fopen(PUNCH,wb)", test = fopen("PUNCH", "wb"), test,);
+    ASSERTNULL("fgets()", , fgets(buf, 200, test),);
+    ASSERTNOTZERO("ferror()", , ferror(test),);
+    ASSERTZEROP("fclose()", , fclose(test),);
 }
 
 /**************************************************************************************************/
@@ -236,12 +255,12 @@ static void fgets_t() {
 /*    1 if EOF has been reached, 0 otherwise.                                                     */
 /**************************************************************************************************/
 static void feof_t() {
-  FILE* test;
+    FILE *test;
 
-  SUB_STRT("feof()");
-  ASSERTNOTNULLP("fopen(PUNCH,w)", test=fopen("PUNCH","w"), test, );
-  ASSERTZERO("feof()", , feof(test), );
-  ASSERTZEROP("fclose()", , fclose(test), );
+    SUB_STRT("feof()");
+    ASSERTNOTNULLP("fopen(PUNCH,w)", test = fopen("PUNCH", "w"), test,);
+    ASSERTZERO("feof()", , feof(test),);
+    ASSERTZEROP("fclose()", , fclose(test),);
 }
 
 /**************************************************************************************************/
@@ -260,12 +279,12 @@ static void feof_t() {
 /*        the previous character is read, it is not placed in the buffer and EOF is returned.     */
 /**************************************************************************************************/
 static void ungetc_t() {
-  FILE* test;
+    FILE *test;
 
-  SUB_STRT("ungetc() - opened for writing");
-  ASSERTNOTNULLP("fopen(PUNCH,w)", test=fopen("PUNCH","w"), test, );
-  ASSERTEOF("ungetc(y)", , ungetc('y',test), );
-  ASSERTZEROP("fclose()", , fclose(test), );
+    SUB_STRT("ungetc() - opened for writing");
+    ASSERTNOTNULLP("fopen(PUNCH,w)", test = fopen("PUNCH", "w"), test,);
+    ASSERTEOF("ungetc(y)", , ungetc('y', test),);
+    ASSERTZEROP("fclose()", , fclose(test),);
 }
 
 /**************************************************************************************************/
@@ -279,37 +298,37 @@ static void ungetc_t() {
 /*    the character, or EOF if there is an error.                                                 */
 /**************************************************************************************************/
 static void fputc_t() {
-  FILE* test;
-  char buf[201];
-  char buf2[201];
-  char buf3[201];
-  int i;
+    FILE *test;
+    char buf[201];
+    char buf2[201];
+    char buf3[201];
+    int i;
 
-  SUB_STRT("fputc() - text");
-  system("cp spool punch to *");
-  ASSERTNOTNULLP("fopen(PUNCH,w)", test=fopen("PUNCH","w"), test, );
-  FPUTC_T(test);
-  ASSERTZEROP("fclose()", , fclose(test), );
-  ASSERTNOTNULLP("fopen(READER,r)", test=fopen("READER","r"), test, );
-  FGETS_T(test,80);
-  ASSERTZEROP("fclose()", , fclose(test), );
-  SUB_STRT("fputc() - binary");
-  system("cp spool punch to *");
-  ASSERTNOTNULLP("fopen(PUNCH,wb)", test=fopen("PUNCH","wb"), test, );
-  buf2[0]=0;
-  for (i=0; i<20; i++) {
-    FPUTC_WR("123456789+",test);
-    strcat(buf2,"123456789+");
-  }
-  ASSERTZEROP("fclose()", , fclose(test), );
-  ASSERTNOTNULLP("fopen(READER,rb)", test=fopen("READER","rb"), test, );
-  ASSERTNOTNULL("fgets()", , fgets(buf, 81, test), );
-  ASSERTNOTNULL("fgets()", , fgets(buf3, 81, test), );
-  strcat(buf,buf3);
-  ASSERTNOTNULL("fgets()", , fgets(buf3, strlen(buf2)-80-80+1, test), );
-  strcat(buf,buf3);
-  ASSERTZERO("strcmp()", , strcmp(buf,buf2), );
-  ASSERTZEROP("fclose()", , fclose(test), );
+    SUB_STRT("fputc() - text");
+    system("cp spool punch to *");
+    ASSERTNOTNULLP("fopen(PUNCH,w)", test = fopen("PUNCH", "w"), test,);
+    FPUTC_T(test);
+    ASSERTZEROP("fclose()", , fclose(test),);
+    ASSERTNOTNULLP("fopen(READER,r)", test = fopen("READER", "r"), test,);
+    FGETS_T(test, 80);
+    ASSERTZEROP("fclose()", , fclose(test),);
+    SUB_STRT("fputc() - binary");
+    system("cp spool punch to *");
+    ASSERTNOTNULLP("fopen(PUNCH,wb)", test = fopen("PUNCH", "wb"), test,);
+    buf2[0] = 0;
+    for (i = 0; i < 20; i++) {
+        FPUTC_WR("123456789+", test);
+        strcat(buf2, "123456789+");
+    }
+    ASSERTZEROP("fclose()", , fclose(test),);
+    ASSERTNOTNULLP("fopen(READER,rb)", test = fopen("READER", "rb"), test,);
+    ASSERTNOTNULL("fgets()", , fgets(buf, 81, test),);
+    ASSERTNOTNULL("fgets()", , fgets(buf3, 81, test),);
+    strcat(buf, buf3);
+    ASSERTNOTNULL("fgets()", , fgets(buf3, strlen(buf2) - 80 - 80 + 1, test),);
+    strcat(buf, buf3);
+    ASSERTZERO("strcmp()", , strcmp(buf, buf2),);
+    ASSERTZEROP("fclose()", , fclose(test),);
 }
 
 /**************************************************************************************************/
@@ -323,37 +342,37 @@ static void fputc_t() {
 /*    non-negative on success, EOF on failure.                                                    */
 /**************************************************************************************************/
 static void fputs_t() {
-  FILE* test;
-  char buf[201];
-  char buf2[201];
-  char buf3[201];
-  int i;
+    FILE *test;
+    char buf[201];
+    char buf2[201];
+    char buf3[201];
+    int i;
 
-  SUB_STRT("fputs() - text");
-  system("cp spool punch to *");
-  ASSERTNOTNULLP("fopen(PUNCH,w)", test=fopen("PUNCH","w"), test, );
-  FPUTS_T(test);
-  ASSERTZEROP("fclose()", , fclose(test), );
-  ASSERTNOTNULLP("fopen(READER,r)", test=fopen("READER","r"), test, );
-  FGETS_T(test,80);
-  ASSERTZEROP("fclose()", , fclose(test), );
-  SUB_STRT("fputs() - binary");
-  system("cp spool punch to *");
-  ASSERTNOTNULLP("fopen(PUNCH,wb)", test=fopen("PUNCH","wb"), test, );
-  buf2[0]=0;
-  for (i=0; i<20; i++) {
-    fputs("123456789+",test);
-    strcat(buf2,"123456789+");
-  }
-  fclose(test);
-  ASSERTNOTNULLP("fopen(READER,rb)", test=fopen("READER","rb"), test, );
-  ASSERTNOTNULL("fgets()", , fgets(buf, 81, test), );
-  ASSERTNOTNULL("fgets()", , fgets(buf3, 81, test), );
-  strcat(buf,buf3);
-  ASSERTNOTNULL("fgets()", , fgets(buf3, strlen(buf2)-80-80+1, test), );
-  strcat(buf,buf3);
-  ASSERTZERO("strcmp()", , strcmp(buf,buf2), );
-  ASSERTZEROP("fclose()", , fclose(test), );
+    SUB_STRT("fputs() - text");
+    system("cp spool punch to *");
+    ASSERTNOTNULLP("fopen(PUNCH,w)", test = fopen("PUNCH", "w"), test,);
+    FPUTS_T(test);
+    ASSERTZEROP("fclose()", , fclose(test),);
+    ASSERTNOTNULLP("fopen(READER,r)", test = fopen("READER", "r"), test,);
+    FGETS_T(test, 80);
+    ASSERTZEROP("fclose()", , fclose(test),);
+    SUB_STRT("fputs() - binary");
+    system("cp spool punch to *");
+    ASSERTNOTNULLP("fopen(PUNCH,wb)", test = fopen("PUNCH", "wb"), test,);
+    buf2[0] = 0;
+    for (i = 0; i < 20; i++) {
+        fputs("123456789+", test);
+        strcat(buf2, "123456789+");
+    }
+    fclose(test);
+    ASSERTNOTNULLP("fopen(READER,rb)", test = fopen("READER", "rb"), test,);
+    ASSERTNOTNULL("fgets()", , fgets(buf, 81, test),);
+    ASSERTNOTNULL("fgets()", , fgets(buf3, 81, test),);
+    strcat(buf, buf3);
+    ASSERTNOTNULL("fgets()", , fgets(buf3, strlen(buf2) - 80 - 80 + 1, test),);
+    strcat(buf, buf3);
+    ASSERTZERO("strcmp()", , strcmp(buf, buf2),);
+    ASSERTZEROP("fclose()", , fclose(test),);
 }
 
 /**************************************************************************************************/
@@ -392,42 +411,44 @@ static void fputs_t() {
 /*        record.  Thus the file is treated as a stream of bytes.                                 */
 /**************************************************************************************************/
 static void fwriteread_t() {
-  FILE* test;
-  const char *item = "1234567890abcdefghijklmnopqrstuvwxyz";
-  const char *item2 = "123456789\nfghijklmnopqrstuvwxyz";
-  const int count = 20;
-  char* buffer;
-  char* buffer2;
-  int i;
+    FILE *test;
+    const char *item = "1234567890abcdefghijklmnopqrstuvwxyz";
+    const char *item2 = "123456789\nfghijklmnopqrstuvwxyz";
+    const int count = 20;
+    char *buffer;
+    char *buffer2;
+    int i;
 
-  SUB_STRT("fwrite() and fread()");
-  buffer = malloc(count * strlen(item));
-  buffer2 = malloc(count * strlen(item));
-  buffer[0] = 0;
-  buffer2[0] = 0;
-  buffer2[count * strlen(item)] = 0;
-  for (i=0; i<count; i++) strcat(buffer,item);
-  system("cp spool punch to *");
-  ASSERTNOTNULLP("fopen(PUNCH,wb)", test=fopen("PUNCH","wb"), test, );
-  ASSERTNOTZERO("fwrite()", ,fwrite(buffer, strlen(item), count, test)==count, );
-  ASSERTZEROP("fclose()", , fclose(test), );
-  ASSERTNOTNULLP("fopen(READER,rb)", test=fopen("READER","rb"), test, );
-  ASSERTNOTZERO("fread()", ,fread(buffer2, strlen(item), count, test)==count, );
-  ASSERTZERO("strcmp()", , strcmp(buffer,buffer2), );
-  ASSERTZEROP("fclose()", , fclose(test), );
+    SUB_STRT("fwrite() and fread()");
+    buffer = malloc(count * strlen(item));
+    buffer2 = malloc(count * strlen(item));
+    buffer[0] = 0;
+    buffer2[0] = 0;
+    buffer2[count * strlen(item)] = 0;
+    for (i = 0; i < count; i++) strcat(buffer, item);
+    system("cp spool punch to *");
+    ASSERTNOTNULLP("fopen(PUNCH,wb)", test = fopen("PUNCH", "wb"), test,);
+    ASSERTNOTZERO("fwrite()", ,
+                  fwrite(buffer, strlen(item), count, test) == count,);
+    ASSERTZEROP("fclose()", , fclose(test),);
+    ASSERTNOTNULLP("fopen(READER,rb)", test = fopen("READER", "rb"), test,);
+    ASSERTNOTZERO("fread()", ,
+                  fread(buffer2, strlen(item), count, test) == count,);
+    ASSERTZERO("strcmp()", , strcmp(buffer, buffer2),);
+    ASSERTZEROP("fclose()", , fclose(test),);
 
-  buffer2[strlen(item2)] = 0;
-  system("cp spool punch to *");
-  ASSERTNOTNULLP("fopen(PUNCH,w)", test=fopen("PUNCH","w"), test, );
-  ASSERTNOTZERO("fwrite()", ,fwrite(item2, strlen(item2), 1, test)==1, );
-  ASSERTZEROP("fclose()", , fclose(test), );
-  ASSERTNOTNULLP("fopen(READER,r)", test=fopen("READER","r"), test, );
-  ASSERTNOTZERO("fread()", ,fread(buffer2, strlen(item2), 1, test)==1, );
-  ASSERTZERO("strcmp()", , strcmp(item2,buffer2), );
-  ASSERTZEROP("fclose()", , fclose(test), );
+    buffer2[strlen(item2)] = 0;
+    system("cp spool punch to *");
+    ASSERTNOTNULLP("fopen(PUNCH,w)", test = fopen("PUNCH", "w"), test,);
+    ASSERTNOTZERO("fwrite()", , fwrite(item2, strlen(item2), 1, test) == 1,);
+    ASSERTZEROP("fclose()", , fclose(test),);
+    ASSERTNOTNULLP("fopen(READER,r)", test = fopen("READER", "r"), test,);
+    ASSERTNOTZERO("fread()", , fread(buffer2, strlen(item2), 1, test) == 1,);
+    ASSERTZERO("strcmp()", , strcmp(item2, buffer2),);
+    ASSERTZEROP("fclose()", , fclose(test),);
 
-  free(buffer);
-  free(buffer2);
+    free(buffer);
+    free(buffer2);
 }
 /**************************************************************************************************/
 /* long ftell(FILE * stream)                                                                      */
@@ -443,12 +464,12 @@ static void fwriteread_t() {
 /*    2.  Functioally, ftell is equivalent to fgetpos.                                            */
 /**************************************************************************************************/
 static void ftell_t() {
-  FILE* test;
+    FILE *test;
 
-  SUB_STRT("ftell()");
-  ASSERTNOTNULLP("fopen(PUNCH,w)", test=fopen("PUNCH","w"), test, );
-  ASSERTNOTZERO("ftell()", , ftell(test)==-1, );
-  ASSERTZEROP("fclose()", , fclose(test), );
+    SUB_STRT("ftell()");
+    ASSERTNOTNULLP("fopen(PUNCH,w)", test = fopen("PUNCH", "w"), test,);
+    ASSERTNOTZERO("ftell()", , ftell(test) == -1,);
+    ASSERTZEROP("fclose()", , fclose(test),);
 }
 
 /**************************************************************************************************/
@@ -467,14 +488,14 @@ static void ftell_t() {
 /*    1.  fseek is only valid for fixed record length disk files                                  */
 /**************************************************************************************************/
 static void fseek_t() {
-  FILE* test;
+    FILE *test;
 
-  SUB_STRT("fseek()");
-  ASSERTNOTNULLP("fopen(PUNCH,w)", test=fopen("PUNCH","w"), test, );
-  ASSERTNOTZERO("fseek(SEEK_SET)", , fseek(test, 1, SEEK_SET)!=0, );
-  ASSERTNOTZERO("fseek(SEEK_CUR)", , fseek(test, 1, SEEK_CUR)!=0, );
-  ASSERTNOTZERO("fseek(SEEK_END)", , fseek(test, 1, SEEK_END)!=0, );
-  ASSERTZEROP("fclose()", , fclose(test), );
+    SUB_STRT("fseek()");
+    ASSERTNOTNULLP("fopen(PUNCH,w)", test = fopen("PUNCH", "w"), test,);
+    ASSERTNOTZERO("fseek(SEEK_SET)", , fseek(test, 1, SEEK_SET) != 0,);
+    ASSERTNOTZERO("fseek(SEEK_CUR)", , fseek(test, 1, SEEK_CUR) != 0,);
+    ASSERTNOTZERO("fseek(SEEK_END)", , fseek(test, 1, SEEK_END) != 0,);
+    ASSERTZEROP("fclose()", , fclose(test),);
 }
 
 /**************************************************************************************************/
@@ -501,14 +522,14 @@ static void fseek_t() {
 /*    0 on success, non-zero on failure.                                                          */
 /**************************************************************************************************/
 static void fgetsetpos_t() {
-  FILE* test;
-  fpos_t position;
+    FILE *test;
+    fpos_t position;
 
-  SUB_STRT("fgetpos() and fsetpos()");
-  ASSERTNOTNULLP("fopen(PUNCH,w)", test=fopen("PUNCH","w"), test, );
-  ASSERTNOTZERO("fgetpos()", , fgetpos(test, &position) != 0, );
-  ASSERTNOTZERO("fsetpos()", , fsetpos(test, &position) != 0, );
-  ASSERTZEROP("fclose()", , fclose(test), );
+    SUB_STRT("fgetpos() and fsetpos()");
+    ASSERTNOTNULLP("fopen(PUNCH,w)", test = fopen("PUNCH", "w"), test,);
+    ASSERTNOTZERO("fgetpos()", , fgetpos(test, &position) != 0,);
+    ASSERTNOTZERO("fsetpos()", , fsetpos(test, &position) != 0,);
+    ASSERTZEROP("fclose()", , fclose(test),);
 }
 
 /**************************************************************************************************/
@@ -519,12 +540,12 @@ static void fgetsetpos_t() {
 /*    stream   a pointer to the open stream.                                                      */
 /**************************************************************************************************/
 static void rewind_t() {
-  FILE* test;
+    FILE *test;
 
-  SUB_STRT("rewind()");
-  ASSERTNOTNULLP("fopen(PUNCH,w)", test=fopen("PUNCH","w"), test, );
-  ASSERTNOTZERO("rewind()",rewind(test) , 1, );
-  ASSERTZEROP("fclose()", , fclose(test), );
+    SUB_STRT("rewind()");
+    ASSERTNOTNULLP("fopen(PUNCH,w)", test = fopen("PUNCH", "w"), test,);
+    ASSERTNOTZERO("rewind()", rewind(test), 1,);
+    ASSERTZEROP("fclose()", , fclose(test),);
 }
 
 /**************************************************************************************************/
@@ -540,15 +561,15 @@ static void rewind_t() {
 /*                                                                                                */
 /**************************************************************************************************/
 static void setbuf_t() {
-  FILE* test;
-  char* buffer;
+    FILE *test;
+    char *buffer;
 
-  SUB_STRT("setbuf()");
-  buffer = malloc(BUFSIZ);
-  ASSERTNOTNULLP("fopen(PUNCH,w)", test=fopen("PUNCH","w"), test, );
-  setbuf(test, buffer); /* No error detection! */
-  ASSERTZEROP("fclose()", , fclose(test), );
-  free(buffer);
+    SUB_STRT("setbuf()");
+    buffer = malloc(BUFSIZ);
+    ASSERTNOTNULLP("fopen(PUNCH,w)", test = fopen("PUNCH", "w"), test,);
+    setbuf(test, buffer); /* No error detection! */
+    ASSERTZEROP("fclose()", , fclose(test),);
+    free(buffer);
 }
 
 /**************************************************************************************************/
@@ -570,13 +591,13 @@ static void setbuf_t() {
 /*   Otherwise, a non-zero value is returned                                                      */
 /**************************************************************************************************/
 static void setvbuf_t() {
-  FILE* test;
-  char* buffer;
+    FILE *test;
+    char *buffer;
 
-  SUB_STRT("setvbuf()");
-  ASSERTNOTNULLP("fopen(PUNCH,w)", test=fopen("PUNCH","w"), test, );
-  ASSERTNOTZERO("setvbuf()", , setvbuf(test, 0, _IOLBF, BUFSIZ), );
-  ASSERTZEROP("fclose()", , fclose(test), );
+    SUB_STRT("setvbuf()");
+    ASSERTNOTNULLP("fopen(PUNCH,w)", test = fopen("PUNCH", "w"), test,);
+    ASSERTNOTZERO("setvbuf()", , setvbuf(test, 0, _IOLBF, BUFSIZ),);
+    ASSERTZEROP("fclose()", , fclose(test),);
 }
 
 /**************************************************************************************************/
@@ -597,14 +618,14 @@ static void setvbuf_t() {
 /*    record number or 0 on failure / not block device                                            */
 /**************************************************************************************************/
 static void fgetsetrec_t() {
-  FILE* test;
-  int record;
+    FILE *test;
+    int record;
 
-  SUB_STRT("fgetrec() and fsetrec()");
-  ASSERTNOTNULLP("fopen(PUNCH,w)", test=fopen("PUNCH","w"), test, );
-  ASSERTZERO("fgetrec()", , record = fgetrec(test), );
-  ASSERTZERO("fsetrec()", , fsetrec(test, record), );
-  ASSERTZEROP("fclose()", , fclose(test), );
+    SUB_STRT("fgetrec() and fsetrec()");
+    ASSERTNOTNULLP("fopen(PUNCH,w)", test = fopen("PUNCH", "w"), test,);
+    ASSERTZERO("fgetrec()", , record = fgetrec(test),);
+    ASSERTZERO("fsetrec()", , fsetrec(test, record),);
+    ASSERTZEROP("fclose()", , fclose(test),);
 }
 
 /**************************************************************************************************/
@@ -617,12 +638,12 @@ static void fgetsetrec_t() {
 /*    Percentage of cache hits or -1 on error (device without a cache)                            */
 /**************************************************************************************************/
 static int fcachehits_t() {
-  FILE* test;
+    FILE *test;
 
-  SUB_STRT("fcachehits()");
-  ASSERTNOTNULLP("fopen(PUNCH,w)", test=fopen("PUNCH","w"), test, );
-  ASSERTNOTZERO("fcachehits()", , fcachehits(test) == -1, );
-  ASSERTZEROP("fclose()", , fclose(test), );
+    SUB_STRT("fcachehits()");
+    ASSERTNOTNULLP("fopen(PUNCH,w)", test = fopen("PUNCH", "w"), test,);
+    ASSERTNOTZERO("fcachehits()", , fcachehits(test) == -1,);
+    ASSERTZEROP("fclose()", , fclose(test),);
 }
 
 /**************************************************************************************************/
@@ -634,12 +655,12 @@ static int fcachehits_t() {
 /*                                                                                                */
 /**************************************************************************************************/
 static int fateof_t() {
-  FILE* test;
+    FILE *test;
 
-  SUB_STRT("fateof()");
-  ASSERTNOTNULLP("fopen(PUNCH,w)", test=fopen("PUNCH","w"), test, );
-  ASSERTZERO("fateof()", , fateof(test), );
-  ASSERTZEROP("fclose()", , fclose(test), );
+    SUB_STRT("fateof()");
+    ASSERTNOTNULLP("fopen(PUNCH,w)", test = fopen("PUNCH", "w"), test,);
+    ASSERTZERO("fateof()", , fateof(test),);
+    ASSERTZEROP("fclose()", , fclose(test),);
 }
 
 /**************************************************************************************************/
@@ -653,13 +674,13 @@ static int fateof_t() {
 /*                                                                                                */
 /**************************************************************************************************/
 static int fgethandle_t() {
-  FILE* test;
+    FILE *test;
 
-  SUB_STRT("fgethandle()");
-  ASSERTNOTNULLP("fopen(PUNCH,w)", test=fopen("PUNCH","w"), test, );
-  ASSERTNOTZERO("fgethandle()", , fgethandle("PUNCH")==test, );
-  ASSERTZEROP("fclose()", , fclose(test), );
-  ASSERTZERO("fgethandle()", , fgethandle("PUNCH"), );
+    SUB_STRT("fgethandle()");
+    ASSERTNOTNULLP("fopen(PUNCH,w)", test = fopen("PUNCH", "w"), test,);
+    ASSERTNOTZERO("fgethandle()", , fgethandle("PUNCH") == test,);
+    ASSERTZEROP("fclose()", , fclose(test),);
+    ASSERTZERO("fgethandle()", , fgethandle("PUNCH"),);
 }
 
 /**************************************************************************************************/
@@ -672,12 +693,12 @@ static int fgethandle_t() {
 /*                                                                                                */
 /**************************************************************************************************/
 static int fgetrecs_t() {
-  FILE* test;
+    FILE *test;
 
-  SUB_STRT("fgetrecs()");
-  ASSERTNOTNULLP("fopen(PUNCH,w)", test=fopen("PUNCH","w"), test, );
-  ASSERTEOF("fgetrecs()", , fgetrecs(test), );
-  ASSERTZEROP("fclose()", , fclose(test), );
+    SUB_STRT("fgetrecs()");
+    ASSERTNOTNULLP("fopen(PUNCH,w)", test = fopen("PUNCH", "w"), test,);
+    ASSERTEOF("fgetrecs()", , fgetrecs(test),);
+    ASSERTZEROP("fclose()", , fclose(test),);
 }
 
 /**************************************************************************************************/
@@ -691,12 +712,12 @@ static int fgetrecs_t() {
 /*                                                                                                */
 /**************************************************************************************************/
 static int fgetlen_t() {
-  FILE* test;
+    FILE *test;
 
-  SUB_STRT("fgetlen()");
-  ASSERTNOTNULLP("fopen(PUNCH,w)", test=fopen("PUNCH","w"), test, );
-  ASSERTEOF("fgetlen()", , fgetlen(test), );
-  ASSERTZEROP("fclose()", , fclose(test), );
+    SUB_STRT("fgetlen()");
+    ASSERTNOTNULLP("fopen(PUNCH,w)", test = fopen("PUNCH", "w"), test,);
+    ASSERTEOF("fgetlen()", , fgetlen(test),);
+    ASSERTZEROP("fclose()", , fclose(test),);
 }
 
 /**************************************************************************************************/
@@ -708,12 +729,12 @@ static int fgetlen_t() {
 /*    stream   a pointer to the open stream.                                                      */
 /**************************************************************************************************/
 static int append_t() {
-  FILE* test;
+    FILE *test;
 
-  SUB_STRT("append()");
-  ASSERTNOTNULLP("fopen(PUNCH,w)", test=fopen("PUNCH","w"), test, );
-  ASSERTNOTZERO("append()",append(test) , 1, );
-  ASSERTZEROP("fclose()", , fclose(test), );
+    SUB_STRT("append()");
+    ASSERTNOTNULLP("fopen(PUNCH,w)", test = fopen("PUNCH", "w"), test,);
+    ASSERTNOTZERO("append()", append(test), 1,);
+    ASSERTZEROP("fclose()", , fclose(test),);
 }
 
 /**************************************************************************************************/
@@ -727,44 +748,44 @@ static int append_t() {
 /*    number of bytes for the next record, 0 for EOF, -1 for error                                */
 /**************************************************************************************************/
 static void nextrecLen_t() {
-  FILE* test;
+    FILE *test;
 
-  SUB_STRT("nextrecLen()");
-  ASSERTNOTNULLP("fopen(PUNCH,w)", test=fopen("PUNCH","w"), test, );
-  ASSERTNOTZERO("nextrecLen()", , nextrecLen(test)==-1, );
-  ASSERTNOTZERO("ferror()", , ferror(test), );
-  ASSERTZEROP("fclose()", , fclose(test), );
+    SUB_STRT("nextrecLen()");
+    ASSERTNOTNULLP("fopen(PUNCH,w)", test = fopen("PUNCH", "w"), test,);
+    ASSERTNOTZERO("nextrecLen()", , nextrecLen(test) == -1,);
+    ASSERTNOTZERO("ferror()", , ferror(test),);
+    ASSERTZEROP("fclose()", , fclose(test),);
 }
 
 /**************************************************************************************************/
 /* Run Tests                                                                                      */
 /**************************************************************************************************/
 void IO_PUN_T() {
-  SEC_STRT("IO Tests - Punch");
-  fopen_t();
-  fclose_t();
-  fflush_t();
-  ferror_t();
-  clearerr_t();
-  fgetc_t();
-  fgets_t();
-  feof_t();
-  ungetc_t();
-  fputc_t();
-  fputs_t();
-  fwriteread_t();
-  ftell_t();
-  fseek_t();
-  fgetsetpos_t();
-  rewind_t();
-  setbuf_t();
-  setvbuf_t();
-  fgetsetrec_t();
-  fcachehits_t();
-  fateof_t();
-  fgethandle_t();
-  fgetrecs_t();
-  fgetlen_t();
-  append_t();
-  nextrecLen_t();
+    SEC_STRT("IO Tests - Punch");
+    fopen_t();
+    fclose_t();
+    fflush_t();
+    ferror_t();
+    clearerr_t();
+    fgetc_t();
+    fgets_t();
+    feof_t();
+    ungetc_t();
+    fputc_t();
+    fputs_t();
+    fwriteread_t();
+    ftell_t();
+    fseek_t();
+    fgetsetpos_t();
+    rewind_t();
+    setbuf_t();
+    setvbuf_t();
+    fgetsetrec_t();
+    fcachehits_t();
+    fateof_t();
+    fgethandle_t();
+    fgetrecs_t();
+    fgetlen_t();
+    append_t();
+    nextrecLen_t();
 }

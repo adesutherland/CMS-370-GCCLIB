@@ -17,123 +17,118 @@
 #include <cmsruntm.h>
 
 /* Low Level Assembler functions */
-int __SVC202(PLIST *plist , EPLIST *eplist, int calltype);
+int __SVC202(PLIST *plist, EPLIST *eplist, int calltype);
+
 int _DMSFRET(void *address, int doublewords);
-void* _DMSFREE(int doublewords);
+
+void *_DMSFREE(int doublewords);
 
 /* Worker Function - create PLIST / EPLIST and call __svc202 */
-static int cmd_with_plist(char *command, int calltype)
-{
-  int i, j, len, args;
-  PLIST plist[MAXPLISTARGS + 1];
-  EPLIST eplist;
+static int cmd_with_plist(char *command, int calltype) {
+    int i, j, len, args;
+    PLIST plist[MAXPLISTARGS + 1];
+    EPLIST eplist;
 
-  memset((void*)plist, ' ', sizeof(plist));
-  eplist.Command = 0;
-  eplist.BeginArgs = 0;
-  eplist.EndArgs = 0;
-  eplist.CallContext = 0;
-  eplist.ArgList = 0;
-  eplist.FunctionReturn = 0;
+    memset((void *) plist, ' ', sizeof(plist));
+    eplist.Command = 0;
+    eplist.BeginArgs = 0;
+    eplist.EndArgs = 0;
+    eplist.CallContext = 0;
+    eplist.ArgList = 0;
+    eplist.FunctionReturn = 0;
 
-  len = strlen(command);
-  args = -1;
-  for (i=0; i<len; i++)
-  {
-    /* Find start of next word */
-    if (command[i]!=' ')
-    {
-      /* Process word */
-      args++;
-      if (args==1)
-      {
-        /* Start of args */
-        eplist.BeginArgs = command + i;
-      }
-      for (j=0; i<len && j<8; i++, j++)
-      {
-        if (command[i]==' ') break;
-        (plist[args])[j] = toupper(command[i]);
-      }
-      for (; i<len && command[i]!=' '; i++);
-      if (args>=MAXPLISTARGS) break;
+    len = strlen(command);
+    args = -1;
+    for (i = 0; i < len; i++) {
+        /* Find start of next word */
+        if (command[i] != ' ') {
+            /* Process word */
+            args++;
+            if (args == 1) {
+                /* Start of args */
+                eplist.BeginArgs = command + i;
+            }
+            for (j = 0; i < len && j < 8; i++, j++) {
+                if (command[i] == ' ') break;
+                (plist[args])[j] = toupper(command[i]);
+            }
+            for (; i < len && command[i] != ' '; i++);
+            if (args >= MAXPLISTARGS) break;
+        }
     }
-  }
-  if (eplist.BeginArgs) eplist.EndArgs = command + len;
-  eplist.Command = command;
+    if (eplist.BeginArgs) eplist.EndArgs = command + len;
+    eplist.Command = command;
 
-  /* PLIST FENCE */
-  args++;
-  for (j=0; j<8; j++)
-  {
-    (plist[args])[j] = 0xFF;
-  }
+    /* PLIST FENCE */
+    args++;
+    for (j = 0; j < 8; j++) {
+        (plist[args])[j] = 0xFF;
+    }
 
-  return __SVC202(plist, &eplist, calltype);
+    return __SVC202(plist, &eplist, calltype);
 }
 
 /* Main Function - has the search logic for call type 11 (CMS_CONSOLE) */
-int __CMSCMD(char *command, int calltype)
-{
+int __CMSCMD(char *command, int calltype) {
 
-  char fileid[28];
-  CMSFILEINFO * fst;
-  int rc;
-  int len, i, j;
-  char program[9];
-  char *newcommand;
+    char fileid[28];
+    CMSFILEINFO *fst;
+    int rc;
+    int len, i, j;
+    char program[9];
+    char *newcommand;
 
-  if (calltype == CMS_CONSOLE) {
-    len = strlen(command);
-    /* Skip spaces */
-    for (i=0; i<len && command[i]==' '; i++);
+    if (calltype == CMS_CONSOLE) {
+        len = strlen(command);
+        /* Skip spaces */
+        for (i = 0; i < len && command[i] == ' '; i++);
 
-    /* Get the program */
-    for (j=0; i<len && command[i]!=' '; i++) {
-      program[j++] = toupper(command[i]);
-      if (j>8) break;
+        /* Get the program */
+        for (j = 0; i < len && command[i] != ' '; i++) {
+            program[j++] = toupper(command[i]);
+            if (j > 8) break;
+        }
+        program[j] = 0;
+
+        /* Special cases */
+        if (!strcmp(program, "EXEC")) return cmd_with_plist(command, calltype);
+        if (!strcmp(program, "CP")) {
+            rc = cmd_with_plist(command, calltype);
+            if (rc == 1) rc = -1;
+            return rc;
+        }
+
+        /* Does an EXEC exist? */
+        strcpy(fileid, "        EXEC    * ");
+        strncpy(fileid, program, strlen(program));
+        rc = CMSfileState(fileid, &fst);
+        if (!rc) {
+            newcommand = (char *) malloc(strlen(command) + 6);
+            newcommand[0] = 0;
+            strcat(newcommand, "EXEC ");
+            strcat(newcommand, command);
+            rc = cmd_with_plist(newcommand, calltype);
+            free(newcommand);
+            return rc;
+        }
+
+        /* Try the command naked */
+        rc = cmd_with_plist(command, calltype);
+        if (rc != -3) return rc;
+
+        /* Finally see if it is a CP command */
+        newcommand = (char *) malloc(strlen(command) + 4);
+        newcommand[0] = 0;
+        strcat(newcommand, "CP ");
+        strcat(newcommand, command);
+        rc = cmd_with_plist(newcommand, calltype);
+        free(newcommand);
+        if (rc == 1) return -3;
+        else return rc;
     }
-    program[j] = 0;
 
-    /* Special cases */
-    if (!strcmp(program,"EXEC")) return cmd_with_plist(command, calltype);
-    if (!strcmp(program,"CP")) {
-      rc = cmd_with_plist(command, calltype);
-      if (rc == 1) rc = -1;
-      return rc;
-    }
-
-    /* Does an EXEC exist? */
-    strcpy(fileid, "        EXEC    * ");
-    strncpy(fileid, program, strlen(program));
-    rc = CMSfileState(fileid, &fst);
-    if (!rc) {
-      newcommand = (char*)malloc(strlen(command) + 6);
-      newcommand[0] = 0;
-      strcat(newcommand, "EXEC ");
-      strcat(newcommand, command);
-      rc = cmd_with_plist(newcommand, calltype);
-      free(newcommand);
-      return rc;
-    }
-
-    /* Try the command naked */
-    rc = cmd_with_plist(command, calltype);
-    if (rc != -3) return rc;
-
-    /* Finally see if it is a CP command */
-    newcommand = (char*)malloc(strlen(command) + 4);
-    newcommand[0] = 0;
-    strcat(newcommand, "CP ");
-    strcat(newcommand, command);
-    rc = cmd_with_plist(newcommand, calltype);
-    free(newcommand);
-    if (rc == 1) return -3;
-    else return rc;
-  }
-
-  /* If not call type 11 just try the command naked */
-  else return cmd_with_plist(command, calltype);
+        /* If not call type 11 just try the command naked */
+    else return cmd_with_plist(command, calltype);
 }
 
 /**************************************************************************************************/
@@ -151,17 +146,17 @@ int __CMSCMD(char *command, int calltype)
 /* Note: that this area is freed automatically on normal program termination.                     */
 /*                                                                                                */
 /**************************************************************************************************/
-void* CMSPGAll(size_t size) {
-  GCCCRAB *crab;
+void *CMSPGAll(size_t size) {
+    GCCCRAB *crab;
 
-  crab = GETGCCCRAB();
+    crab = GETGCCCRAB();
 
-  if (crab->process_global) free (crab->process_global);
+    if (crab->process_global) free(crab->process_global);
 
-  if (size) crab->process_global = malloc(size);
-  else crab->process_global = 0;
+    if (size) crab->process_global = malloc(size);
+    else crab->process_global = 0;
 
-  return crab->process_global;
+    return crab->process_global;
 }
 
 /**************************************************************************************************/
@@ -188,9 +183,9 @@ void* CMSPGAll(size_t size) {
 /*         -3 routine not found (from svc202)                                                     */
 /*         Other negative rc from svc202 / called function (a positive RC is make negative)       */
 /**************************************************************************************************/
-int __CMSFND(char *physical, char *logical, int is_proc, char **ret_val, int argc,
-             char *argv[], int lenv[])
-{
+int
+__CMSFND(char *physical, char *logical, int is_proc, char **ret_val, int argc,
+         char *argv[], int lenv[]) {
     int i, j, len, a, rc;
     PLIST plist[MAXPLISTARGS + 1];
     EPLIST eplist;
@@ -198,11 +193,11 @@ int __CMSFND(char *physical, char *logical, int is_proc, char **ret_val, int arg
     EVALBLOK *evalblock;
 
     /* Validate args */
-    if ( !(physical && strlen(physical)) ) return -1;
-    if ( !(logical && strlen(logical)) ) logical = physical;
+    if (!(physical && strlen(physical))) return -1;
+    if (!(logical && strlen(logical))) logical = physical;
 
     /* Clear Structures */
-    memset((void*)plist, ' ', sizeof(plist));
+    memset((void *) plist, ' ', sizeof(plist));
     eplist.Command = 0;
     eplist.BeginArgs = 0;
     eplist.EndArgs = 0;
@@ -215,45 +210,37 @@ int __CMSFND(char *physical, char *logical, int is_proc, char **ret_val, int arg
     /* Process the physical string */
     len = strlen(physical);
     a = -1;
-    for (i=0; i<len; i++)
-    {
+    for (i = 0; i < len; i++) {
         /* Find start of next word */
-        if (physical[i]!=' ')
-        {
+        if (physical[i] != ' ') {
             /* Process word */
             a++;
-            for (j=0; i<len && j<8; i++, j++)
-            {
-                if (physical[i]==' ') break;
+            for (j = 0; i < len && j < 8; i++, j++) {
+                if (physical[i] == ' ') break;
                 (plist[a])[j] = toupper(physical[i]);
             }
-            for (; i<len && physical[i]!=' '; i++);
-            if (a>=MAXPLISTARGS) break;
+            for (; i < len && physical[i] != ' '; i++);
+            if (a >= MAXPLISTARGS) break;
         }
     }
     /* Add the PLIST fence */
     a++;
-    for (j=0; j<8; j++)
-    {
+    for (j = 0; j < 8; j++) {
         (plist[a])[j] = 0xFF;
     }
 
     /* Process the logical string */
     len = strlen(logical);
     a = -1;
-    for (i=0; i<len; i++)
-    {
+    for (i = 0; i < len; i++) {
         /* Find start of next word */
-        if (logical[i]!=' ')
-        {
+        if (logical[i] != ' ') {
             /* Process word */
             a++;
             if (a == 0) {
                 eplist.Command = logical + i;
-                for (; i<len; i++) if (logical[i]==' ') break;
-            }
-            else
-            {
+                for (; i < len; i++) if (logical[i] == ' ') break;
+            } else {
                 /* Start of a */
                 eplist.BeginArgs = logical + i;
                 break;
@@ -263,8 +250,8 @@ int __CMSFND(char *physical, char *logical, int is_proc, char **ret_val, int arg
     if (eplist.BeginArgs) eplist.EndArgs = logical + len;
 
     /* Process Arguments */
-    eplist.ArgList = (ADLEN *)malloc((argc + 1) * sizeof(ADLEN));
-    for (a=0; a<argc; a++) {
+    eplist.ArgList = (ADLEN *) malloc((argc + 1) * sizeof(ADLEN));
+    for (a = 0; a < argc; a++) {
         eplist.ArgList[a].Data = argv[a];
         eplist.ArgList[a].Len = lenv[a];
     }
@@ -275,24 +262,24 @@ int __CMSFND(char *physical, char *logical, int is_proc, char **ret_val, int arg
     pointer_eplist = &eplist;
     if (is_proc) {
         /* if a proc (subroutine) sets register 0 (EPLIST) Bit 0 (MSB) */
-        (int)pointer_eplist |= 0x80000000;
+        (int) pointer_eplist |= 0x80000000;
     }
 
     /* Actual Call */
     rc = __SVC202(plist, pointer_eplist, 5);
-    if (rc>0) rc = 0 - rc;
+    if (rc > 0) rc = 0 - rc;
 
     /* Handle return value */
     if (evalblock && ret_val) {
         *ret_val = malloc(evalblock->Len + 1);
-        memcpy(*ret_val,evalblock->Data, evalblock->Len);
+        memcpy(*ret_val, evalblock->Data, evalblock->Len);
         (*ret_val)[evalblock->Len] = 0;
         rc = evalblock->Len;
     }
 
     /* Release evalblok memory */
     if (evalblock) {
-        if (_DMSFRET((void*)evalblock, evalblock->BlokSize)) {
+        if (_DMSFRET((void *) evalblock, evalblock->BlokSize)) {
             /* Free allocated memory */
             free(eplist.ArgList);
             return -2;
@@ -328,7 +315,9 @@ int __CMSFND(char *physical, char *logical, int is_proc, char **ret_val, int arg
 /*         -3 routine not found (from svc202)                                                     */
 /*         Other negative rc from svc202 / called function (a positive RC is make negative)       */
 /**************************************************************************************************/
-int __CMSFNA(char *physical, char *logical, int is_proc, char **ret_val, int argc, char *argv[]) {
+int
+__CMSFNA(char *physical, char *logical, int is_proc, char **ret_val, int argc,
+         char *argv[]) {
     int *lenv;
     int rc, a;
 
@@ -367,28 +356,30 @@ int __CMSFNA(char *physical, char *logical, int is_proc, char **ret_val, int arg
 /*         -3 routine not found (from svc202)                                                     */
 /*         Other negative rc from svc202 / called function (a positive RC is make negative)       */
 /**************************************************************************************************/
-int __CMSFNC(char *physical, char *logical, int is_proc, char **ret_val, int argc, ...) {
-  va_list valist;
-  int rc;
-  int i;
-  char **argv;
+int
+__CMSFNC(char *physical, char *logical, int is_proc, char **ret_val, int argc,
+         ...) {
+    va_list valist;
+    int rc;
+    int i;
+    char **argv;
 
-  /* initialize */
-  va_start(valist, argc);
-  argv = malloc(argc * sizeof(char*));
+    /* initialize */
+    va_start(valist, argc);
+    argv = malloc(argc * sizeof(char *));
 
-  /* Set up arguments */
-  for (i = 0; i < argc; i++) {
-    argv[i] = va_arg(valist, char*);
-  }
+    /* Set up arguments */
+    for (i = 0; i < argc; i++) {
+        argv[i] = va_arg(valist, char*);
+    }
 
-  rc = __CMSFNA(physical, logical, is_proc, ret_val, argc, argv);
+    rc = __CMSFNA(physical, logical, is_proc, ret_val, argc, argv);
 
-  /* release memory */
-  va_end(valist);
-  free(argv);
+    /* release memory */
+    va_end(valist);
+    free(argv);
 
-  return rc;
+    return rc;
 }
 
 /**************************************************************************************************/
@@ -397,7 +388,7 @@ int __CMSFNC(char *physical, char *logical, int is_proc, char **ret_val, int arg
 /* char **CMSargv(void)                                                                           */
 /**************************************************************************************************/
 char **__ARGV(void) {
-  return GETGCCCRAB()->argv;
+    return GETGCCCRAB()->argv;
 }
 
 /**************************************************************************************************/
@@ -406,7 +397,7 @@ char **__ARGV(void) {
 /* int CMSargc(void)                                                                              */
 /**************************************************************************************************/
 int __ARGC(void) {
-  return GETGCCCRAB()->argc;
+    return GETGCCCRAB()->argc;
 }
 
 /**************************************************************************************************/
@@ -415,7 +406,7 @@ int __ARGC(void) {
 /* PLIST *CMSplist(void)                                                                          */
 /**************************************************************************************************/
 PLIST *__PLIST(void) {
-  return GETGCCCRAB()->plist;
+    return GETGCCCRAB()->plist;
 }
 
 /**************************************************************************************************/
@@ -424,7 +415,7 @@ PLIST *__PLIST(void) {
 /* EPLIST *CMSeplist(void)                                                                        */
 /**************************************************************************************************/
 EPLIST *__EPLIST(void) {
-  return GETGCCCRAB()->eplist;
+    return GETGCCCRAB()->eplist;
 }
 
 /**************************************************************************************************/
@@ -433,7 +424,7 @@ EPLIST *__EPLIST(void) {
 /* int CMScalltype(void)                                                                          */
 /**************************************************************************************************/
 int __CALLTP(void) {
-  return GETGCCCRAB()->calltype;
+    return GETGCCCRAB()->calltype;
 }
 
 /**************************************************************************************************/
@@ -442,7 +433,7 @@ int __CALLTP(void) {
 /* int CMSisproc(void)                                                                            */
 /**************************************************************************************************/
 int __ISPROC(void) {
-  return GETGCCCRAB()->isproc;
+    return GETGCCCRAB()->isproc;
 }
 
 /**************************************************************************************************/
@@ -451,23 +442,23 @@ int __ISPROC(void) {
 /* int CMSreturnvalue(char*)                                                                      */
 /* returns 0 on success or 1 if the calltype is not 5, or the return value has already been set   */
 /**************************************************************************************************/
-int __RETVAL(char* value) {
-  GCCCRAB *gcccrab;
-  int ret_size;
-  gcccrab = GETGCCCRAB();
+int __RETVAL(char *value) {
+    GCCCRAB *gcccrab;
+    int ret_size;
+    gcccrab = GETGCCCRAB();
 
-  if ((gcccrab->calltype == 5) && !gcccrab->evalblok && gcccrab->eplist->FunctionReturn) {
-    ret_size = strlen(value);
-    /* integer roundup -> "add the divisor minus one to the dividend" */
-    int db_size=(sizeof(EVALBLOK) + ret_size + (8-1) ) / 8;
-    gcccrab->evalblok = _DMSFREE(db_size);
-    gcccrab->evalblok->BlokSize = db_size;
-    gcccrab->evalblok->Len = ret_size;
-    strcpy(gcccrab->evalblok->Data, value);
-    *(gcccrab->eplist->FunctionReturn) = gcccrab->evalblok;
-    return 0;
-  }
-  else return 1;
+    if ((gcccrab->calltype == 5) && !gcccrab->evalblok &&
+        gcccrab->eplist->FunctionReturn) {
+        ret_size = strlen(value);
+        /* integer roundup -> "add the divisor minus one to the dividend" */
+        int db_size = (sizeof(EVALBLOK) + ret_size + (8 - 1)) / 8;
+        gcccrab->evalblok = _DMSFREE(db_size);
+        gcccrab->evalblok->BlokSize = db_size;
+        gcccrab->evalblok->Len = ret_size;
+        strcpy(gcccrab->evalblok->Data, value);
+        *(gcccrab->eplist->FunctionReturn) = gcccrab->evalblok;
+        return 0;
+    } else return 1;
 }
 
 /**************************************************************************************************/
@@ -476,21 +467,21 @@ int __RETVAL(char* value) {
 /* int CMSreturndata(void* data, int len)                                                         */
 /* returns 0 on success or 1 if the calltype is not 5, or the return value has already been set   */
 /**************************************************************************************************/
-int __RETDATA(void* data, int len) {
+int __RETDATA(void *data, int len) {
     GCCCRAB *gcccrab;
     gcccrab = GETGCCCRAB();
 
-    if ((gcccrab->calltype == 5) && !gcccrab->evalblok && gcccrab->eplist->FunctionReturn) {
+    if ((gcccrab->calltype == 5) && !gcccrab->evalblok &&
+        gcccrab->eplist->FunctionReturn) {
         /* integer roundup -> "add the divisor minus one to the dividend" */
-        int db_size=(sizeof(EVALBLOK) + len + (8-1) ) / 8;
+        int db_size = (sizeof(EVALBLOK) + len + (8 - 1)) / 8;
         gcccrab->evalblok = _DMSFREE(db_size);
         gcccrab->evalblok->BlokSize = db_size;
         gcccrab->evalblok->Len = len;
         memcpy(gcccrab->evalblok->Data, data, len);
         *(gcccrab->eplist->FunctionReturn) = gcccrab->evalblok;
         return 0;
-    }
-    else return 1;
+    } else return 1;
 }
 
 /**************************************************************************************************/
@@ -501,19 +492,19 @@ int __RETDATA(void* data, int len) {
 /* been set                                                                                       */
 /**************************************************************************************************/
 int __RETINT(int value) {
-  GCCCRAB *gcccrab;
-  int ret_size = 11;
-  gcccrab = GETGCCCRAB();
+    GCCCRAB *gcccrab;
+    int ret_size = 11;
+    gcccrab = GETGCCCRAB();
 
-  if ((gcccrab->calltype == 5) && !gcccrab->evalblok && gcccrab->eplist->FunctionReturn) {
-    /* integer roundup -> "add the divisor minus one to the dividend" */
-    int db_size=(sizeof(EVALBLOK) + ret_size + (4-1) ) / 4;
-    gcccrab->evalblok = _DMSFREE(db_size);
-    gcccrab->evalblok->BlokSize = db_size;
-    sprintf(gcccrab->evalblok->Data,"%d",value);
-    gcccrab->evalblok->Len = strlen(gcccrab->evalblok->Data);
-    *(gcccrab->eplist->FunctionReturn) = gcccrab->evalblok;
-    return 0;
-  }
-  else return value;
+    if ((gcccrab->calltype == 5) && !gcccrab->evalblok &&
+        gcccrab->eplist->FunctionReturn) {
+        /* integer roundup -> "add the divisor minus one to the dividend" */
+        int db_size = (sizeof(EVALBLOK) + ret_size + (4 - 1)) / 4;
+        gcccrab->evalblok = _DMSFREE(db_size);
+        gcccrab->evalblok->BlokSize = db_size;
+        sprintf(gcccrab->evalblok->Data, "%d", value);
+        gcccrab->evalblok->Len = strlen(gcccrab->evalblok->Data);
+        *(gcccrab->eplist->FunctionReturn) = gcccrab->evalblok;
+        return 0;
+    } else return value;
 }

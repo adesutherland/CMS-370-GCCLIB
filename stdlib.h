@@ -22,8 +22,14 @@ typedef unsigned long size_t;
 typedef char wchar_t;
 #endif
 
-typedef struct { int quot; int rem; } div_t;
-typedef struct { long int quot; long int rem; } ldiv_t;
+typedef struct {
+    int quot;
+    int rem;
+} div_t;
+typedef struct {
+    long int quot;
+    long int rem;
+} ldiv_t;
 
 #define NULL ((void *)0)
 #define EXIT_SUCCESS 0
@@ -59,13 +65,13 @@ int atoi(const char *nptr);
 long int atol(const char *nptr);
 
 void *bsearch(const void *key, const void *base, size_t nmemb, size_t size,
-   int (*compar)(const void *, const void *));
+              int (*compar)(const void *, const void *));
 
 div_t div(int numer, int denom);
 
 void exit(int status);
 
-char * getenv(const char *name);
+char *getenv(const char *name);
 
 long int labs(long int j);
 
@@ -89,7 +95,7 @@ long int strtol(const char *nptr, char **endptr, int base);
 
 unsigned long int strtoul(const char *nptr, char **endptr, int base);
 
-int system(const char * s);
+int system(const char *s);
 
 size_t wcstombs(char *s, const wchar_t *pwcs, size_t n);
 
@@ -101,7 +107,7 @@ int wctomb(char *s, wchar_t wchar);
   null if no space is available, in which case errno is set to ENOMEM
   on ANSI C systems.
 */
-void* malloc(size_t bytes);
+void *malloc(size_t bytes);
 
 /*
   free(void* p)
@@ -110,7 +116,7 @@ void* malloc(size_t bytes);
   It has no effect if p is null. If p was not malloced or already
   freed, free(p) will by default cuase the current program to abort.
 */
-void free(void* mem);
+void free(void *mem);
 
 /*
   realloc(void* p, size_t n)
@@ -131,14 +137,14 @@ void free(void* mem);
   space is lopped off and freed if possible.  realloc with a size
   argument of zero (re)allocates a minimum-sized chunk.
 */
-void* realloc(void* mem, size_t newsize);
+void *realloc(void *mem, size_t newsize);
 
 /*
   calloc(size_t n_elements, size_t element_size);
   Returns a pointer to n_elements * element_size bytes, with all locations
   set to zero.
 */
-void* calloc(size_t n_elements, size_t elem_size);
+void *calloc(size_t n_elements, size_t elem_size);
 
 /*
   memalign(size_t alignment, size_t n);
@@ -152,7 +158,7 @@ void* calloc(size_t n_elements, size_t elem_size);
 
   Overreliance on memalign is a sure way to fragment space.
 */
-void* memalign(size_t alignment, size_t bytes);
+void *memalign(size_t alignment, size_t bytes);
 
 /*
   icalloc (independent_calloc)
@@ -191,8 +197,9 @@ void* memalign(size_t alignment, size_t bytes);
   but the number is not known at compile time, and some of the nodes
   may later need to be freed.
 */
-void** icalloc(size_t n_elements, size_t elem_size, void* chunks[]);
-#define independent_calloc(a,b,c) icalloc((a),(b),(c))
+void **icalloc(size_t n_elements, size_t elem_size, void *chunks[]);
+
+#define independent_calloc(a, b, c) icalloc((a),(b),(c))
 
 /*
   icomalloc (independent_comalloc)
@@ -231,8 +238,9 @@ void** icalloc(size_t n_elements, size_t elem_size, void* chunks[]);
   where several structs or objects must always be allocated at the
   same time.
 */
-void** icomalloc(size_t n_elements, size_t sizes[], void* chunks[]);
-#define independent_comalloc(a,b,c) icomalloc((a),(b),(c))
+void **icomalloc(size_t n_elements, size_t sizes[], void *chunks[]);
+
+#define independent_comalloc(a, b, c) icomalloc((a),(b),(c))
 
 /*
   footprint() returns the number of bytes obtained from the
@@ -271,16 +279,16 @@ size_t mfootprint();
 #ifndef STRUCT_MALLINFO_DECLARED
 #define STRUCT_MALLINFO_DECLARED
 struct mallinfo {
-  size_t arena;    /* non-mmapped space allocated from system */
-  size_t ordblks;  /* number of free chunks */
-  size_t smblks;   /* always 0 */
-  size_t hblks;    /* always 0 */
-  size_t hblkhd;   /* space in mmapped regions */
-  size_t usmblks;  /* maximum total allocated space */
-  size_t fsmblks;  /* always 0 */
-  size_t uordblks; /* total allocated space */
-  size_t fordblks; /* total free space */
-  size_t keepcost; /* releasable (via malloc_trim) space */
+    size_t arena;    /* non-mmapped space allocated from system */
+    size_t ordblks;  /* number of free chunks */
+    size_t smblks;   /* always 0 */
+    size_t hblks;    /* always 0 */
+    size_t hblkhd;   /* space in mmapped regions */
+    size_t usmblks;  /* maximum total allocated space */
+    size_t fsmblks;  /* always 0 */
+    size_t uordblks; /* total allocated space */
+    size_t fordblks; /* total free space */
+    size_t keepcost; /* releasable (via malloc_trim) space */
 };
 #endif /* __MALLINFO_DEFINED */
 
@@ -298,7 +306,8 @@ struct mallinfo mallinfo();
   programming practice. malloc_usable_size can be more useful in
   debugging and assertions
 */
-size_t mallocus(const void* mem);
+size_t mallocus(const void *mem);
+
 #define malloc_usable_size(a) mallocus((a))
 
 /*
@@ -322,6 +331,7 @@ size_t mallocus(const void* mem);
   More information can be obtained by calling mallinfo.
 */
 void mallocst();
+
 #define malloc_stats() mallocst()
 
 /*
@@ -347,6 +357,7 @@ void mallocst();
   Malloc_trim returns 1 if it actually released any memory, else 0.
 */
 int mtrim(size_t pad);
+
 #define malloc_trim(a) mtrim((a))
 
 /*

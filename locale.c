@@ -15,45 +15,38 @@
 #include "string.h"
 
 static struct lconv thislocale = {
-    ".",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    CHAR_MAX,
-    CHAR_MAX,
-    CHAR_MAX,
-    CHAR_MAX,
-    CHAR_MAX,
-    CHAR_MAX,
-    CHAR_MAX,
-    CHAR_MAX
+        ".",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        CHAR_MAX,
+        CHAR_MAX,
+        CHAR_MAX,
+        CHAR_MAX,
+        CHAR_MAX,
+        CHAR_MAX,
+        CHAR_MAX,
+        CHAR_MAX
 };
 
-char *setlocale(int category, const char *locale)
-{
-    (void)category;
-    if (locale == NULL)
-    {
+char *setlocale(int category, const char *locale) {
+    (void) category;
+    if (locale == NULL) {
         return ("C");
-    }
-    else if ((strcmp(locale, "C") == 0)
-             || (strcmp(locale, "") == 0))
-    {
+    } else if ((strcmp(locale, "C") == 0)
+               || (strcmp(locale, "") == 0)) {
         return ("C");
-    }
-    else
-    {
+    } else {
         return (NULL);
     }
 }
 
-struct lconv *localeconv(void)
-{
+struct lconv *localeconv(void) {
     return (&thislocale);
 }

@@ -58,39 +58,61 @@
 /*        exists.                                                                                 */
 /**************************************************************************************************/
 static void fopen_t() {
-  FILE* f;
-  SUB_STRT("fopen()");
+    FILE *f;
+    SUB_STRT("fopen()");
 
-  /* Open */
-  MAKEFILE("TEMP FILE A F 80");
-  ASSERTNOTNULLP("fopen(TEMP FILE A F 512,r)", f=fopen("TEMP FILE A F 512","r"), f, if (f) fclose(f));
-  ASSERTNULL("fopen(NOT MEMO A F 80,r)", f=fopen("NOT MEMO A F 80","r"), f, if (f) fclose(f));
-  ASSERTNOTNULLP("fopen(NEW FILE A F 512,w)", f=fopen("NEW FILE A F 512","w"), f, if (f) fclose(f));
-  ASSERTNOTNULLP("fopen(TEMP FILE A 512,a)", f=fopen("TEMP FILE A F 512","a"), f, if (f) fclose(f));
-  ASSERTNULL("fopen(NOT FILE A F 512,a)", f=fopen("NOT FILE A F 512","a"), f, if (f) fclose(f));
-  ASSERTNOTNULLP("fopen(TEMP FILE A F 80,a)", f=fopen("TEMP FILE A F 80","a"), f, if (f) fclose(f));
+    /* Open */
+    MAKEFILE("TEMP FILE A F 80");
+    ASSERTNOTNULLP("fopen(TEMP FILE A F 512,r)",
+                   f = fopen("TEMP FILE A F 512", "r"), f, if (f) fclose(f));
+    ASSERTNULL("fopen(NOT MEMO A F 80,r)", f = fopen("NOT MEMO A F 80", "r"), f,
+               if (f) fclose(f));
+    ASSERTNOTNULLP("fopen(NEW FILE A F 512,w)",
+                   f = fopen("NEW FILE A F 512", "w"), f, if (f) fclose(f));
+    ASSERTNOTNULLP("fopen(TEMP FILE A 512,a)",
+                   f = fopen("TEMP FILE A F 512", "a"), f, if (f) fclose(f));
+    ASSERTNULL("fopen(NOT FILE A F 512,a)", f = fopen("NOT FILE A F 512", "a"),
+               f, if (f) fclose(f));
+    ASSERTNOTNULLP("fopen(TEMP FILE A F 80,a)",
+                   f = fopen("TEMP FILE A F 80", "a"), f, if (f) fclose(f));
 
-  /* Different Access types */
-  ASSERTNOTNULLP("fopen(TEMP FILE A F 80,r+)", f=fopen("TEMP FILE A F 80","r+"), f, if (f) fclose(f));
-  ASSERTNOTNULLP("fopen(TEMP FILE A F 80,rb+)", f=fopen("TEMP FILE A F 80","rb+"), f, if (f) fclose(f));
-  ASSERTNOTNULLP("fopen(TEMP FILE A F 80,rb)", f=fopen("TEMP FILE A F 80","rb"), f, if (f) fclose(f));
-  ASSERTNOTNULLP("fopen(NEW FILE A F 512,w+)", f=fopen("NEW FILE A F 512","w+"), f, if (f) fclose(f));
-  ASSERTNOTNULLP("fopen(NEW FILE A F 512,w+b)", f=fopen("NEW FILE A F 512","w+b"), f, if (f) fclose(f));
-  ASSERTNOTNULLP("fopen(NEW FILE A F 512,wb)", f=fopen("NEW FILE A F 512","wb"), f, if (f) fclose(f));
-  ASSERTNOTNULLP("fopen(TEMP FILE A F 512,a+)", f=fopen("TEMP FILE A F 512","a+"), f, if (f) fclose(f));
-  ASSERTNOTNULLP("fopen(TEMP FILE A F 512,a+b)", f=fopen("TEMP FILE A F 512","a+b"), f, if (f) fclose(f));
-  ASSERTNOTNULLP("fopen(TEMP FILE A F 512,ab)", f=fopen("TEMP FILE A F 512","ab"), f, if (f) fclose(f));
+    /* Different Access types */
+    ASSERTNOTNULLP("fopen(TEMP FILE A F 80,r+)",
+                   f = fopen("TEMP FILE A F 80", "r+"), f, if (f) fclose(f));
+    ASSERTNOTNULLP("fopen(TEMP FILE A F 80,rb+)",
+                   f = fopen("TEMP FILE A F 80", "rb+"), f, if (f) fclose(f));
+    ASSERTNOTNULLP("fopen(TEMP FILE A F 80,rb)",
+                   f = fopen("TEMP FILE A F 80", "rb"), f, if (f) fclose(f));
+    ASSERTNOTNULLP("fopen(NEW FILE A F 512,w+)",
+                   f = fopen("NEW FILE A F 512", "w+"), f, if (f) fclose(f));
+    ASSERTNOTNULLP("fopen(NEW FILE A F 512,w+b)",
+                   f = fopen("NEW FILE A F 512", "w+b"), f, if (f) fclose(f));
+    ASSERTNOTNULLP("fopen(NEW FILE A F 512,wb)",
+                   f = fopen("NEW FILE A F 512", "wb"), f, if (f) fclose(f));
+    ASSERTNOTNULLP("fopen(TEMP FILE A F 512,a+)",
+                   f = fopen("TEMP FILE A F 512", "a+"), f, if (f) fclose(f));
+    ASSERTNOTNULLP("fopen(TEMP FILE A F 512,a+b)",
+                   f = fopen("TEMP FILE A F 512", "a+b"), f, if (f) fclose(f));
+    ASSERTNOTNULLP("fopen(TEMP FILE A F 512,ab)",
+                   f = fopen("TEMP FILE A F 512", "ab"), f, if (f) fclose(f));
 
-  /* Bad Access */
-  ASSERTNULL("fopen(TEMP FILE A F 512,x)", f=fopen("TEMP FILE A F 512","x"), f, if (f) fclose(f));
-  ASSERTNULL("fopen(TEMP FILE A F 512,+)", f=fopen("TEMP FILE A F 512","+"), f, if (f) fclose(f));
-  ASSERTNULL("fopen(TEMP FILE A F 512,b)", f=fopen("TEMP FILE A F 512","b"), f, if (f) fclose(f));
-  ASSERTNULL("fopen(TEMP FILE A F 512,)", f=fopen("TEMP FILE A F 512",""), f, if (f) fclose(f));
-  ASSERTNULL("fopen(TEMP FILE A F 512,r+bx)", f=fopen("TEMP FILE A F 512","r+bx"), f, if (f) fclose(f));
+    /* Bad Access */
+    ASSERTNULL("fopen(TEMP FILE A F 512,x)",
+               f = fopen("TEMP FILE A F 512", "x"), f, if (f) fclose(f));
+    ASSERTNULL("fopen(TEMP FILE A F 512,+)",
+               f = fopen("TEMP FILE A F 512", "+"), f, if (f) fclose(f));
+    ASSERTNULL("fopen(TEMP FILE A F 512,b)",
+               f = fopen("TEMP FILE A F 512", "b"), f, if (f) fclose(f));
+    ASSERTNULL("fopen(TEMP FILE A F 512,)", f = fopen("TEMP FILE A F 512", ""),
+               f, if (f) fclose(f));
+    ASSERTNULL("fopen(TEMP FILE A F 512,r+bx)",
+               f = fopen("TEMP FILE A F 512", "r+bx"), f, if (f) fclose(f));
 
-  /* Finally Check if write deletes */
-  ASSERTNOTNULLP("fopen(TEMP FILE A F 80,w)", f=fopen("TEMP FILE A F 80","w"), f, if (f) fclose(f));
-  ASSERTNULL("fopen(TEMP FILE A F 80,r)", f=fopen("TEMP FILE A F 80","r"), f, if (f) fclose(f));
+    /* Finally Check if write deletes */
+    ASSERTNOTNULLP("fopen(TEMP FILE A F 80,w)",
+                   f = fopen("TEMP FILE A F 80", "w"), f, if (f) fclose(f));
+    ASSERTNULL("fopen(TEMP FILE A F 80,r)", f = fopen("TEMP FILE A F 80", "r"),
+               f, if (f) fclose(f));
 }
 
 /**************************************************************************************************/
@@ -99,12 +121,13 @@ static void fopen_t() {
 /*    0 if all is well, EOF if there is an error.                                                 */
 /**************************************************************************************************/
 static void fclose_t() {
-  FILE* f;
-  SUB_STRT("fclose()");
-  ASSERTNOTNULLP("fopen(TEMP FILE A F 80,w)", f=fopen("TEMP FILE A F 80","w"), f, );
-  ASSERTNOTEOFP("fclose(f)", ,fclose(f), );
-  ASSERTEOF("fputs(SHOULD NOT SEE,f)", ,fputs("SHOULD NOT SEE\n",f), );
-  ASSERTEOF("fclose(f)", ,fclose(f), );
+    FILE *f;
+    SUB_STRT("fclose()");
+    ASSERTNOTNULLP("fopen(TEMP FILE A F 80,w)",
+                   f = fopen("TEMP FILE A F 80", "w"), f,);
+    ASSERTNOTEOFP("fclose(f)", , fclose(f),);
+    ASSERTEOF("fputs(SHOULD NOT SEE,f)", , fputs("SHOULD NOT SEE\n", f),);
+    ASSERTEOF("fclose(f)", , fclose(f),);
 }
 
 /**************************************************************************************************/
@@ -119,21 +142,23 @@ static void fclose_t() {
 /*    1.  If the stream is not open for output, fflush is a NOP.                                  */
 /**************************************************************************************************/
 static void fflush_t() {
-  FILE* test;
-  FILE* reader;
-  char buf[200];
+    FILE *test;
+    FILE *reader;
+    char buf[200];
 
-  SUB_STRT("fflush()");
-  ASSERTNOTNULLP("fopen(NEW FILE A F 80,w)", test=fopen("NEW FILE A F 80","w"), test, );
-  ASSERTNOTEOFP("fputc()", ,FPUTC_WR(TEST_SHORT_STRING,test), );
-  ASSERTZEROP("fflush()", , fflush(test), );
-  ASSERTZEROP("fclose()", , fclose(test), );
-  ASSERTNOTNULLP("fopen(NEW FILE,r)", reader = fopen("NEW FILE","r"), reader, );
-  ASSERTNOTNULLP("fgets(reader)", , fgets(buf, 200, reader), );
-  ASSERTZERO("strcmp()", , strcmp(buf, TEST_SHORT_STRING_NL), );
-  ASSERTNULL("fgets(reader)", , fgets(buf, 200, reader), );
-  ASSERTNOTZERO("feof(reader)", ,feof(reader), );
-  ASSERTZEROP("fclose(reader)", , fclose(reader), );
+    SUB_STRT("fflush()");
+    ASSERTNOTNULLP("fopen(NEW FILE A F 80,w)",
+                   test = fopen("NEW FILE A F 80", "w"), test,);
+    ASSERTNOTEOFP("fputc()", , FPUTC_WR(TEST_SHORT_STRING, test),);
+    ASSERTZEROP("fflush()", , fflush(test),);
+    ASSERTZEROP("fclose()", , fclose(test),);
+    ASSERTNOTNULLP("fopen(NEW FILE,r)", reader = fopen("NEW FILE", "r"),
+                   reader,);
+    ASSERTNOTNULLP("fgets(reader)", , fgets(buf, 200, reader),);
+    ASSERTZERO("strcmp()", , strcmp(buf, TEST_SHORT_STRING_NL),);
+    ASSERTNULL("fgets(reader)", , fgets(buf, 200, reader),);
+    ASSERTNOTZERO("feof(reader)", , feof(reader),);
+    ASSERTZEROP("fclose(reader)", , fclose(reader),);
 }
 
 /**************************************************************************************************/
@@ -146,13 +171,14 @@ static void fflush_t() {
 /*    the error status, or 0 if there is no error.                                                */
 /**************************************************************************************************/
 static void ferror_t() {
-  FILE* test;
+    FILE *test;
 
-  SUB_STRT("ferror()");
-  ASSERTNOTNULLP("fopen(NEW FILE A F 80,w)", test=fopen("NEW FILE A F 80","w"), test, );
-  ASSERTEOF("fgetc()", , fgetc(test), );
-  ASSERTNOTZERO("ferror()", , ferror(test), );
-  ASSERTZEROP("fclose()", , fclose(test), );
+    SUB_STRT("ferror()");
+    ASSERTNOTNULLP("fopen(NEW FILE A F 80,w)",
+                   test = fopen("NEW FILE A F 80", "w"), test,);
+    ASSERTEOF("fgetc()", , fgetc(test),);
+    ASSERTNOTZERO("ferror()", , ferror(test),);
+    ASSERTZEROP("fclose()", , fclose(test),);
 }
 
 /**************************************************************************************************/
@@ -162,14 +188,15 @@ static void ferror_t() {
 /*    stream   a pointer to the open input stream.                                                */
 /**************************************************************************************************/
 static void clearerr_t() {
-  FILE* test;
+    FILE *test;
 
-  SUB_STRT("clearerr()");
-  ASSERTNOTNULLP("fopen(NEW FILE A F 80,w)", test=fopen("NEW FILE A F 80","w"), test, );
-  ASSERTEOF("fgetc()", , fgetc(test), );
-  clearerr(test);
-  ASSERTZERO("ferror()", , ferror(test), );
-  ASSERTZEROP("fclose()", , fclose(test), );
+    SUB_STRT("clearerr()");
+    ASSERTNOTNULLP("fopen(NEW FILE A F 80,w)",
+                   test = fopen("NEW FILE A F 80", "w"), test,);
+    ASSERTEOF("fgetc()", , fgetc(test),);
+    clearerr(test);
+    ASSERTZERO("ferror()", , ferror(test),);
+    ASSERTZEROP("fclose()", , fclose(test),);
 }
 
 /**************************************************************************************************/
@@ -186,31 +213,36 @@ static void clearerr_t() {
 /*        files.                                                                                  */
 /**************************************************************************************************/
 static void fgetc_t() {
-  FILE* test;
-  FILE* out;
-  char buf[300];
-  char buf2[300];
+    FILE *test;
+    FILE *out;
+    char buf[300];
+    char buf2[300];
 
-  SUB_STRT("fgetc() - text");
-  ASSERTNOTNULLP("fopen(TEST FILE A F 120,w)", out=fopen("TEST FILE A F 120","w"), out, );
-  ASSERTNOTEOFP("fputs()", , fputs(TEST_STRING, out), );
-  ASSERTZEROP("fclose()", , fclose(out), );
-  ASSERTNOTNULLP("fopen(TEST FILE A,r)", test=fopen("TEST FILE A","r"), test, );
-  ASSERTNOTNULL("FGETC_RD()", , FGETC_RD(buf, 200, test), );
-  ASSERTZERO("strcmp()", , strcmp(buf,TEST_STRING_NL), );
-  ASSERTZEROP("fclose()", , fclose(test), );
+    SUB_STRT("fgetc() - text");
+    ASSERTNOTNULLP("fopen(TEST FILE A F 120,w)",
+                   out = fopen("TEST FILE A F 120", "w"), out,);
+    ASSERTNOTEOFP("fputs()", , fputs(TEST_STRING, out),);
+    ASSERTZEROP("fclose()", , fclose(out),);
+    ASSERTNOTNULLP("fopen(TEST FILE A,r)", test = fopen("TEST FILE A", "r"),
+                   test,);
+    ASSERTNOTNULL("FGETC_RD()", , FGETC_RD(buf, 200, test),);
+    ASSERTZERO("strcmp()", , strcmp(buf, TEST_STRING_NL),);
+    ASSERTZEROP("fclose()", , fclose(test),);
 
-  SUB_STRT("fgetc() - binary");
-  ASSERTNOTNULLP("fopen(TEST FILE A F 120,w)", out=fopen("TEST FILE A F 120","w"), out, );
-  ASSERTNOTEOFP("fputs()", , fputs(TEST_STRING, out), );
-  ASSERTNOTEOFP("fputs()", , fputs(TEST_STRING, out), );
-  ASSERTZEROP("fclose()", , fclose(out), );
-  ASSERTNOTNULLP("fopen(TEST FILE A,rb)", test=fopen("TEST FILE A","rb"), test, );
-  ASSERTNOTNULL("FGETC_RD()", , FGETC_RD(buf, strlen(TEST_STRING)*2, test), );
-  strcpy(buf2,TEST_STRING);
-  strcat(buf2,TEST_STRING);
-  ASSERTZERO("strcmp()", , strcmp(buf,buf2), );
-  ASSERTZEROP("fclose()", , fclose(test), );
+    SUB_STRT("fgetc() - binary");
+    ASSERTNOTNULLP("fopen(TEST FILE A F 120,w)",
+                   out = fopen("TEST FILE A F 120", "w"), out,);
+    ASSERTNOTEOFP("fputs()", , fputs(TEST_STRING, out),);
+    ASSERTNOTEOFP("fputs()", , fputs(TEST_STRING, out),);
+    ASSERTZEROP("fclose()", , fclose(out),);
+    ASSERTNOTNULLP("fopen(TEST FILE A,rb)", test = fopen("TEST FILE A", "rb"),
+                   test,);
+    ASSERTNOTNULL("FGETC_RD()", ,
+                  FGETC_RD(buf, strlen(TEST_STRING) * 2, test),);
+    strcpy(buf2, TEST_STRING);
+    strcat(buf2, TEST_STRING);
+    ASSERTZERO("strcmp()", , strcmp(buf, buf2),);
+    ASSERTZEROP("fclose()", , fclose(test),);
 }
 
 /**************************************************************************************************/
@@ -228,34 +260,39 @@ static void fgetc_t() {
 /*    1.  fgets is only appropriate for a text file.                                              */
 /**************************************************************************************************/
 static void fgets_t() {
-  FILE* test;
-  FILE* out;
-  char buf[300];
-  char buf2[300];
-  char buf3[300];
+    FILE *test;
+    FILE *out;
+    char buf[300];
+    char buf2[300];
+    char buf3[300];
 
-  SUB_STRT("fgets() - text");
-  ASSERTNOTNULLP("fopen(TEST FILE A F 120,w)", out=fopen("TEST FILE A F 120","w"), out, );
-  ASSERTNOTEOFP("fputs()", , fputs(TEST_STRING, out), );
-  ASSERTZEROP("fclose()", , fclose(out), );
-  ASSERTNOTNULLP("fopen(TEST FILE A,r)", test=fopen("TEST FILE A","r"), test, );
-  ASSERTNOTNULL("fgets()", , fgets(buf, 200, test), );
-  ASSERTZERO("strcmp()", , strcmp(buf,TEST_STRING_NL), );
-  ASSERTZEROP("fclose()", , fclose(test), );
+    SUB_STRT("fgets() - text");
+    ASSERTNOTNULLP("fopen(TEST FILE A F 120,w)",
+                   out = fopen("TEST FILE A F 120", "w"), out,);
+    ASSERTNOTEOFP("fputs()", , fputs(TEST_STRING, out),);
+    ASSERTZEROP("fclose()", , fclose(out),);
+    ASSERTNOTNULLP("fopen(TEST FILE A,r)", test = fopen("TEST FILE A", "r"),
+                   test,);
+    ASSERTNOTNULL("fgets()", , fgets(buf, 200, test),);
+    ASSERTZERO("strcmp()", , strcmp(buf, TEST_STRING_NL),);
+    ASSERTZEROP("fclose()", , fclose(test),);
 
-  SUB_STRT("fgets() - binary");
-  ASSERTNOTNULLP("fopen(TEST FILE A F 120,w)", out=fopen("TEST FILE A F 120","w"), out, );
-  ASSERTNOTEOFP("fputs()", , fputs(TEST_STRING, out), );
-  ASSERTNOTEOFP("fputs()", , fputs(TEST_STRING, out), );
-  ASSERTZEROP("fclose()", , fclose(out), );
-  ASSERTNOTNULLP("fopen(TEST FILE A,rb)", test=fopen("TEST FILE A","rb"), test, );
-  ASSERTNOTNULL("fgets()", , fgets(buf, 300, test), );
-  ASSERTNOTNULL("fgets()", , fgets(buf3, (strlen(TEST_STRING)*2)+1-120, test), ); /* rest of the data */
-  strcat(buf,buf3);
-  strcpy(buf2,TEST_STRING);
-  strcat(buf2,TEST_STRING);
-  ASSERTZERO("strcmp()", , strcmp(buf,buf2), );
-  ASSERTZEROP("fclose()", , fclose(test), );
+    SUB_STRT("fgets() - binary");
+    ASSERTNOTNULLP("fopen(TEST FILE A F 120,w)",
+                   out = fopen("TEST FILE A F 120", "w"), out,);
+    ASSERTNOTEOFP("fputs()", , fputs(TEST_STRING, out),);
+    ASSERTNOTEOFP("fputs()", , fputs(TEST_STRING, out),);
+    ASSERTZEROP("fclose()", , fclose(out),);
+    ASSERTNOTNULLP("fopen(TEST FILE A,rb)", test = fopen("TEST FILE A", "rb"),
+                   test,);
+    ASSERTNOTNULL("fgets()", , fgets(buf, 300, test),);
+    ASSERTNOTNULL("fgets()", , fgets(buf3, (strlen(TEST_STRING) * 2) + 1 - 120,
+                                     test),); /* rest of the data */
+    strcat(buf, buf3);
+    strcpy(buf2, TEST_STRING);
+    strcat(buf2, TEST_STRING);
+    ASSERTZERO("strcmp()", , strcmp(buf, buf2),);
+    ASSERTZEROP("fclose()", , fclose(test),);
 }
 
 /**************************************************************************************************/
@@ -268,22 +305,24 @@ static void fgets_t() {
 /*    1 if EOF has been reached, 0 otherwise.                                                     */
 /**************************************************************************************************/
 static void feof_t() {
-  FILE* test;
-  char buf[81];
+    FILE *test;
+    char buf[81];
 
-  SUB_STRT("feof()");
-  ASSERTNOTNULLP("fopen(TEMP FILE A F 80,w)", test=fopen("TEMP FILE A F 80","w"), test, );
-  ASSERTZERO("feof()", , feof(test), );
-  ASSERTNOTEOFP("fputs()", , fputs(TEST_SHORT_STRING, test), );
-  ASSERTZEROP("fclose()", , fclose(test), );
-  ASSERTNOTNULLP("fopen(TEMP FILE A,r)", test=fopen("TEMP FILE A","r"), test, );
-  ASSERTZERO("feof()", , feof(test), );
-  ASSERTNOTNULL("fgets()", , fgets(buf, 81, test), );
-  ASSERTZERO("feof()", , feof(test), );
-  ASSERTNULL("fgets()", , fgets(buf, 81, test), );
-  ASSERTNOTZERO("feof()", , feof(test), );
-  ASSERTZEROP("fclose()", , fclose(test), );
-  DELFILE("TEMP FILE A");
+    SUB_STRT("feof()");
+    ASSERTNOTNULLP("fopen(TEMP FILE A F 80,w)",
+                   test = fopen("TEMP FILE A F 80", "w"), test,);
+    ASSERTZERO("feof()", , feof(test),);
+    ASSERTNOTEOFP("fputs()", , fputs(TEST_SHORT_STRING, test),);
+    ASSERTZEROP("fclose()", , fclose(test),);
+    ASSERTNOTNULLP("fopen(TEMP FILE A,r)", test = fopen("TEMP FILE A", "r"),
+                   test,);
+    ASSERTZERO("feof()", , feof(test),);
+    ASSERTNOTNULL("fgets()", , fgets(buf, 81, test),);
+    ASSERTZERO("feof()", , feof(test),);
+    ASSERTNULL("fgets()", , fgets(buf, 81, test),);
+    ASSERTNOTZERO("feof()", , feof(test),);
+    ASSERTZEROP("fclose()", , fclose(test),);
+    DELFILE("TEMP FILE A");
 }
 
 /**************************************************************************************************/
@@ -302,39 +341,49 @@ static void feof_t() {
 /*        the previous character is read, it is not placed in the buffer and EOF is returned.     */
 /**************************************************************************************************/
 static void ungetc_t() {
-  FILE* test;
-  char buf[200];
-  char buf2[200];
+    FILE *test;
+    char buf[200];
+    char buf2[200];
 
-  SUB_STRT("ungetc() - opened for writing");
-  ASSERTNOTNULLP("fopen(TEMP FILE A F 80,w)", test=fopen("TEMP FILE A F 80","w"), test, );
-  ASSERTEOF("ungetc(y)", , ungetc('y',test), );
-  ASSERTZEROP("fclose()", , fclose(test), );
-  SUB_STRT("ungetc() - text");
-  ASSERTNOTNULLP("fopen(TEMP FILE A F 80,w)", test=fopen("TEMP FILE A F 80","w"), test, );
-  ASSERTNOTEOFP("fputs()", , fputs(TEST_SHORT_STRING, test), );
-  ASSERTZEROP("fclose()", , fclose(test), );
-  ASSERTNOTNULLP("fopen(TEMP FILE A,r)", test=fopen("TEMP FILE A","r"), test, );
-  ASSERTNOTEOF("ungetc(x)", , ungetc('x',test), );
-  ASSERTEOF("ungetc(y)", , ungetc('y',test), );
-  ASSERTNOTNULL("fgets()", , fgets(buf, 200, test), );
-  ASSERTNOTEOF("ungetc(z)", , ungetc('z',test), );
-  buf2[0] = 'x'; buf2[1]=0; strcat(buf2,TEST_SHORT_STRING_NL);
-  ASSERTZERO("strcmp()", , strcmp(buf,buf2), );
-  ASSERTZEROP("fclose()", , fclose(test), );
-  SUB_STRT("ungetc() - binary");
-  ASSERTNOTNULLP("fopen(TEMP FILE A F 80,w)", test=fopen("TEMP FILE A F 80","w"), test, );
-  ASSERTNOTEOFP("fputs()", , fputs(TEST_SHORT_STRING, test), );
-  ASSERTZEROP("fclose()", , fclose(test), );
-  ASSERTNOTNULLP("fopen(TEMP FILE A,rb)", test=fopen("TEMP FILE A","rb"), test, );
-  ASSERTNOTEOF("ungetc(x)", , ungetc('x',test), );
-  ASSERTEOF("ungetc(y)", , ungetc('y',test), );
-  ASSERTNOTNULL("fgets()", , fgets(buf, strlen(TEST_SHORT_STRING) + 2, test), );
-  ASSERTNOTEOF("ungetc(z)", , ungetc('z',test), );
-  buf2[0] = 'x'; buf2[1]=0; strcat(buf2,TEST_SHORT_STRING);
-  ASSERTZERO("strcmp()", , strcmp(buf,buf2), );
-  ASSERTZEROP("fclose()", , fclose(test), );
-  DELFILE("TEMP FILE A");
+    SUB_STRT("ungetc() - opened for writing");
+    ASSERTNOTNULLP("fopen(TEMP FILE A F 80,w)",
+                   test = fopen("TEMP FILE A F 80", "w"), test,);
+    ASSERTEOF("ungetc(y)", , ungetc('y', test),);
+    ASSERTZEROP("fclose()", , fclose(test),);
+    SUB_STRT("ungetc() - text");
+    ASSERTNOTNULLP("fopen(TEMP FILE A F 80,w)",
+                   test = fopen("TEMP FILE A F 80", "w"), test,);
+    ASSERTNOTEOFP("fputs()", , fputs(TEST_SHORT_STRING, test),);
+    ASSERTZEROP("fclose()", , fclose(test),);
+    ASSERTNOTNULLP("fopen(TEMP FILE A,r)", test = fopen("TEMP FILE A", "r"),
+                   test,);
+    ASSERTNOTEOF("ungetc(x)", , ungetc('x', test),);
+    ASSERTEOF("ungetc(y)", , ungetc('y', test),);
+    ASSERTNOTNULL("fgets()", , fgets(buf, 200, test),);
+    ASSERTNOTEOF("ungetc(z)", , ungetc('z', test),);
+    buf2[0] = 'x';
+    buf2[1] = 0;
+    strcat(buf2, TEST_SHORT_STRING_NL);
+    ASSERTZERO("strcmp()", , strcmp(buf, buf2),);
+    ASSERTZEROP("fclose()", , fclose(test),);
+    SUB_STRT("ungetc() - binary");
+    ASSERTNOTNULLP("fopen(TEMP FILE A F 80,w)",
+                   test = fopen("TEMP FILE A F 80", "w"), test,);
+    ASSERTNOTEOFP("fputs()", , fputs(TEST_SHORT_STRING, test),);
+    ASSERTZEROP("fclose()", , fclose(test),);
+    ASSERTNOTNULLP("fopen(TEMP FILE A,rb)", test = fopen("TEMP FILE A", "rb"),
+                   test,);
+    ASSERTNOTEOF("ungetc(x)", , ungetc('x', test),);
+    ASSERTEOF("ungetc(y)", , ungetc('y', test),);
+    ASSERTNOTNULL("fgets()", ,
+                  fgets(buf, strlen(TEST_SHORT_STRING) + 2, test),);
+    ASSERTNOTEOF("ungetc(z)", , ungetc('z', test),);
+    buf2[0] = 'x';
+    buf2[1] = 0;
+    strcat(buf2, TEST_SHORT_STRING);
+    ASSERTZERO("strcmp()", , strcmp(buf, buf2),);
+    ASSERTZEROP("fclose()", , fclose(test),);
+    DELFILE("TEMP FILE A");
 }
 
 /**************************************************************************************************/
@@ -348,34 +397,38 @@ static void ungetc_t() {
 /*    the character, or EOF if there is an error.                                                 */
 /**************************************************************************************************/
 static void fputc_t() {
-  FILE* test;
-  char buf[201];
-  char buf2[201];
-  char buf3[201];
-  int i;
+    FILE *test;
+    char buf[201];
+    char buf2[201];
+    char buf3[201];
+    int i;
 
-  SUB_STRT("fputc() - text");
-  ASSERTNOTNULLP("fopen(TEMP FILE A F 110,w)", test=fopen("TEMP FILE A F 110","w"), test, );
-  FPUTC_T(test);
-  ASSERTZEROP("fclose()", , fclose(test), );
-  ASSERTNOTNULLP("fopen(TEMP FILE A,r)", test=fopen("TEMP FILE A","r"), test, );
-  FGETS_T(test,110);
-  ASSERTZEROP("fclose()", , fclose(test), );
+    SUB_STRT("fputc() - text");
+    ASSERTNOTNULLP("fopen(TEMP FILE A F 110,w)",
+                   test = fopen("TEMP FILE A F 110", "w"), test,);
+    FPUTC_T(test);
+    ASSERTZEROP("fclose()", , fclose(test),);
+    ASSERTNOTNULLP("fopen(TEMP FILE A,r)", test = fopen("TEMP FILE A", "r"),
+                   test,);
+    FGETS_T(test, 110);
+    ASSERTZEROP("fclose()", , fclose(test),);
 
-  SUB_STRT("fputc() - binary");
-  ASSERTNOTNULLP("fopen(TEMP FILE A F 110,wb)", test=fopen("TEMP FILE A F 110","wb"), test, );
-  buf2[0]=0;
-  for (i=0; i<20; i++) {
-    FPUTC_WR("123456789+",test);
-    strcat(buf2,"123456789+");
-  }
-  ASSERTZEROP("fclose()", , fclose(test), );
-  ASSERTNOTNULLP("fopen(TEMP FILE A,rb)", test=fopen("TEMP FILE A","rb"), test, );
-  ASSERTNOTNULL("fgets()", , fgets(buf, 201, test), );
-  ASSERTNOTNULL("fgets()", , fgets(buf3, strlen(buf2)-110+1, test), );
-  strcat(buf,buf3);
-  ASSERTZERO("strcmp()", , strcmp(buf,buf2), );
-  ASSERTZEROP("fclose()", , fclose(test), );
+    SUB_STRT("fputc() - binary");
+    ASSERTNOTNULLP("fopen(TEMP FILE A F 110,wb)",
+                   test = fopen("TEMP FILE A F 110", "wb"), test,);
+    buf2[0] = 0;
+    for (i = 0; i < 20; i++) {
+        FPUTC_WR("123456789+", test);
+        strcat(buf2, "123456789+");
+    }
+    ASSERTZEROP("fclose()", , fclose(test),);
+    ASSERTNOTNULLP("fopen(TEMP FILE A,rb)", test = fopen("TEMP FILE A", "rb"),
+                   test,);
+    ASSERTNOTNULL("fgets()", , fgets(buf, 201, test),);
+    ASSERTNOTNULL("fgets()", , fgets(buf3, strlen(buf2) - 110 + 1, test),);
+    strcat(buf, buf3);
+    ASSERTZERO("strcmp()", , strcmp(buf, buf2),);
+    ASSERTZEROP("fclose()", , fclose(test),);
 }
 
 /**************************************************************************************************/
@@ -389,33 +442,37 @@ static void fputc_t() {
 /*    non-negative on success, EOF on failure.                                                    */
 /**************************************************************************************************/
 static void fputs_t() {
-  FILE* test;
-  char buf[201];
-  char buf2[201];
-  char buf3[201];
-  int i;
+    FILE *test;
+    char buf[201];
+    char buf2[201];
+    char buf3[201];
+    int i;
 
-  SUB_STRT("fputs() - text");
-  ASSERTNOTNULLP("fopen(TEMP FILE A F 110,w)", test=fopen("TEMP FILE A F 110","w"), test, );
-  FPUTS_T(test);
-  ASSERTZEROP("fclose()", , fclose(test), );
-  ASSERTNOTNULLP("fopen(TEMP FILE A,r)", test=fopen("TEMP FILE A","r"), test, );
-  FGETS_T(test,110);
-  SUB_STRT("fputs() - binary");
-  ASSERTZEROP("fclose()", , fclose(test), );
-  ASSERTNOTNULLP("fopen(TEMP FILE A F 110,wb)", test=fopen("TEMP FILE A F 110","wb"), test, );
-  buf2[0]=0;
-  for (i=0; i<20; i++) {
-    fputs("123456789+",test);
-    strcat(buf2,"123456789+");
-  }
-  ASSERTZEROP("fclose()", , fclose(test), );
-  ASSERTNOTNULLP("fopen(TEMP FILE A,rb)", test=fopen("TEMP FILE A","rb"), test, );
-  ASSERTNOTNULL("fgets()", , fgets(buf, 201, test), );
-  ASSERTNOTNULL("fgets()", , fgets(buf3, strlen(buf2)-110+1, test), );
-  strcat(buf,buf3);
-  ASSERTZERO("strcmp()", , strcmp(buf,buf2), );
-  ASSERTZEROP("fclose()", , fclose(test), );
+    SUB_STRT("fputs() - text");
+    ASSERTNOTNULLP("fopen(TEMP FILE A F 110,w)",
+                   test = fopen("TEMP FILE A F 110", "w"), test,);
+    FPUTS_T(test);
+    ASSERTZEROP("fclose()", , fclose(test),);
+    ASSERTNOTNULLP("fopen(TEMP FILE A,r)", test = fopen("TEMP FILE A", "r"),
+                   test,);
+    FGETS_T(test, 110);
+    SUB_STRT("fputs() - binary");
+    ASSERTZEROP("fclose()", , fclose(test),);
+    ASSERTNOTNULLP("fopen(TEMP FILE A F 110,wb)",
+                   test = fopen("TEMP FILE A F 110", "wb"), test,);
+    buf2[0] = 0;
+    for (i = 0; i < 20; i++) {
+        fputs("123456789+", test);
+        strcat(buf2, "123456789+");
+    }
+    ASSERTZEROP("fclose()", , fclose(test),);
+    ASSERTNOTNULLP("fopen(TEMP FILE A,rb)", test = fopen("TEMP FILE A", "rb"),
+                   test,);
+    ASSERTNOTNULL("fgets()", , fgets(buf, 201, test),);
+    ASSERTNOTNULL("fgets()", , fgets(buf3, strlen(buf2) - 110 + 1, test),);
+    strcat(buf, buf3);
+    ASSERTZERO("strcmp()", , strcmp(buf, buf2),);
+    ASSERTZEROP("fclose()", , fclose(test),);
 }
 
 /**************************************************************************************************/
@@ -454,40 +511,46 @@ static void fputs_t() {
 /*        record.  Thus the file is treated as a stream of bytes.                                 */
 /**************************************************************************************************/
 static void fwriteread_t() {
-  FILE* test;
-  const char *item = "1234567890abcdefghijklmnopqrstuvwxyz";
-  const char *item2 = "1234567890\nahijklmnopqrstuvwxyz";
-  const int count = 20;
-  char* buffer;
-  char* buffer2;
-  int i;
+    FILE *test;
+    const char *item = "1234567890abcdefghijklmnopqrstuvwxyz";
+    const char *item2 = "1234567890\nahijklmnopqrstuvwxyz";
+    const int count = 20;
+    char *buffer;
+    char *buffer2;
+    int i;
 
-  SUB_STRT("fwrite() and fread()");
-  buffer = malloc(count * strlen(item));
-  buffer2 = malloc(count * strlen(item));
-  buffer[0] = 0;
-  buffer2[0] = 0;
-  buffer2[count * strlen(item)] = 0;
-  for (i=0; i<count; i++) strcat(buffer,item);
-  ASSERTNOTNULLP("fopen(TEMP FILE A F 105,wb)", test=fopen("TEMP FILE A F 105","wb"), test, );
-  ASSERTNOTZERO("fwrite()", ,fwrite(buffer, strlen(item), count, test)==count, );
-  ASSERTZEROP("fclose()", , fclose(test), );
-  ASSERTNOTNULLP("fopen(TEMP FILE A,rb)", test=fopen("TEMP FILE A","rb"), test, );
-  ASSERTNOTZERO("fread()", ,fread(buffer2, strlen(item), count, test)==count, );
-  ASSERTZERO("strcmp()", , strcmp(buffer,buffer2), );
-  ASSERTZEROP("fclose()", , fclose(test), );
+    SUB_STRT("fwrite() and fread()");
+    buffer = malloc(count * strlen(item));
+    buffer2 = malloc(count * strlen(item));
+    buffer[0] = 0;
+    buffer2[0] = 0;
+    buffer2[count * strlen(item)] = 0;
+    for (i = 0; i < count; i++) strcat(buffer, item);
+    ASSERTNOTNULLP("fopen(TEMP FILE A F 105,wb)",
+                   test = fopen("TEMP FILE A F 105", "wb"), test,);
+    ASSERTNOTZERO("fwrite()", ,
+                  fwrite(buffer, strlen(item), count, test) == count,);
+    ASSERTZEROP("fclose()", , fclose(test),);
+    ASSERTNOTNULLP("fopen(TEMP FILE A,rb)", test = fopen("TEMP FILE A", "rb"),
+                   test,);
+    ASSERTNOTZERO("fread()", ,
+                  fread(buffer2, strlen(item), count, test) == count,);
+    ASSERTZERO("strcmp()", , strcmp(buffer, buffer2),);
+    ASSERTZEROP("fclose()", , fclose(test),);
 
-  buffer2[strlen(item2)] = 0;
-  ASSERTNOTNULLP("fopen(TEMP FILE A F 105,w)", test=fopen("TEMP FILE A F 105","w"), test, );
-  ASSERTNOTZERO("fwrite()", ,fwrite(item2, strlen(item2), 1, test)==1, );
-  ASSERTZEROP("fclose()", , fclose(test), );
-  ASSERTNOTNULLP("fopen(TEMP FILE A,r)", test=fopen("TEMP FILE A","r"), test, );
-  ASSERTNOTZERO("fread()", ,fread(buffer2, strlen(item2), 1, test)==1, );
-  ASSERTZERO("strcmp()", , strcmp(item2,buffer2), );
-  ASSERTZEROP("fclose()", , fclose(test), );
+    buffer2[strlen(item2)] = 0;
+    ASSERTNOTNULLP("fopen(TEMP FILE A F 105,w)",
+                   test = fopen("TEMP FILE A F 105", "w"), test,);
+    ASSERTNOTZERO("fwrite()", , fwrite(item2, strlen(item2), 1, test) == 1,);
+    ASSERTZEROP("fclose()", , fclose(test),);
+    ASSERTNOTNULLP("fopen(TEMP FILE A,r)", test = fopen("TEMP FILE A", "r"),
+                   test,);
+    ASSERTNOTZERO("fread()", , fread(buffer2, strlen(item2), 1, test) == 1,);
+    ASSERTZERO("strcmp()", , strcmp(item2, buffer2),);
+    ASSERTZEROP("fclose()", , fclose(test),);
 
-  free(buffer);
-  free(buffer2);
+    free(buffer);
+    free(buffer2);
 }
 
 /**************************************************************************************************/
@@ -504,13 +567,14 @@ static void fwriteread_t() {
 /*    2.  Functioally, ftell is equivalent to fgetpos.                                            */
 /**************************************************************************************************/
 static void ftell_t() {
-  FILE* test;
+    FILE *test;
 
-  SUB_STRT("ftell()");
-  ASSERTNOTNULLP("fopen(TEMP FILE A F 80,wb)", test=fopen("TEMP FILE A F 80","wb"), test, );
-  ASSERTNOTEOFP("fputs()", , fputs("PREFIX",test),);
-  ASSERTNOTZERO("ftell()", , ftell(test)==6, );
-  ASSERTZEROP("fclose()", , fclose(test), );
+    SUB_STRT("ftell()");
+    ASSERTNOTNULLP("fopen(TEMP FILE A F 80,wb)",
+                   test = fopen("TEMP FILE A F 80", "wb"), test,);
+    ASSERTNOTEOFP("fputs()", , fputs("PREFIX", test),);
+    ASSERTNOTZERO("ftell()", , ftell(test) == 6,);
+    ASSERTZEROP("fclose()", , fclose(test),);
 }
 
 /**************************************************************************************************/
@@ -529,39 +593,45 @@ static void ftell_t() {
 /*    1.  fseek is only valid for fixed record length disk files                                  */
 /**************************************************************************************************/
 static void fseek_t() {
-  FILE* test;
-  const char *item = "1234567890abcdefghijklmnopqrstuvwxyz";
-  const int count = 20;
-  char* buffer;
-  int i;
-  fpos_t position;
-  char c;
+    FILE *test;
+    const char *item = "1234567890abcdefghijklmnopqrstuvwxyz";
+    const int count = 20;
+    char *buffer;
+    int i;
+    fpos_t position;
+    char c;
 
-  SUB_STRT("fseek()");
-  buffer = malloc(count * strlen(item));
-  buffer[0] = 0;
-  for (i=0; i<count; i++) strcat(buffer,item);
-  ASSERTNOTNULLP("fopen(TEMP FILE A F 1024,wb+)", test=fopen("TEMP FILE A F 1024","wb+"), test, );
-  ASSERTNOTEOFP("fputs()", , fputs("PREFIX",test),);
-  ASSERTNOTZERO("fwrite()", , fwrite(buffer, strlen(item), count, test)==count, );
-  ASSERTZEROP("fseek(SEEK_CUR)", , fseek(test, -1, SEEK_CUR), );
-  ASSERTNOTZERO("fgetc()",  , fgetc(test)=='z', );
-  ASSERTZEROP("fseek(SEEK_SET)", , fseek(test, 0, SEEK_SET), );
-  ASSERTNOTZERO("fgetc()",  , fgetc(test)=='P', );
-  ASSERTZEROP("fseek(SEEK_END)", , fseek(test, -1, SEEK_END), );
-  ASSERTNOTZERO("fgetc()",  , fgetc(test)==0, );
-  ASSERTZEROP("fclose()", , fclose(test), );
-  ASSERTNOTNULLP("fopen(TEMP FILE A F 80,wb+)", test=fopen("TEMP FILE A F 80","wb+"), test, );
-  ASSERTNOTEOFP("fputs()", , fputs("PREFIXABCDEFGHIJKLMNOPQRSTUVWXYZPREFIXABCDEFGHIJKLMNOPQRSTUVWXYZPREFIXABCDEFGHIJKLMNOPQRSTUVWXYZPREFIXABCDEFGHIJKLMNOPQRSTUVWXYZ",test),);
-  ASSERTNOTZERO("fwrite()", , fwrite(buffer, strlen(item), count, test)==count, );
-  ASSERTZEROP("fseek(SEEK_CUR)", , fseek(test, -1, SEEK_CUR), );
-  ASSERTNOTZERO("fgetc()", c=fgetc(test), c=='z', );
-  ASSERTZEROP("fseek(SEEK_SET)", , fseek(test, 5, SEEK_SET), );
-  ASSERTNOTZERO("fgetc()", c=fgetc(test), c=='X', );
-  ASSERTZEROP("fseek(SEEK_END)", , fseek(test, -1, SEEK_END), );
-  ASSERTNOTZERO("fgetc()", c=fgetc(test), c==0, );
-  ASSERTZEROP("fclose()", , fclose(test), );
-  free(buffer);
+    SUB_STRT("fseek()");
+    buffer = malloc(count * strlen(item));
+    buffer[0] = 0;
+    for (i = 0; i < count; i++) strcat(buffer, item);
+    ASSERTNOTNULLP("fopen(TEMP FILE A F 1024,wb+)",
+                   test = fopen("TEMP FILE A F 1024", "wb+"), test,);
+    ASSERTNOTEOFP("fputs()", , fputs("PREFIX", test),);
+    ASSERTNOTZERO("fwrite()", ,
+                  fwrite(buffer, strlen(item), count, test) == count,);
+    ASSERTZEROP("fseek(SEEK_CUR)", , fseek(test, -1, SEEK_CUR),);
+    ASSERTNOTZERO("fgetc()", , fgetc(test) == 'z',);
+    ASSERTZEROP("fseek(SEEK_SET)", , fseek(test, 0, SEEK_SET),);
+    ASSERTNOTZERO("fgetc()", , fgetc(test) == 'P',);
+    ASSERTZEROP("fseek(SEEK_END)", , fseek(test, -1, SEEK_END),);
+    ASSERTNOTZERO("fgetc()", , fgetc(test) == 0,);
+    ASSERTZEROP("fclose()", , fclose(test),);
+    ASSERTNOTNULLP("fopen(TEMP FILE A F 80,wb+)",
+                   test = fopen("TEMP FILE A F 80", "wb+"), test,);
+    ASSERTNOTEOFP("fputs()", ,
+                  fputs("PREFIXABCDEFGHIJKLMNOPQRSTUVWXYZPREFIXABCDEFGHIJKLMNOPQRSTUVWXYZPREFIXABCDEFGHIJKLMNOPQRSTUVWXYZPREFIXABCDEFGHIJKLMNOPQRSTUVWXYZ",
+                        test),);
+    ASSERTNOTZERO("fwrite()", ,
+                  fwrite(buffer, strlen(item), count, test) == count,);
+    ASSERTZEROP("fseek(SEEK_CUR)", , fseek(test, -1, SEEK_CUR),);
+    ASSERTNOTZERO("fgetc()", c = fgetc(test), c == 'z',);
+    ASSERTZEROP("fseek(SEEK_SET)", , fseek(test, 5, SEEK_SET),);
+    ASSERTNOTZERO("fgetc()", c = fgetc(test), c == 'X',);
+    ASSERTZEROP("fseek(SEEK_END)", , fseek(test, -1, SEEK_END),);
+    ASSERTNOTZERO("fgetc()", c = fgetc(test), c == 0,);
+    ASSERTZEROP("fclose()", , fclose(test),);
+    free(buffer);
 }
 
 /**************************************************************************************************/
@@ -588,39 +658,47 @@ static void fseek_t() {
 /*    0 on success, non-zero on failure.                                                          */
 /**************************************************************************************************/
 static void fgetsetpos_t() {
-  FILE* test;
-  const char *item = "1234567890abcdefghijklmnopqrstuvwxyz";
-  const int count = 20;
-  char* buffer;
-  char* buffer2;
-  int i;
-  fpos_t position;
+    FILE *test;
+    const char *item = "1234567890abcdefghijklmnopqrstuvwxyz";
+    const int count = 20;
+    char *buffer;
+    char *buffer2;
+    int i;
+    fpos_t position;
 
-  SUB_STRT("fgetpos() and fsetpos()");
-  buffer = malloc(count * strlen(item));
-  buffer2 = malloc(count * strlen(item));
-  buffer[0] = 0;
-  buffer2[0] = 0;
-  buffer2[count * strlen(item)] = 0;
-  for (i=0; i<count; i++) strcat(buffer,item);
-  ASSERTNOTNULLP("fopen(TEMP FILE A F 1024,wb+)", test=fopen("TEMP FILE A F 1024","wb+"), test, );
-  ASSERTNOTEOFP("fputs()", , fputs("PREFIX",test),);
-  ASSERTZERO("fgetpos()", , fgetpos(test, &position) != 0, );
-  ASSERTNOTZERO("fwrite()", , fwrite(buffer, strlen(item), count, test)==count, );
-  ASSERTZERO("fsetpos()", , fsetpos(test, &position) != 0, );
-  ASSERTNOTZEROP("fread()", ,(i=fread(buffer2, strlen(item), count, test))==count, );
-  ASSERTZERO("strcmp()", , strcmp(buffer,buffer2), );
-  ASSERTZEROP("fclose()", , fclose(test), );
-  ASSERTNOTNULLP("fopen(TEMP FILE A F 80,wb+)", test=fopen("TEMP FILE A F 80","wb+"), test, );
-  ASSERTNOTEOFP("fputs()", , fputs("PREFIXABCDEFGHIJKLMNOPQRSTUVWXYZPREFIXABCDEFGHIJKLMNOPQRSTUVWXYZPREFIXABCDEFGHIJKLMNOPQRSTUVWXYZPREFIXABCDEFGHIJKLMNOPQRSTUVWXYZ",test),);
-  ASSERTZERO("fgetpos()", , fgetpos(test, &position) != 0, );
-  ASSERTNOTZERO("fwrite()", , fwrite(buffer, strlen(item), count, test)==count, );
-  ASSERTZERO("fsetpos()", , fsetpos(test, &position) != 0, );
-  ASSERTNOTZERO("fread()", ,fread(buffer2, strlen(item), count, test)==count, );
-  ASSERTZERO("strcmp()", , strcmp(buffer,buffer2), );
-  ASSERTZEROP("fclose()", , fclose(test), );
-  free(buffer);
-  free(buffer2);
+    SUB_STRT("fgetpos() and fsetpos()");
+    buffer = malloc(count * strlen(item));
+    buffer2 = malloc(count * strlen(item));
+    buffer[0] = 0;
+    buffer2[0] = 0;
+    buffer2[count * strlen(item)] = 0;
+    for (i = 0; i < count; i++) strcat(buffer, item);
+    ASSERTNOTNULLP("fopen(TEMP FILE A F 1024,wb+)",
+                   test = fopen("TEMP FILE A F 1024", "wb+"), test,);
+    ASSERTNOTEOFP("fputs()", , fputs("PREFIX", test),);
+    ASSERTZERO("fgetpos()", , fgetpos(test, &position) != 0,);
+    ASSERTNOTZERO("fwrite()", ,
+                  fwrite(buffer, strlen(item), count, test) == count,);
+    ASSERTZERO("fsetpos()", , fsetpos(test, &position) != 0,);
+    ASSERTNOTZEROP("fread()", ,
+                   (i = fread(buffer2, strlen(item), count, test)) == count,);
+    ASSERTZERO("strcmp()", , strcmp(buffer, buffer2),);
+    ASSERTZEROP("fclose()", , fclose(test),);
+    ASSERTNOTNULLP("fopen(TEMP FILE A F 80,wb+)",
+                   test = fopen("TEMP FILE A F 80", "wb+"), test,);
+    ASSERTNOTEOFP("fputs()", ,
+                  fputs("PREFIXABCDEFGHIJKLMNOPQRSTUVWXYZPREFIXABCDEFGHIJKLMNOPQRSTUVWXYZPREFIXABCDEFGHIJKLMNOPQRSTUVWXYZPREFIXABCDEFGHIJKLMNOPQRSTUVWXYZ",
+                        test),);
+    ASSERTZERO("fgetpos()", , fgetpos(test, &position) != 0,);
+    ASSERTNOTZERO("fwrite()", ,
+                  fwrite(buffer, strlen(item), count, test) == count,);
+    ASSERTZERO("fsetpos()", , fsetpos(test, &position) != 0,);
+    ASSERTNOTZERO("fread()", ,
+                  fread(buffer2, strlen(item), count, test) == count,);
+    ASSERTZERO("strcmp()", , strcmp(buffer, buffer2),);
+    ASSERTZEROP("fclose()", , fclose(test),);
+    free(buffer);
+    free(buffer2);
 }
 
 /**************************************************************************************************/
@@ -641,20 +719,21 @@ static void fgetsetpos_t() {
 /*    record number or 0 on failure / not block device                                            */
 /**************************************************************************************************/
 static void fgetsetrec_t() {
-  FILE* test;
-  const char *item = "1234567890abcdefghijklmnopqrstuvwxyz\n";
-  int record;
-  char buffer[100];
+    FILE *test;
+    const char *item = "1234567890abcdefghijklmnopqrstuvwxyz\n";
+    int record;
+    char buffer[100];
 
-  SUB_STRT("fgetrec() and fsetrec()");
-  ASSERTNOTNULLP("fopen(TEMP FILE A F 80,w+)", test=fopen("TEMP FILE A F 80","w+"), test, );
-  ASSERTNOTEOFP("fputs()", , fputs("PREFIX\n",test),);
-  ASSERTNOTZERO("fgetrec()", , record = fgetrec(test), );
-  ASSERTNOTEOFP("fputs()", , fputs(item,test),);
-  ASSERTNOTZERO("fsetrec()", , fsetrec(test, record), );
-  ASSERTNOTNULL("fgets()", , fgets(buffer, 100, test), );
-  ASSERTZERO("strcmp()", , strcmp(buffer,item), );
-  ASSERTZEROP("fclose()", , fclose(test), );
+    SUB_STRT("fgetrec() and fsetrec()");
+    ASSERTNOTNULLP("fopen(TEMP FILE A F 80,w+)",
+                   test = fopen("TEMP FILE A F 80", "w+"), test,);
+    ASSERTNOTEOFP("fputs()", , fputs("PREFIX\n", test),);
+    ASSERTNOTZERO("fgetrec()", , record = fgetrec(test),);
+    ASSERTNOTEOFP("fputs()", , fputs(item, test),);
+    ASSERTNOTZERO("fsetrec()", , fsetrec(test, record),);
+    ASSERTNOTNULL("fgets()", , fgets(buffer, 100, test),);
+    ASSERTZERO("strcmp()", , strcmp(buffer, item),);
+    ASSERTZEROP("fclose()", , fclose(test),);
 }
 
 /**************************************************************************************************/
@@ -665,28 +744,32 @@ static void fgetsetrec_t() {
 /*    stream   a pointer to the open stream.                                                      */
 /**************************************************************************************************/
 static void rewind_t() {
-  FILE* test;
-  const char *item = "1234567890abcdefghijklmnopqrstuvwxyz";
-  const int count = 20;
-  char* buffer;
-  char* buffer2;
-  int i;
+    FILE *test;
+    const char *item = "1234567890abcdefghijklmnopqrstuvwxyz";
+    const int count = 20;
+    char *buffer;
+    char *buffer2;
+    int i;
 
-  SUB_STRT("rewind()");
-  buffer = malloc(count * strlen(item));
-  buffer2 = malloc(count * strlen(item));
-  buffer[0] = 0;
-  buffer2[0] = 0;
-  buffer2[count * strlen(item)] = 0;
-  for (i=0; i<count; i++) strcat(buffer,item);
-  ASSERTNOTNULLP("fopen(TEMP FILE A F 80,wb+)", test=fopen("TEMP FILE A F 80","wb+"), test, );
-  ASSERTNOTZERO("fwrite()", ,fwrite(buffer, strlen(item), count, test)==count, );
-  ASSERTNOTZERO("rewind()",rewind(test) , 1, ); /* No direct way to detect an error! */
-  ASSERTNOTZERO("fread()", ,fread(buffer2, strlen(item), count, test)==count, );
-  ASSERTZERO("strcmp()", , strcmp(buffer,buffer2), );
-  ASSERTZEROP("fclose()", , fclose(test), );
-  free(buffer);
-  free(buffer2);
+    SUB_STRT("rewind()");
+    buffer = malloc(count * strlen(item));
+    buffer2 = malloc(count * strlen(item));
+    buffer[0] = 0;
+    buffer2[0] = 0;
+    buffer2[count * strlen(item)] = 0;
+    for (i = 0; i < count; i++) strcat(buffer, item);
+    ASSERTNOTNULLP("fopen(TEMP FILE A F 80,wb+)",
+                   test = fopen("TEMP FILE A F 80", "wb+"), test,);
+    ASSERTNOTZERO("fwrite()", ,
+                  fwrite(buffer, strlen(item), count, test) == count,);
+    ASSERTNOTZERO("rewind()", rewind(test),
+                  1,); /* No direct way to detect an error! */
+    ASSERTNOTZERO("fread()", ,
+                  fread(buffer2, strlen(item), count, test) == count,);
+    ASSERTZERO("strcmp()", , strcmp(buffer, buffer2),);
+    ASSERTZEROP("fclose()", , fclose(test),);
+    free(buffer);
+    free(buffer2);
 }
 
 /**************************************************************************************************/
@@ -702,15 +785,16 @@ static void rewind_t() {
 /*                                                                                                */
 /**************************************************************************************************/
 static void setbuf_t() {
-  FILE* test;
-  char* buffer;
+    FILE *test;
+    char *buffer;
 
-  SUB_STRT("setbuf()");
-  buffer = malloc(BUFSIZ);
-  ASSERTNOTNULLP("fopen(TEMP FILE A F 80,w)", test=fopen("TEMP FILE A F 80","w"), test, );
-  setbuf(test, buffer); /* No error detection! */
-  ASSERTZEROP("fclose()", , fclose(test), );
-  free(buffer);
+    SUB_STRT("setbuf()");
+    buffer = malloc(BUFSIZ);
+    ASSERTNOTNULLP("fopen(TEMP FILE A F 80,w)",
+                   test = fopen("TEMP FILE A F 80", "w"), test,);
+    setbuf(test, buffer); /* No error detection! */
+    ASSERTZEROP("fclose()", , fclose(test),);
+    free(buffer);
 }
 
 /**************************************************************************************************/
@@ -732,199 +816,244 @@ static void setbuf_t() {
 /*   Otherwise, a non-zero value is returned                                                      */
 /**************************************************************************************************/
 static void setvbuf_t() {
-  FILE* test;
-  char* buffer;
+    FILE *test;
+    char *buffer;
 
-  SUB_STRT("setvbuf()");
-  ASSERTNOTNULLP("fopen(TEMP FILE A F 80,w)", test=fopen("TEMP FILE A F 80","w"), test, );
-  ASSERTZERO("setvbuf()", , setvbuf(test, 0, _IOLBF, BUFSIZ), );
-  ASSERTZEROP("fclose()", , fclose(test), );
+    SUB_STRT("setvbuf()");
+    ASSERTNOTNULLP("fopen(TEMP FILE A F 80,w)",
+                   test = fopen("TEMP FILE A F 80", "w"), test,);
+    ASSERTZERO("setvbuf()", , setvbuf(test, 0, _IOLBF, BUFSIZ),);
+    ASSERTZEROP("fclose()", , fclose(test),);
 }
 
 /**************************************************************************************************/
 /* randon access / cache testing functions                                                        */
 /**************************************************************************************************/
-static void makeRecord(char* record, int recno, int length, char* c) {
-  int i;
-  length -= 6;
-  sprintf(record, "%05d", recno);
-  for (i=0; i<length; i++) strcat(record,c);
-  strcat(record,">");
+static void makeRecord(char *record, int recno, int length, char *c) {
+    int i;
+    length -= 6;
+    sprintf(record, "%05d", recno);
+    for (i = 0; i < length; i++) strcat(record, c);
+    strcat(record, ">");
 }
 
-static void writeRecordText(FILE* file, int recno, int length, char* c)
-{
-  char* record = malloc(length+2);
-  makeRecord(record, recno, length, c);
-  fputs(record, file);
-  free(record);
+static void writeRecordText(FILE *file, int recno, int length, char *c) {
+    char *record = malloc(length + 2);
+    makeRecord(record, recno, length, c);
+    fputs(record, file);
+    free(record);
 }
 
-static int readRecordText(FILE* file, int recno, int length, char* c)
-{
-  char* record = malloc(length+2);
-  char* fromFile = malloc(length+2);
-  int rc;
-  makeRecord(record, recno, length, c);
-  strcat(record,"\n");
-  if (!fgets(fromFile, length+2, file)) {
-    printf("fgets() returned null\n");
+static int readRecordText(FILE *file, int recno, int length, char *c) {
+    char *record = malloc(length + 2);
+    char *fromFile = malloc(length + 2);
+    int rc;
+    makeRecord(record, recno, length, c);
+    strcat(record, "\n");
+    if (!fgets(fromFile, length + 2, file)) {
+        printf("fgets() returned null\n");
+        free(record);
+        free(fromFile);
+        return 1;
+    }
+    rc = strcmp(record, fromFile);
+    if (rc) {
+        printf("from file (%s)\n", fromFile);
+        printf("should be (%s)\n", record);
+    }
     free(record);
     free(fromFile);
-    return 1;
-  }
-  rc = strcmp(record,fromFile);
-  if (rc) {
-    printf("from file (%s)\n", fromFile);
-    printf("should be (%s)\n", record);
-  }
-  free(record);
-  free(fromFile);
-  return rc;
+    return rc;
 }
 
-static void writeRecordBin(FILE* file, int recno, int length, char* c)
-{
-  char* record = malloc(length+1);
-  makeRecord(record, recno, length, c);
-  fwrite(record, length, 1, file);
-  free(record);
+static void writeRecordBin(FILE *file, int recno, int length, char *c) {
+    char *record = malloc(length + 1);
+    makeRecord(record, recno, length, c);
+    fwrite(record, length, 1, file);
+    free(record);
 }
 
-static int readRecordBin(FILE* file, int recno, int length, char* c)
-{
-  char* record = malloc(length+1);
-  char* fromFile = malloc(length+1);
-  int rc;
-  makeRecord(record, recno, length, c);
+static int readRecordBin(FILE *file, int recno, int length, char *c) {
+    char *record = malloc(length + 1);
+    char *fromFile = malloc(length + 1);
+    int rc;
+    makeRecord(record, recno, length, c);
 
-  if (!fread(fromFile, length, 1, file)) {
-    printf("fread() returned 0\n");
+    if (!fread(fromFile, length, 1, file)) {
+        printf("fread() returned 0\n");
+        free(record);
+        free(fromFile);
+        return 1;
+    }
+
+    fromFile[length] = 0;
+
+    rc = strcmp(record, fromFile);
+    if (rc) {
+        printf("from file (%s)\n", fromFile);
+        printf("should be (%s)\n", record);
+    }
     free(record);
     free(fromFile);
-    return 1;
-  }
-
-  fromFile[length] = 0;
-
-  rc = strcmp(record,fromFile);
-  if (rc) {
-    printf("from file (%s)\n", fromFile);
-    printf("should be (%s)\n", record);
-  }
-  free(record);
-  free(fromFile);
-  return rc;
+    return rc;
 }
 
 static void raccess_t() {
-  FILE* test;
-  int i;
-  long r;
-  int rc;
+    FILE *test;
+    int i;
+    long r;
+    int rc;
 
-  srand(10); /* Seed random numbers to a set state - repeatability */
+    srand(10); /* Seed random numbers to a set state - repeatability */
 
-  SUB_STRT("random access test");
-  ASSERTNOTNULLP("fopen(TEMP FILE A F 80,w+)", test=fopen("TEMP FILE A F 80","w+"), test, );
-  for (i=1; i<100; i++) writeRecordText(test, i, 80, "-");
-  rewind(test);
-  TST_STRT("serial read text");
-  rc = 0;
-  for (i=1; i<100; i++) {
-    rc = readRecordText(test, i, 80, "-");
-    if (rc) { TST_ERR("mismatch"); break; }
-  }
-  if (!rc) TST_OK();
-  ASSERTZEROP("fclose()", , fclose(test), );
-
-  ASSERTNOTNULLP("fopen(TEMP FILE A F 80,wb+)", test=fopen("TEMP FILE A F 80","wb+"), test, );
-  for (i=1; i<100; i++) writeRecordBin(test, i, 80, "-");
-  rewind(test);
-  TST_STRT("serial read binary");
-  rc = 0;
-  for (i=1; i<100; i++) {
-    rc = readRecordBin(test, i, 80, "-");
-    if (rc) { TST_ERR("mismatch"); break; }
-  }
-  if (!rc) TST_OK();
-  ASSERTZEROP("fclose()", , fclose(test), );
-
-  ASSERTNOTNULLP("fopen(TEMP FILE A F 80,wb+)", test=fopen("TEMP FILE A F 80","wb+"), test, );
-  for (i=1; i<100; i++) writeRecordBin(test, i, 80, "-");
-  rewind(test);
-  TST_STRT("random read binary (all cache hits)");
-  rc = 0;
-  for (i=0; i<500; i++) {
-    r = (rand() % 99) + 1;
-    rc = fseek(test, (r-1)*80, SEEK_SET);
-    if (rc) {TST_ERR("fseek error");break;}
-    rc = readRecordBin(test, r, 80, "-");
-    if (rc) {TST_ERR("mismatch");break;}
-  }
-  if (!rc) TST_OK();
-  ASSERTZEROP("fclose()", , fclose(test), );
-
-  ASSERTNOTNULLP("fopen(TEMP FILE A F 80,wb+)", test=fopen("TEMP FILE A F 80","wb+"), test, );
-  for (i=1; i<100; i++) writeRecordBin(test, i, 80, "-");
-  ASSERTZEROP("fclose()", , fclose(test), );
-  ASSERTNOTNULLP("fopen(TEMP FILE A F 80,rb)", test=fopen("TEMP FILE A F 80","rb"), test, );
-  TST_STRT("random read binary (many cache misses)");
-  rc = 0;
-  for (i=0; i<500; i++) {
-    r = (rand() % 99) + 1;
-    rc = fseek(test, (r-1)*80, SEEK_SET);
-    if (rc) {TST_ERR("fseek error");break;}
-    rc = readRecordBin(test, r, 80, "-");
-    if (rc) {TST_ERR("mismatch");break;}
-  }
-  if (!rc) TST_OK();
-  ASSERTZEROP("fclose()", , fclose(test), );
-
-  ASSERTNOTNULLP("fopen(TEMP FILE A F 80,wb+)", test=fopen("TEMP FILE A F 80","wb+"), test, );
-  for (i=1; i<100; i++) writeRecordBin(test, i, 80, "-");
-  rewind(test);
-  TST_STRT("random read/write/read binary (all cache hits)");
-  rc = 0;
-  for (i=0; i<500; i++) {
-    r = (rand() % 99) + 1;
-    rc = fseek(test, (r-1)*80, SEEK_SET);
-    if (rc) {TST_ERR("fseek error");break;}
-    rc = readRecordBin(test, r, 80, "-");
-    if (rc) { TST_ERR("mismatch"); break; }
+    SUB_STRT("random access test");
+    ASSERTNOTNULLP("fopen(TEMP FILE A F 80,w+)",
+                   test = fopen("TEMP FILE A F 80", "w+"), test,);
+    for (i = 1; i < 100; i++) writeRecordText(test, i, 80, "-");
     rewind(test);
-    rc = fseek(test, (r-1)*80, SEEK_SET);
-    if (rc) {TST_ERR("fseek error");break;}
-    writeRecordBin(test, r, 80, "*");
+    TST_STRT("serial read text");
+    rc = 0;
+    for (i = 1; i < 100; i++) {
+        rc = readRecordText(test, i, 80, "-");
+        if (rc) {
+            TST_ERR("mismatch");
+            break;
+        }
+    }
+    if (!rc) TST_OK();
+    ASSERTZEROP("fclose()", , fclose(test),);
+
+    ASSERTNOTNULLP("fopen(TEMP FILE A F 80,wb+)",
+                   test = fopen("TEMP FILE A F 80", "wb+"), test,);
+    for (i = 1; i < 100; i++) writeRecordBin(test, i, 80, "-");
     rewind(test);
-    fseek(test, (r-1)*80, SEEK_SET);
-    rc = readRecordBin(test, r, 80, "*");
-    if (rc) { TST_ERR("mismatch"); break; }
-    rc = fseek(test, (r-1)*80, SEEK_SET);
-    if (rc) {TST_ERR("fseek error");break;}
-    writeRecordBin(test, r, 80, "-");
-  }
-  if (!rc) TST_OK();
-  ASSERTZEROP("fclose()", , fclose(test), );
+    TST_STRT("serial read binary");
+    rc = 0;
+    for (i = 1; i < 100; i++) {
+        rc = readRecordBin(test, i, 80, "-");
+        if (rc) {
+            TST_ERR("mismatch");
+            break;
+        }
+    }
+    if (!rc) TST_OK();
+    ASSERTZEROP("fclose()", , fclose(test),);
 
-  ASSERTNOTNULLP("fopen(TEMP FILE A F 80,w)", test=fopen("TEMP FILE A F 80","w"), test, );
-  for (i=1; i<100; i++) writeRecordText(test, i, 80, "-");
-  ASSERTZEROP("fclose()", , fclose(test), );
-  ASSERTNOTNULLP("fopen(TEMP FILE A F 80,r)", test=fopen("TEMP FILE A F 80","r"), test, );
-  TST_STRT("random read text (many cache misses)");
-  rc = 0;
-  for (i=0; i<500; i++) {
-    r = (rand() % 99) + 1;
-    rc = fsetrec(test,r);
-    if (!rc) {TST_ERR("fsetrec error");break;}
-    rc = readRecordText(test, r, 80, "-");
-    if (rc) {TST_ERR("mismatch");break;}
-  }
-  if (!rc) TST_OK();
-  ASSERTZEROP("fclose()", , fclose(test), );
+    ASSERTNOTNULLP("fopen(TEMP FILE A F 80,wb+)",
+                   test = fopen("TEMP FILE A F 80", "wb+"), test,);
+    for (i = 1; i < 100; i++) writeRecordBin(test, i, 80, "-");
+    rewind(test);
+    TST_STRT("random read binary (all cache hits)");
+    rc = 0;
+    for (i = 0; i < 500; i++) {
+        r = (rand() % 99) + 1;
+        rc = fseek(test, (r - 1) * 80, SEEK_SET);
+        if (rc) {
+            TST_ERR("fseek error");
+            break;
+        }
+        rc = readRecordBin(test, r, 80, "-");
+        if (rc) {
+            TST_ERR("mismatch");
+            break;
+        }
+    }
+    if (!rc) TST_OK();
+    ASSERTZEROP("fclose()", , fclose(test),);
 
-  /* Delete */
-  fopen("TEMP FILE A F 80","w"); fclose(test);
+    ASSERTNOTNULLP("fopen(TEMP FILE A F 80,wb+)",
+                   test = fopen("TEMP FILE A F 80", "wb+"), test,);
+    for (i = 1; i < 100; i++) writeRecordBin(test, i, 80, "-");
+    ASSERTZEROP("fclose()", , fclose(test),);
+    ASSERTNOTNULLP("fopen(TEMP FILE A F 80,rb)",
+                   test = fopen("TEMP FILE A F 80", "rb"), test,);
+    TST_STRT("random read binary (many cache misses)");
+    rc = 0;
+    for (i = 0; i < 500; i++) {
+        r = (rand() % 99) + 1;
+        rc = fseek(test, (r - 1) * 80, SEEK_SET);
+        if (rc) {
+            TST_ERR("fseek error");
+            break;
+        }
+        rc = readRecordBin(test, r, 80, "-");
+        if (rc) {
+            TST_ERR("mismatch");
+            break;
+        }
+    }
+    if (!rc) TST_OK();
+    ASSERTZEROP("fclose()", , fclose(test),);
+
+    ASSERTNOTNULLP("fopen(TEMP FILE A F 80,wb+)",
+                   test = fopen("TEMP FILE A F 80", "wb+"), test,);
+    for (i = 1; i < 100; i++) writeRecordBin(test, i, 80, "-");
+    rewind(test);
+    TST_STRT("random read/write/read binary (all cache hits)");
+    rc = 0;
+    for (i = 0; i < 500; i++) {
+        r = (rand() % 99) + 1;
+        rc = fseek(test, (r - 1) * 80, SEEK_SET);
+        if (rc) {
+            TST_ERR("fseek error");
+            break;
+        }
+        rc = readRecordBin(test, r, 80, "-");
+        if (rc) {
+            TST_ERR("mismatch");
+            break;
+        }
+        rewind(test);
+        rc = fseek(test, (r - 1) * 80, SEEK_SET);
+        if (rc) {
+            TST_ERR("fseek error");
+            break;
+        }
+        writeRecordBin(test, r, 80, "*");
+        rewind(test);
+        fseek(test, (r - 1) * 80, SEEK_SET);
+        rc = readRecordBin(test, r, 80, "*");
+        if (rc) {
+            TST_ERR("mismatch");
+            break;
+        }
+        rc = fseek(test, (r - 1) * 80, SEEK_SET);
+        if (rc) {
+            TST_ERR("fseek error");
+            break;
+        }
+        writeRecordBin(test, r, 80, "-");
+    }
+    if (!rc) TST_OK();
+    ASSERTZEROP("fclose()", , fclose(test),);
+
+    ASSERTNOTNULLP("fopen(TEMP FILE A F 80,w)",
+                   test = fopen("TEMP FILE A F 80", "w"), test,);
+    for (i = 1; i < 100; i++) writeRecordText(test, i, 80, "-");
+    ASSERTZEROP("fclose()", , fclose(test),);
+    ASSERTNOTNULLP("fopen(TEMP FILE A F 80,r)",
+                   test = fopen("TEMP FILE A F 80", "r"), test,);
+    TST_STRT("random read text (many cache misses)");
+    rc = 0;
+    for (i = 0; i < 500; i++) {
+        r = (rand() % 99) + 1;
+        rc = fsetrec(test, r);
+        if (!rc) {
+            TST_ERR("fsetrec error");
+            break;
+        }
+        rc = readRecordText(test, r, 80, "-");
+        if (rc) {
+            TST_ERR("mismatch");
+            break;
+        }
+    }
+    if (!rc) TST_OK();
+    ASSERTZEROP("fclose()", , fclose(test),);
+
+    /* Delete */
+    fopen("TEMP FILE A F 80", "w");
+    fclose(test);
 }
 
 /**************************************************************************************************/
@@ -937,25 +1066,29 @@ static void raccess_t() {
 /*    Percentage of cache hits or -1 on error (device without a cache)                            */
 /**************************************************************************************************/
 static int fcachehits_t() {
-  FILE* test;
-  int i;
-  int rc;
-  srand(10); /* Seed random numbers to a set state - repeatability */
+    FILE *test;
+    int i;
+    int rc;
+    srand(10); /* Seed random numbers to a set state - repeatability */
 
-  SUB_STRT("fcachehits()");
-  ASSERTNOTNULLP("fopen(TEMP FILE A F 80,w+)", test=fopen("TEMP FILE A F 80","w+"), test, );
-  ASSERTNOTZERO("fcachehits()", , fcachehits(test) == 0, );
-  for (i=1; i<100; i++) writeRecordText(test, i, 80, "-");
-  rewind(test);
-  TST_STRT("serial read");
-  rc = 0;
-  for (i=1; i<100; i++) {
-    rc = readRecordText(test, i, 80, "-");
-    if (rc) { TST_ERR("mismatch"); break; }
-  }
-  if (!rc) TST_OK();
-  ASSERTNOTZERO("fcachehits()", rc=fcachehits(test),  rc > 50, );
-  ASSERTZEROP("fclose()", , fclose(test), );
+    SUB_STRT("fcachehits()");
+    ASSERTNOTNULLP("fopen(TEMP FILE A F 80,w+)",
+                   test = fopen("TEMP FILE A F 80", "w+"), test,);
+    ASSERTNOTZERO("fcachehits()", , fcachehits(test) == 0,);
+    for (i = 1; i < 100; i++) writeRecordText(test, i, 80, "-");
+    rewind(test);
+    TST_STRT("serial read");
+    rc = 0;
+    for (i = 1; i < 100; i++) {
+        rc = readRecordText(test, i, 80, "-");
+        if (rc) {
+            TST_ERR("mismatch");
+            break;
+        }
+    }
+    if (!rc) TST_OK();
+    ASSERTNOTZERO("fcachehits()", rc = fcachehits(test), rc > 50,);
+    ASSERTZEROP("fclose()", , fclose(test),);
 }
 
 /**************************************************************************************************/
@@ -967,20 +1100,22 @@ static int fcachehits_t() {
 /*                                                                                                */
 /**************************************************************************************************/
 static int fateof_t() {
-  FILE* test;
-  char buf[81];
+    FILE *test;
+    char buf[81];
 
-  SUB_STRT("fateof()");
-  ASSERTNOTNULLP("fopen(TEMP FILE A F 80,w)", test=fopen("TEMP FILE A F 80","w"), test, );
-  ASSERTNOTZERO("fateof()", , fateof(test), );
-  ASSERTNOTEOFP("fputs()", , fputs(TEST_SHORT_STRING, test), );
-  ASSERTZEROP("fclose()", , fclose(test), );
-  ASSERTNOTNULLP("fopen(TEMP FILE A,r)", test=fopen("TEMP FILE A","r"), test, );
-  ASSERTZERO("fateof()", , fateof(test), );
-  ASSERTNOTNULL("fgets()", , fgets(buf, 81, test), );
-  ASSERTNOTZERO("fateof()", , fateof(test), );
-  ASSERTZEROP("fclose()", , fclose(test), );
-  DELFILE("TEMP FILE A");
+    SUB_STRT("fateof()");
+    ASSERTNOTNULLP("fopen(TEMP FILE A F 80,w)",
+                   test = fopen("TEMP FILE A F 80", "w"), test,);
+    ASSERTNOTZERO("fateof()", , fateof(test),);
+    ASSERTNOTEOFP("fputs()", , fputs(TEST_SHORT_STRING, test),);
+    ASSERTZEROP("fclose()", , fclose(test),);
+    ASSERTNOTNULLP("fopen(TEMP FILE A,r)", test = fopen("TEMP FILE A", "r"),
+                   test,);
+    ASSERTZERO("fateof()", , fateof(test),);
+    ASSERTNOTNULL("fgets()", , fgets(buf, 81, test),);
+    ASSERTNOTZERO("fateof()", , fateof(test),);
+    ASSERTZEROP("fclose()", , fclose(test),);
+    DELFILE("TEMP FILE A");
 }
 
 /**************************************************************************************************/
@@ -994,18 +1129,19 @@ static int fateof_t() {
 /*                                                                                                */
 /**************************************************************************************************/
 static int fgethandle_t() {
-  FILE* test;
-  char buf[81];
+    FILE *test;
+    char buf[81];
 
-  SUB_STRT("fgethandle()");
-  ASSERTNOTNULLP("fopen(TEMP FILE A F 80,w)", test=fopen("TEMP FILE A F 80","w"), test, );
-  ASSERTNOTEOFP("fputs()", , fputs(TEST_SHORT_STRING, test), );
-  ASSERTNOTZERO("fgethandle()", , fgethandle("TEMP FILE A")==test, );
-  ASSERTNOTZERO("fgethandle()", , fgethandle("TEMP   FILE")==test, );
-  ASSERTNOTZERO("fgethandle()", , fgethandle("TEMP   FILE   * ")==test, );
-  ASSERTZEROP("fclose()", , fclose(test), );
-  ASSERTZERO("fgethandle()", , fgethandle("TEMP FILE A"), );
-  DELFILE("TEMP FILE A");
+    SUB_STRT("fgethandle()");
+    ASSERTNOTNULLP("fopen(TEMP FILE A F 80,w)",
+                   test = fopen("TEMP FILE A F 80", "w"), test,);
+    ASSERTNOTEOFP("fputs()", , fputs(TEST_SHORT_STRING, test),);
+    ASSERTNOTZERO("fgethandle()", , fgethandle("TEMP FILE A") == test,);
+    ASSERTNOTZERO("fgethandle()", , fgethandle("TEMP   FILE") == test,);
+    ASSERTNOTZERO("fgethandle()", , fgethandle("TEMP   FILE   * ") == test,);
+    ASSERTZEROP("fclose()", , fclose(test),);
+    ASSERTZERO("fgethandle()", , fgethandle("TEMP FILE A"),);
+    DELFILE("TEMP FILE A");
 }
 
 /**************************************************************************************************/
@@ -1018,22 +1154,23 @@ static int fgethandle_t() {
 /*                                                                                                */
 /**************************************************************************************************/
 static int fgetrecs_t() {
-  FILE* test;
-  char buf[81];
+    FILE *test;
+    char buf[81];
 
-  SUB_STRT("fgetrecs()");
-  ASSERTNOTNULLP("fopen(TEMP FILE A F 80,w)", test=fopen("TEMP FILE A F 80","w"), test, );
-  ASSERTNOTEOFP("fputs()", , fputs(TEST_SHORT_STRING_NL, test), );
-  ASSERTNOTZERO("fgetrecs()", , fgetrecs(test)==1, );
-  ASSERTNOTEOFP("fputs()", , fputs(TEST_SHORT_STRING_NL, test), );
-  ASSERTNOTEOFP("fputs()", , fputs(TEST_SHORT_STRING_NL, test), );
-  ASSERTNOTZERO("fgetrecs()", , fgetrecs(test)==3, );
-  ASSERTNOTEOFP("fputs()", , fputs(TEST_SHORT_STRING_NL, test), );
-  ASSERTNOTEOFP("fputs()", , fputs(TEST_SHORT_STRING_NL, test), );
-  ASSERTNOTEOFP("fputs()", , fputs(TEST_SHORT_STRING_NL, test), );
-  ASSERTNOTZERO("fgetrecs()", , fgetrecs(test)==6, );
-  ASSERTZEROP("fclose()", , fclose(test), );
-  DELFILE("TEMP FILE A");
+    SUB_STRT("fgetrecs()");
+    ASSERTNOTNULLP("fopen(TEMP FILE A F 80,w)",
+                   test = fopen("TEMP FILE A F 80", "w"), test,);
+    ASSERTNOTEOFP("fputs()", , fputs(TEST_SHORT_STRING_NL, test),);
+    ASSERTNOTZERO("fgetrecs()", , fgetrecs(test) == 1,);
+    ASSERTNOTEOFP("fputs()", , fputs(TEST_SHORT_STRING_NL, test),);
+    ASSERTNOTEOFP("fputs()", , fputs(TEST_SHORT_STRING_NL, test),);
+    ASSERTNOTZERO("fgetrecs()", , fgetrecs(test) == 3,);
+    ASSERTNOTEOFP("fputs()", , fputs(TEST_SHORT_STRING_NL, test),);
+    ASSERTNOTEOFP("fputs()", , fputs(TEST_SHORT_STRING_NL, test),);
+    ASSERTNOTEOFP("fputs()", , fputs(TEST_SHORT_STRING_NL, test),);
+    ASSERTNOTZERO("fgetrecs()", , fgetrecs(test) == 6,);
+    ASSERTZEROP("fclose()", , fclose(test),);
+    DELFILE("TEMP FILE A");
 }
 
 /**************************************************************************************************/
@@ -1047,22 +1184,23 @@ static int fgetrecs_t() {
 /*                                                                                                */
 /**************************************************************************************************/
 static int fgetlen_t() {
-  FILE* test;
-  char buf[81];
+    FILE *test;
+    char buf[81];
 
-  SUB_STRT("fgetlen()");
-  ASSERTNOTNULLP("fopen(TEMP FILE A F 80,w)", test=fopen("TEMP FILE A F 80","w"), test, );
-  ASSERTNOTEOFP("fputs()", , fputs(TEST_SHORT_STRING_NL, test), );
-  ASSERTNOTZERO("fgetlen()", , fgetlen(test)==1*81, );
-  ASSERTNOTEOFP("fputs()", , fputs(TEST_SHORT_STRING_NL, test), );
-  ASSERTNOTEOFP("fputs()", , fputs(TEST_SHORT_STRING_NL, test), );
-  ASSERTNOTZERO("fgetlen()", , fgetlen(test)==3*81, );
-  ASSERTNOTEOFP("fputs()", , fputs(TEST_SHORT_STRING_NL, test), );
-  ASSERTNOTEOFP("fputs()", , fputs(TEST_SHORT_STRING_NL, test), );
-  ASSERTNOTEOFP("fputs()", , fputs(TEST_SHORT_STRING_NL, test), );
-  ASSERTNOTZERO("fgetlen()", , fgetlen(test)==6*81, );
-  ASSERTZEROP("fclose()", , fclose(test), );
-  DELFILE("TEMP FILE A");
+    SUB_STRT("fgetlen()");
+    ASSERTNOTNULLP("fopen(TEMP FILE A F 80,w)",
+                   test = fopen("TEMP FILE A F 80", "w"), test,);
+    ASSERTNOTEOFP("fputs()", , fputs(TEST_SHORT_STRING_NL, test),);
+    ASSERTNOTZERO("fgetlen()", , fgetlen(test) == 1 * 81,);
+    ASSERTNOTEOFP("fputs()", , fputs(TEST_SHORT_STRING_NL, test),);
+    ASSERTNOTEOFP("fputs()", , fputs(TEST_SHORT_STRING_NL, test),);
+    ASSERTNOTZERO("fgetlen()", , fgetlen(test) == 3 * 81,);
+    ASSERTNOTEOFP("fputs()", , fputs(TEST_SHORT_STRING_NL, test),);
+    ASSERTNOTEOFP("fputs()", , fputs(TEST_SHORT_STRING_NL, test),);
+    ASSERTNOTEOFP("fputs()", , fputs(TEST_SHORT_STRING_NL, test),);
+    ASSERTNOTZERO("fgetlen()", , fgetlen(test) == 6 * 81,);
+    ASSERTZEROP("fclose()", , fclose(test),);
+    DELFILE("TEMP FILE A");
 }
 
 /**************************************************************************************************/
@@ -1074,31 +1212,35 @@ static int fgetlen_t() {
 /*    stream   a pointer to the open stream.                                                      */
 /**************************************************************************************************/
 static int append_t() {
-  FILE* test;
-  const char *item1 = "1234567890abcdefghijklmnopqrstuvwxyz\n";
-  const char *item2 = "QWERTY12433345675875769869869867QWER\n";
-  const char *item3 = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n";
-  char* buffer;
-  int len = strlen(item1) + 1;
-  buffer = malloc(len);
+    FILE *test;
+    const char *item1 = "1234567890abcdefghijklmnopqrstuvwxyz\n";
+    const char *item2 = "QWERTY12433345675875769869869867QWER\n";
+    const char *item3 = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n";
+    char *buffer;
+    int len = strlen(item1) + 1;
+    buffer = malloc(len);
 
-  SUB_STRT("append()");
-  ASSERTNOTNULLP("fopen(TEMP FILE A F 80,w+)", test=fopen("TEMP FILE A F 80","w+"), test, );
-  ASSERTNOTEOF("fputs()", ,fputs(item1, test), );
-  ASSERTNOTEOF("fputs()", ,fputs(item2, test), );
-  ASSERTNOTZERO("rewind()",rewind(test) , 1, ); /* No direct way to detect an error! */
-  ASSERTNOTEOF("fputs()", ,fputs(item3, test), );
-  ASSERTNOTZERO("append()",append(test) , 1, ); /* No direct way to detect an error! */
-  ASSERTNOTEOF("fputs()", ,fputs(item1, test), );
-  ASSERTNOTZERO("rewind()",rewind(test) , 1, ); /* No direct way to detect an error! */
-  ASSERTNOTEOF("fgets()", , fgets(buffer, len, test), );
-  ASSERTZERO("strcmp()", , strcmp(buffer,item3), );
-  ASSERTNOTEOF("fgets()", , fgets(buffer, len, test), );
-  ASSERTZERO("strcmp()", , strcmp(buffer,item2), );
-  ASSERTNOTEOF("fgets()", , fgets(buffer, len, test), );
-  ASSERTZERO("strcmp()", , strcmp(buffer,item1), );
-  ASSERTZEROP("fclose()", , fclose(test), );
-  free(buffer);
+    SUB_STRT("append()");
+    ASSERTNOTNULLP("fopen(TEMP FILE A F 80,w+)",
+                   test = fopen("TEMP FILE A F 80", "w+"), test,);
+    ASSERTNOTEOF("fputs()", , fputs(item1, test),);
+    ASSERTNOTEOF("fputs()", , fputs(item2, test),);
+    ASSERTNOTZERO("rewind()", rewind(test),
+                  1,); /* No direct way to detect an error! */
+    ASSERTNOTEOF("fputs()", , fputs(item3, test),);
+    ASSERTNOTZERO("append()", append(test),
+                  1,); /* No direct way to detect an error! */
+    ASSERTNOTEOF("fputs()", , fputs(item1, test),);
+    ASSERTNOTZERO("rewind()", rewind(test),
+                  1,); /* No direct way to detect an error! */
+    ASSERTNOTEOF("fgets()", , fgets(buffer, len, test),);
+    ASSERTZERO("strcmp()", , strcmp(buffer, item3),);
+    ASSERTNOTEOF("fgets()", , fgets(buffer, len, test),);
+    ASSERTZERO("strcmp()", , strcmp(buffer, item2),);
+    ASSERTNOTEOF("fgets()", , fgets(buffer, len, test),);
+    ASSERTZERO("strcmp()", , strcmp(buffer, item1),);
+    ASSERTZEROP("fclose()", , fclose(test),);
+    free(buffer);
 }
 
 /**************************************************************************************************/
@@ -1112,63 +1254,69 @@ static int append_t() {
 /*    number of bytes for the next record, 0 for EOF, -1 for error                                */
 /**************************************************************************************************/
 static void nextrecLen_t() {
-  FILE* test;
-  FILE* out;
-  char buf[300];
+    FILE *test;
+    FILE *out;
+    char buf[300];
 
-  SUB_STRT("nextrecLen() - text");
-  ASSERTNOTNULLP("fopen(TEST FILE A F 120,w)", out=fopen("TEST FILE A F 120","w"), out, );
-  ASSERTNOTEOFP("fputs()", , fputs(TEST_SHORT_STRING_NL, out), );
-  ASSERTNOTEOFP("fputs()", , fputs(TEST_SHORT_STRING_NL, out), );
-  ASSERTZEROP("fclose()", , fclose(out), );
-  ASSERTNOTNULLP("fopen(TEST FILE A,r)", test=fopen("TEST FILE A","r"), test, );
-  ASSERTNOTZERO("nextrecLen()", , nextrecLen(test)==strlen(TEST_SHORT_STRING_NL), );
-  ASSERTNOTEOF("fgetc()", , fgetc(test), );
-  ASSERTNOTZERO("nextrecLen()", , nextrecLen(test)==strlen(TEST_SHORT_STRING_NL)-1, );
-  ASSERTNOTNULL("fgets()", , fgets(buf, 300, test), );
-  ASSERTNOTZERO("nextrecLen()", , nextrecLen(test)==strlen(TEST_SHORT_STRING_NL), );
-  ASSERTZEROP("fclose()", , fclose(test), );
+    SUB_STRT("nextrecLen() - text");
+    ASSERTNOTNULLP("fopen(TEST FILE A F 120,w)",
+                   out = fopen("TEST FILE A F 120", "w"), out,);
+    ASSERTNOTEOFP("fputs()", , fputs(TEST_SHORT_STRING_NL, out),);
+    ASSERTNOTEOFP("fputs()", , fputs(TEST_SHORT_STRING_NL, out),);
+    ASSERTZEROP("fclose()", , fclose(out),);
+    ASSERTNOTNULLP("fopen(TEST FILE A,r)", test = fopen("TEST FILE A", "r"),
+                   test,);
+    ASSERTNOTZERO("nextrecLen()", ,
+                  nextrecLen(test) == strlen(TEST_SHORT_STRING_NL),);
+    ASSERTNOTEOF("fgetc()", , fgetc(test),);
+    ASSERTNOTZERO("nextrecLen()", ,
+                  nextrecLen(test) == strlen(TEST_SHORT_STRING_NL) - 1,);
+    ASSERTNOTNULL("fgets()", , fgets(buf, 300, test),);
+    ASSERTNOTZERO("nextrecLen()", ,
+                  nextrecLen(test) == strlen(TEST_SHORT_STRING_NL),);
+    ASSERTZEROP("fclose()", , fclose(test),);
 
-  SUB_STRT("nextrecLen() - binary");
-  ASSERTNOTNULLP("fopen(TEST FILE A,rb)", test=fopen("TEST FILE A","rb"), test, );
-  ASSERTNOTZERO("nextrecLen()", , nextrecLen(test)==120, );
-  ASSERTNOTEOF("fgetc()", , fgetc(test), );
-  ASSERTNOTZERO("nextrecLen()", , nextrecLen(test)==119, );
-  ASSERTNOTNULL("fgets()", , fgets(buf, 300, test), );
-  ASSERTNOTZERO("nextrecLen()", , nextrecLen(test)==120, );
-  ASSERTZEROP("fclose()", , fclose(test), );
+    SUB_STRT("nextrecLen() - binary");
+    ASSERTNOTNULLP("fopen(TEST FILE A,rb)", test = fopen("TEST FILE A", "rb"),
+                   test,);
+    ASSERTNOTZERO("nextrecLen()", , nextrecLen(test) == 120,);
+    ASSERTNOTEOF("fgetc()", , fgetc(test),);
+    ASSERTNOTZERO("nextrecLen()", , nextrecLen(test) == 119,);
+    ASSERTNOTNULL("fgets()", , fgets(buf, 300, test),);
+    ASSERTNOTZERO("nextrecLen()", , nextrecLen(test) == 120,);
+    ASSERTZEROP("fclose()", , fclose(test),);
 }
 
 /**************************************************************************************************/
 /* Run Tests                                                                                      */
 /**************************************************************************************************/
 void IO_FFL_T() {
-  SEC_STRT("IO Tests - Fixed Record Length Files");
-  fopen_t();
-  fclose_t();
-  fflush_t();
-  ferror_t();
-  clearerr_t();
-  fgetc_t();
-  fgets_t();
-  feof_t();
-  ungetc_t();
-  fputc_t();
-  fputs_t();
-  fwriteread_t();
-  ftell_t();
-  fseek_t();
-  fgetsetpos_t();
-  fgetsetrec_t();
-  rewind_t();
-  setbuf_t();
-  setvbuf_t();
-  raccess_t();
-  fcachehits_t();
-  fateof_t();
-  fgethandle_t();
-  fgetrecs_t();
-  fgetlen_t();
-  append_t();
-  nextrecLen_t();
+    SEC_STRT("IO Tests - Fixed Record Length Files");
+    fopen_t();
+    fclose_t();
+    fflush_t();
+    ferror_t();
+    clearerr_t();
+    fgetc_t();
+    fgets_t();
+    feof_t();
+    ungetc_t();
+    fputc_t();
+    fputs_t();
+    fwriteread_t();
+    ftell_t();
+    fseek_t();
+    fgetsetpos_t();
+    fgetsetrec_t();
+    rewind_t();
+    setbuf_t();
+    setvbuf_t();
+    raccess_t();
+    fcachehits_t();
+    fateof_t();
+    fgethandle_t();
+    fgetrecs_t();
+    fgetlen_t();
+    append_t();
+    nextrecLen_t();
 }

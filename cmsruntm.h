@@ -21,10 +21,11 @@ typedef unsigned long size_t;
 
 /* mspace is an opaque type representing an independent
    region of space that supports malloc(), etc. */
-typedef void* mspace;
+typedef void *mspace;
 
 /* Function Pointers */
-typedef int (MAINFUNC)(int argc, char *argv[]); /* declare a main() function pointer */
+typedef int (MAINFUNC)(int argc,
+                       char *argv[]); /* declare a main() function pointer */
 
 /* The CMSCRAB macro maps the GCC stack. */
 typedef struct CMSCRAB CMSCRAB;
@@ -33,15 +34,15 @@ typedef struct CMSCRAB CMSCRAB;
 /* M U S T   B E   S Y N C E D   W I T H   C M S C R A B   M A C R O                              */
 /**************************************************************************************************/
 struct CMSCRAB {
-  void *dstack;                                       /* Dynamic Stack Control (see below) +00 */
-  CMSCRAB *backchain;                                  /*  backchain to previous save area +04 */
-  CMSCRAB *forward;                                     /* forward chain to next save area +08 */
-  void *regsavearea[15];                      /* register save area and save area chaining +12 */
-  struct GCCCRAB *gcccrab;                               /* GCC C Runtime Anchor Block (GCCCRAB)  +72 */
-  void *stackNext;                                     /* next available byte in the stack +76 */
-  void *numconv;                                              /* numeric conversion buffer +80 */
-  void *funcrslt;                                                /* function result buffer +84 */
-  unsigned char locals[];                                           /* Local Variables etc +88 */
+    void *dstack;                                       /* Dynamic Stack Control (see below) +00 */
+    CMSCRAB *backchain;                                  /*  backchain to previous save area +04 */
+    CMSCRAB *forward;                                     /* forward chain to next save area +08 */
+    void *regsavearea[15];                      /* register save area and save area chaining +12 */
+    struct GCCCRAB *gcccrab;                               /* GCC C Runtime Anchor Block (GCCCRAB)  +72 */
+    void *stackNext;                                     /* next available byte in the stack +76 */
+    void *numconv;                                              /* numeric conversion buffer +80 */
+    void *funcrslt;                                                /* function result buffer +84 */
+    unsigned char locals[];                                           /* Local Variables etc +88 */
 };
 
 /* To get the addresses of the CMS crab */
@@ -73,7 +74,7 @@ struct CMSCRAB {
 #define ARGBUFFERLEN 300
 
 /* Startup Functions */
-int __cstart(MAINFUNC* mainfunc);
+int __cstart(MAINFUNC *mainfunc);
 
 /*
   creat_msp creates, updates GCCCRAB, and returns a new independent space
@@ -98,14 +99,14 @@ size_t dest_msp();
   Called by the dynst.assemble routines when the current stack bin runs out of
   space.
 */
-CMSCRAB* morestak(CMSCRAB* frame, size_t requested);
+CMSCRAB *morestak(CMSCRAB *frame, size_t requested);
 
 /*
   Removes/cleans up unused stack bins.
   Called by the dynst.assemble routines when a first frame in the bin is
   popped / exited.
 */
-void lessstak(CMSCRAB* frame);
+void lessstak(CMSCRAB *frame);
 
 /**************************************************************************************************/
 /* IO Structures / function / defines                                                             */
@@ -158,52 +159,54 @@ typedef struct CMSCACHEENTRY CMSCACHEENTRY;
 /* Cache */
 #define FCACHEBUCKETS 97                                                          /* Prime number */
 struct CMSFILECACHE {
-  size_t provided_cache_size;             /* Provided cache size - or 0 if we malloced the buffer */
-  int noentries;                                          /* Number of Entries available in cache */
-  size_t entrysize;                                                         /* size of each entry */
-  long hits;                                                  /* Number of successfull cache hits */
-  long misses;                                                          /* Number of cache misses */
-  CMSCACHEENTRY* bucket[FCACHEBUCKETS];                                           /* Bucket Lists */
-  CMSCACHEENTRY* newestused;                                /* The most recently used cache entry */
-  CMSCACHEENTRY* oldestused;      /* The entry that was used last - i.e. the candidate to replace */
-  /* Entries start here */
+    size_t provided_cache_size;             /* Provided cache size - or 0 if we malloced the buffer */
+    int noentries;                                          /* Number of Entries available in cache */
+    size_t entrysize;                                                         /* size of each entry */
+    long hits;                                                  /* Number of successfull cache hits */
+    long misses;                                                          /* Number of cache misses */
+    CMSCACHEENTRY *bucket[FCACHEBUCKETS];                                           /* Bucket Lists */
+    CMSCACHEENTRY *newestused;                                /* The most recently used cache entry */
+    CMSCACHEENTRY *oldestused;      /* The entry that was used last - i.e. the candidate to replace */
+    /* Entries start here */
 };
 
 struct CMSCACHEENTRY {
-  size_t recnum;                                                   /* file record number (1 based) */
-  int reclen;                                                              /* Cached Record Length */
-  int maxreclen;                                                       /* Cached Max Record Length */
-  CMSCACHEENTRY* nextinbucket;                                        /* next entry in this bucket */
-  CMSCACHEENTRY* previnbucket;                                    /* previous entry in this bucket */
-  CMSCACHEENTRY* nextlastused;    /* next entry in the newest used chain (one used more recentyly) */
-  CMSCACHEENTRY* prevlastused;    /* previous entry in the newest used chain (used less recentyly) */
-  /* Cached data starts here */
+    size_t recnum;                                                   /* file record number (1 based) */
+    int reclen;                                                              /* Cached Record Length */
+    int maxreclen;                                                       /* Cached Max Record Length */
+    CMSCACHEENTRY *nextinbucket;                                        /* next entry in this bucket */
+    CMSCACHEENTRY *previnbucket;                                    /* previous entry in this bucket */
+    CMSCACHEENTRY *nextlastused;    /* next entry in the newest used chain (one used more recentyly) */
+    CMSCACHEENTRY *prevlastused;    /* previous entry in the newest used chain (used less recentyly) */
+    /* Cached data starts here */
 };
 
 /* IO Drivers */
 typedef int (CONTROL_FUNC)(struct FILE *stream);
-typedef int (OPEN_FUNC)(char filespecwords[][10], struct FILE* file);
+
+typedef int (OPEN_FUNC)(char filespecwords[][10], struct FILE *file);
+
 typedef int (SETPOS_FUNC)(struct FILE *stream, int recpos);
 
 struct CMSDRIVER {
-  OPEN_FUNC *open_func;
-  CONTROL_FUNC *close_func;
-  CONTROL_FUNC *getpos_func;
-  CONTROL_FUNC *getend_func;
-  SETPOS_FUNC *setpos_func;
-  CONTROL_FUNC *write_func;
-  CONTROL_FUNC *read_func;
-  CONTROL_FUNC *postread_func;
+    OPEN_FUNC *open_func;
+    CONTROL_FUNC *close_func;
+    CONTROL_FUNC *getpos_func;
+    CONTROL_FUNC *getend_func;
+    SETPOS_FUNC *setpos_func;
+    CONTROL_FUNC *write_func;
+    CONTROL_FUNC *read_func;
+    CONTROL_FUNC *postread_func;
 };
 
 struct CMSDRIVERS {
-  char *name;
-  CMSDRIVER *driver;
+    char *name;
+    CMSDRIVER *driver;
 };
 
 /* IO internal functions */
 void _clfiles(); /* Close all files - for exit routine */
-int _isopen(char* fileid); /* See if a file is open */
+int _isopen(char *fileid); /* See if a file is open */
 
 /**************************************************************************************************/
 

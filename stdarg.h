@@ -13,7 +13,7 @@
 #ifndef __STDARG_INCLUDED
 #define __STDARG_INCLUDED
 
-typedef char * va_list;
+typedef char *va_list;
 
 #define va_start(ap, parmN) ap = (char *)&parmN + 4
 #define va_arg(ap, type) *(type *)(ap += sizeof(type), ap - sizeof(type))

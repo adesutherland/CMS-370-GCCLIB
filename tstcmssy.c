@@ -17,32 +17,30 @@
 #include "tsts.h"
 
 static void
-mem_init(unsigned char* ptr, unsigned long size)
-{
-  unsigned long i, j;
+mem_init(unsigned char *ptr, unsigned long size) {
+    unsigned long i, j;
 
-  if (size == 0) return;
-  for (i = 0; i < size; i += 2047) {
-    j = (unsigned long)ptr ^ i;
-    ptr[i] = ((j ^ (j >> 8)) & 0xFF);
-  }
-  j = (unsigned long)ptr ^ (size - 1);
-  ptr[size - 1] = ((j ^ (j >> 8)) & 0xFF);
+    if (size == 0) return;
+    for (i = 0; i < size; i += 2047) {
+        j = (unsigned long) ptr ^ i;
+        ptr[i] = ((j ^ (j >> 8)) & 0xFF);
+    }
+    j = (unsigned long) ptr ^ (size - 1);
+    ptr[size - 1] = ((j ^ (j >> 8)) & 0xFF);
 }
 
 static int
-mem_check(unsigned char* ptr, unsigned long size)
-{
-  unsigned long i, j;
+mem_check(unsigned char *ptr, unsigned long size) {
+    unsigned long i, j;
 
-  if (size == 0) return 0;
-  for (i = 0; i < size; i += 2047) {
-    j = (unsigned long)ptr ^ i;
-    if (ptr[i] != ((j ^ (j >> 8)) & 0xFF)) return 1;
-  }
-  j = (unsigned long)ptr ^ (size - 1);
-  if (ptr[size - 1] != ((j ^ (j >> 8)) & 0xFF)) return 2;
-  return 0;
+    if (size == 0) return 0;
+    for (i = 0; i < size; i += 2047) {
+        j = (unsigned long) ptr ^ i;
+        if (ptr[i] != ((j ^ (j >> 8)) & 0xFF)) return 1;
+    }
+    j = (unsigned long) ptr ^ (size - 1);
+    if (ptr[size - 1] != ((j ^ (j >> 8)) & 0xFF)) return 2;
+    return 0;
 }
 
 /**************************************************************************************************/
@@ -62,32 +60,32 @@ mem_check(unsigned char* ptr, unsigned long size)
 /**************************************************************************************************/
 static void cmspg_t() {
 
-  SUB_STRT("CMSPGAll() and CMSGetPG()");
-  unsigned char *buffer1;
-  unsigned char *buffer2;
-  size_t size1 = 145;
-  size_t size2 = 379;
+    SUB_STRT("CMSPGAll() and CMSGetPG()");
+    unsigned char *buffer1;
+    unsigned char *buffer2;
+    size_t size1 = 145;
+    size_t size2 = 379;
 
-  ASSERTNOTNULL("CMSPGAll(size1)", buffer1 = CMSPGAll(size1), buffer1, );
-  mem_init(buffer1, size1);
-  ASSERTZERO("mem_check(size1)", , mem_check(buffer1, size1), );
-  ASSERTNOTZERO("CMSGetPG()", buffer2 = CMSGetPG(), buffer1 == buffer2, );
+    ASSERTNOTNULL("CMSPGAll(size1)", buffer1 = CMSPGAll(size1), buffer1,);
+    mem_init(buffer1, size1);
+    ASSERTZERO("mem_check(size1)", , mem_check(buffer1, size1),);
+    ASSERTNOTZERO("CMSGetPG()", buffer2 = CMSGetPG(), buffer1 == buffer2,);
 
-  ASSERTNOTNULL("CMSPGAll(size2)", buffer1 = CMSPGAll(size2), buffer1, );
-  mem_init(buffer1, size2);
-  ASSERTZERO("mem_check(size2)", , mem_check(buffer1, size2), );
-  ASSERTNOTZERO("CMSGetPG()", buffer2 = CMSGetPG(), buffer1 == buffer2, );
+    ASSERTNOTNULL("CMSPGAll(size2)", buffer1 = CMSPGAll(size2), buffer1,);
+    mem_init(buffer1, size2);
+    ASSERTZERO("mem_check(size2)", , mem_check(buffer1, size2),);
+    ASSERTNOTZERO("CMSGetPG()", buffer2 = CMSGetPG(), buffer1 == buffer2,);
 
-  ASSERTNULL("CMSPGAll(0)", buffer1 = CMSPGAll(0), buffer1, );
+    ASSERTNULL("CMSPGAll(0)", buffer1 = CMSPGAll(0), buffer1,);
 
-  ASSERTNOTNULL("CMSPGAll(size1)", buffer1 = CMSPGAll(size1), buffer1, );
-  mem_init(buffer1, size1);
-  ASSERTZERO("mem_check(size1)", , mem_check(buffer1, size1), );
-  ASSERTNOTZERO("CMSGetPG()", buffer2 = CMSGetPG(), buffer1 == buffer2, );
+    ASSERTNOTNULL("CMSPGAll(size1)", buffer1 = CMSPGAll(size1), buffer1,);
+    mem_init(buffer1, size1);
+    ASSERTZERO("mem_check(size1)", , mem_check(buffer1, size1),);
+    ASSERTNOTZERO("CMSGetPG()", buffer2 = CMSGetPG(), buffer1 == buffer2,);
 
 }
 
 void CMSSYS_T() {
-  SEC_STRT("CMSSYS Tests");
-  cmspg_t();
+    SEC_STRT("CMSSYS Tests");
+    cmspg_t();
 }

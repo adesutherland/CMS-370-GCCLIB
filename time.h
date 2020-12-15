@@ -21,18 +21,17 @@ typedef unsigned int clock_t;
 #ifndef __SIZE_T_DEFINED
 #define __SIZE_T_DEFINED
 #if (defined(__OS2__) || defined(__32BIT__) || defined(__MVS__) \
-    || defined(__CMS__))
+ || defined(__CMS__))
 typedef unsigned long size_t;
 #elif (defined(__MSDOS__) || defined(__DOS__) || defined(__POWERC) \
-    || defined(__WIN32__))
+ || defined(__WIN32__))
 typedef unsigned int size_t;
 #endif
 #endif
 
 typedef unsigned long time_t;
 
-struct tm
-{
+struct tm {
     int tm_sec;
     int tm_min;
     int tm_hour;
@@ -45,13 +44,21 @@ struct tm
 };
 
 time_t time(time_t *timer);
+
 clock_t clock(void);
+
 double difftime(time_t time1, time_t time0);
+
 time_t mktime(struct tm *timeptr);
+
 char *asctime(const struct tm *timeptr);
+
 char *ctime(const time_t *timer);
+
 struct tm *gmtime(const time_t *timer);
+
 struct tm *localtime(const time_t *timer);
+
 size_t strftime(char *s, size_t maxsize,
                 const char *format, const struct tm *timeptr);
 
