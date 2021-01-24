@@ -119,11 +119,12 @@ int __cstart(MAINFUNC *mainfunc) {
     } else if (gcccrab->calltype == 1 || gcccrab->calltype == 11) {
         /* Decode 4 word eplist */
         /* Function name  */
+        len = gcccrab->eplist->BeginArgs - gcccrab->eplist->Command;
+        if (len > 8) len = 8;
         a = 0;
-        for (i = 0; i < 8; i++) {
-            ch = gcccrab->eplist->Command[i];
-            if (ch && ch != 0xFF && ch != ' ') gcccrab->argbuffer[a++] = ch;
-            else break;
+        for (i = 0; i < len; i++) {
+            if (gcccrab->eplist->Command[i] != ' ')
+                gcccrab->argbuffer[a++] = gcccrab->eplist->Command[i];
         }
         gcccrab->argbuffer[a++] = 0;
         gcccrab->argv[gcccrab->argc++] = gcccrab->argbuffer;
