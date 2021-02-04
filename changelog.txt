@@ -1,6 +1,7 @@
 GCCLIB Change LOG
 =================
 
+0.8.3 - 4 Feb 2021
 F0049 - EPLIST Parsing Error
 
 0.8.2 - 15 Dec 2020
