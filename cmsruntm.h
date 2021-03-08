@@ -16,9 +16,6 @@
 typedef unsigned long size_t;
 #endif
 
-/* Function Vector Table for Stubs is stored @ 0x486 - NUCRSV7 (Reserved word for the last 45 years) */
-#define STUB_ANCHOR_ADDRESS 0x468
-
 /* mspace is an opaque type representing an independent
    region of space that supports malloc(), etc. */
 typedef void *mspace;
@@ -69,7 +66,15 @@ struct CMSCRAB {
 /**************************************************************************************************/
 
 /* Call parameters */
-#define MAXEPLISTARGS 32
+/* #define MAXEPLISTARGS 32 */
+/* MAXEPLISTARGS is the number of bytes allocated to the entire argv[] array.
+   Setting it to 32 means it silently overflows if there are more than eight
+   arguments (because as is usual in C, nobody bothers to check for overflow).
+   Setting it to 520 should accomodate the maximum number of arguments that
+   be present in a 130 character command string so that the elegance of the
+   code does not have to be compromised by the need to check for overflow.
+   If you are thinking that 260 should actually be enough, think again.      */
+#define MAXEPLISTARGS (130*sizeof(void *))
 #define MAXPLISTARGS 16
 #define ARGBUFFERLEN 300
 

@@ -174,7 +174,10 @@ static void *cmsmmap(size_t bytes) {
 
     int unaligned = bytes & 0xFFF; /* 4k alignment */
     if (unaligned) {
-        printf("Unaligned request %x %d\n", bytes, unaligned);
+/*  The following can result in a recursive call into printf() */
+/*  when cmsmmap() is initially called to allocate memory for  */
+/*  printf() and friends, ending up in a program check.        */
+/*      printf("Unaligned request %x %d\n", bytes, unaligned); */
         pages = (bytes >> 12) + 1;
     } else {
         pages = bytes >> 12;
@@ -2049,7 +2052,7 @@ static FORCEINLINE int win32munmap(void* ptr, size_t size) {
   When locks are defined, there is one global lock, plus
   one per-mspace lock.
 
-  The global lock_ensures that mparams.magic and other unique
+  The global lock_ensures that mparams->magic and other unique
   mparams values are initialized only once. It also protects
   sequences of calls to MORECORE.  In many cases sys_alloc requires
   two calls, that should not be interleaved with calls by other
@@ -2812,7 +2815,7 @@ typedef struct malloc_segment *msegmentptr;
     than this are trapped (unless INSECURE is defined).
 
   Magic tag
-    A cross-check field that should always hold same value as mparams.magic.
+    A cross-check field that should always hold same value as mparams->magic.
 
   Max allowed footprint
     The maximum allowed bytes to allocate from system (zero means no limit)
@@ -2893,10 +2896,8 @@ struct malloc_params {
     flag_t default_mflags;
 };
 
-static struct malloc_params mparams;
-
 /* Ensure mparams initialized */
-#define ensure_initialization() (void)(mparams.magic != 0 || init_mparams())
+#define ensure_initialization() (void)(mparams->magic != 0 || init_mparams())
 
 #if !ONLY_MSPACES
 
@@ -2939,12 +2940,12 @@ static struct malloc_state _gm_;
 
 /* page-align a size */
 #define page_align(S)\
- (((S) + (mparams.page_size - SIZE_T_ONE)) & ~(mparams.page_size - SIZE_T_ONE))
+ (((S) + (mparams->page_size - SIZE_T_ONE)) & ~(mparams->page_size - SIZE_T_ONE))
 
 /* granularity-align a size */
 #define granularity_align(S)\
-  (((S) + (mparams.granularity - SIZE_T_ONE))\
-   & ~(mparams.granularity - SIZE_T_ONE))
+  (((S) + (mparams->granularity - SIZE_T_ONE))\
+   & ~(mparams->granularity - SIZE_T_ONE))
 
 
 /* For mmap, use granularity alignment on windows, else page-align */
@@ -2958,9 +2959,9 @@ static struct malloc_state _gm_;
 #define SYS_ALLOC_PADDING (TOP_FOOT_SIZE + MALLOC_ALIGNMENT)
 
 #define is_page_aligned(S)\
-   (((size_t)(S) & (mparams.page_size - SIZE_T_ONE)) == 0)
+   (((size_t)(S) & (mparams->page_size - SIZE_T_ONE)) == 0)
 #define is_granularity_aligned(S)\
-   (((size_t)(S) & (mparams.granularity - SIZE_T_ONE)) == 0)
+   (((size_t)(S) & (mparams->granularity - SIZE_T_ONE)) == 0)
 
 /*  True if segment S holds address A */
 #define segment_holds(S, A)\
@@ -3307,7 +3308,7 @@ static size_t traverse_and_check(mstate m);
 
 #if (FOOTERS && !INSECURE)
 /* Check if (alleged) mstate m has expected magic field */
-#define ok_magic(M)      ((M)->magic == mparams.magic)
+#define ok_magic(M)      ((M)->magic == mparams->magic)
 #else  /* (FOOTERS && !INSECURE) */
 #define ok_magic(M)      (1)
 #endif /* (FOOTERS && !INSECURE) */
@@ -3349,11 +3350,11 @@ static size_t traverse_and_check(mstate m);
 
 /* Set foot of inuse chunk to be xor of mstate and seed */
 #define mark_inuse_foot(M,p,s)\
-  (((mchunkptr)((char*)(p) + (s)))->prev_foot = ((size_t)(M) ^ mparams.magic))
+  (((mchunkptr)((char*)(p) + (s)))->prev_foot = ((size_t)(M) ^ mparams->magic))
 
 #define get_mstate_for(p)\
   ((mstate)(((mchunkptr)((char*)(p) +\
-    (chunksize(p))))->prev_foot ^ mparams.magic))
+    (chunksize(p))))->prev_foot ^ mparams->magic))
 
 #define set_inuse(M,p,s)\
   ((p)->head = (((p)->head & PINUSE_BIT)|s|CINUSE_BIT),\
@@ -3381,13 +3382,14 @@ static void post_fork_child(void) { INITIAL_LOCK(&(gm)->mutex); }
 
 /* Initialize mparams */
 static int init_mparams(void) {
+    struct malloc_params *mparams = GETGCCCRAB()->mparams;
 #ifdef NEED_GLOBAL_LOCK_INIT
     if (malloc_global_mutex_status <= 0)
       init_malloc_global_mutex();
 #endif
 
     ACQUIRE_MALLOC_GLOBAL_LOCK();
-    if (mparams.magic == 0) {
+    if (mparams->magic == 0) {
         size_t magic;
         size_t psize;
         size_t gsize;
@@ -3419,20 +3421,20 @@ static int init_mparams(void) {
             ((MCHUNK_SIZE & (MCHUNK_SIZE - SIZE_T_ONE)) != 0) ||
             ((gsize & (gsize - SIZE_T_ONE)) != 0) ||
             ((psize & (psize - SIZE_T_ONE)) != 0)) ABORT;
-        mparams.granularity = gsize;
-        mparams.page_size = psize;
-        mparams.mmap_threshold = DEFAULT_MMAP_THRESHOLD;
-        mparams.trim_threshold = DEFAULT_TRIM_THRESHOLD;
+        mparams->granularity = gsize;
+        mparams->page_size = psize;
+        mparams->mmap_threshold = DEFAULT_MMAP_THRESHOLD;
+        mparams->trim_threshold = DEFAULT_TRIM_THRESHOLD;
 #if MORECORE_CONTIGUOUS
-        mparams.default_mflags = USE_LOCK_BIT | USE_MMAP_BIT;
+        mparams->default_mflags = USE_LOCK_BIT | USE_MMAP_BIT;
 #else  /* MORECORE_CONTIGUOUS */
-        mparams.default_mflags =
+        mparams->default_mflags =
                 USE_LOCK_BIT | USE_MMAP_BIT | USE_NONCONTIGUOUS_BIT;
 #endif /* MORECORE_CONTIGUOUS */
 
 #if !ONLY_MSPACES
         /* Set up lock for main malloc area */
-        gm->mflags = mparams.default_mflags;
+        gm->mflags = mparams->default_mflags;
         (void)INITIAL_LOCK(&gm->mutex);
 #endif
 #if LOCK_AT_FORK
@@ -3461,7 +3463,7 @@ static int init_mparams(void) {
             magic |= (size_t) 8U;    /* ensure nonzero */
             magic &= ~(size_t) 7U;   /* improve chances of fault for bad values */
             /* Until memory modes commonly available, use volatile-write */
-            (*(volatile size_t *) (&(mparams.magic))) = magic;
+            (*(volatile size_t *) (&(mparams->magic))) = magic;
         }
     }
 
@@ -3472,20 +3474,21 @@ static int init_mparams(void) {
 /* support for mallopt */
 static int change_mparam(int param_number, int value) {
     size_t val;
+    struct malloc_params *mparams = GETGCCCRAB()->mparams;
     ensure_initialization();
     val = (value == -1) ? MAX_SIZE_T : (size_t) value;
     switch (param_number) {
         case M_TRIM_THRESHOLD:
-            mparams.trim_threshold = val;
+            mparams->trim_threshold = val;
             return 1;
         case M_GRANULARITY:
-            if (val >= mparams.page_size && ((val & (val - 1)) == 0)) {
-                mparams.granularity = val;
+            if (val >= mparams->page_size && ((val & (val - 1)) == 0)) {
+                mparams->granularity = val;
                 return 1;
             } else
                 return 0;
         case M_MMAP_THRESHOLD:
-            mparams.mmap_threshold = val;
+            mparams->mmap_threshold = val;
             return 1;
         default:
             return 0;
@@ -3519,12 +3522,13 @@ static void do_check_top_chunk(mstate m, mchunkptr p) {
 static void do_check_mmapped_chunk(mstate m, mchunkptr p) {
     size_t sz = chunksize(p);
     size_t len = (sz + (p->prev_foot) + MMAP_FOOT_PAD);
+    struct malloc_params *mparams = GETGCCCRAB()->mparams;
     assert(is_mmapped(p));
     assert(use_mmap(m));
     assert((is_aligned(chunk2mem(p))) || (p->head == FENCEPOST_HEAD));
     assert(ok_address(m, p));
     assert(!is_small(sz));
-    assert((len & (mparams.page_size - SIZE_T_ONE)) == 0);
+    assert((len & (mparams->page_size - SIZE_T_ONE)) == 0);
     assert(chunk_plus_offset(p, sz)->head == FENCEPOST_HEAD);
     assert(chunk_plus_offset(p, sz + SIZE_T_SIZE)->head == 0);
 }
@@ -3766,6 +3770,7 @@ static void do_check_malloc_state(mstate m) {
 
 static struct mallinfo internal_mallinfo(mstate m) {
     struct mallinfo nm = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+    struct malloc_params *mparams = GETGCCCRAB()->mparams;
     ensure_initialization();
     if (!PREACTION(m)) {
         check_malloc_state(m);
@@ -3808,6 +3813,7 @@ static struct mallinfo internal_mallinfo(mstate m) {
 #if !NO_MALLOC_STATS
 
 static void internal_malloc_stats(mstate m) {
+    struct malloc_params *mparams = GETGCCCRAB()->mparams;
     ensure_initialization();
     if (!PREACTION(m)) {
         size_t maxfp = 0;
@@ -4107,6 +4113,7 @@ static void internal_malloc_stats(mstate m) {
 
 /* Malloc using mmap */
 static void *mmap_alloc(mstate m, size_t nb) {
+    struct malloc_params *mparams = GETGCCCRAB()->mparams;
     size_t mmsize = mmap_align(nb + SIX_SIZE_T_SIZES + CHUNK_ALIGN_MASK);
     if (m->footprint_limit != 0) {
         size_t fp = m->footprint + mmsize;
@@ -4141,11 +4148,12 @@ static void *mmap_alloc(mstate m, size_t nb) {
 static mchunkptr mmap_resize(mstate m, mchunkptr oldp, size_t nb, int flags) {
     size_t oldsize = chunksize(oldp);
     (void) flags; /* placate people compiling -Wunused */
+    struct malloc_params *mparams = GETGCCCRAB()->mparams;
     if (is_small(nb)) /* Can't shrink mmap regions below small size */
         return 0;
     /* Keep old chunk if big enough but not too big */
     if (oldsize >= nb + SIZE_T_SIZE &&
-        (oldsize - nb) <= (mparams.granularity << 1))
+        (oldsize - nb) <= (mparams->granularity << 1))
         return oldp;
     else {
         size_t offset = oldp->prev_foot;
@@ -4179,6 +4187,7 @@ static mchunkptr mmap_resize(mstate m, mchunkptr oldp, size_t nb, int flags) {
 static void init_top(mstate m, mchunkptr p, size_t psize) {
     /* Ensure alignment */
     size_t offset = align_offset(chunk2mem(p));
+    struct malloc_params *mparams = GETGCCCRAB()->mparams;
     p = (mchunkptr) ((char *) p + offset);
     psize -= offset;
 
@@ -4187,7 +4196,7 @@ static void init_top(mstate m, mchunkptr p, size_t psize) {
     p->head = psize | PINUSE_BIT;
     /* set size of fake trailing chunk holding overhead space only once */
     chunk_plus_offset(p, psize)->head = TOP_FOOT_SIZE;
-    m->trim_check = mparams.trim_threshold; /* reset on each update */
+    m->trim_check = mparams->trim_threshold; /* reset on each update */
 }
 
 /* Initialize bins for a new mstate that is otherwise zeroed out */
@@ -4320,11 +4329,12 @@ static void *sys_alloc(mstate m, size_t nb) {
     size_t tsize = 0;
     flag_t mmap_flag = 0;
     size_t asize; /* allocation size */
+    struct malloc_params *mparams = GETGCCCRAB()->mparams;
 
     ensure_initialization();
 
     /* Directly map large chunks, but only if already initialized */
-    if (use_mmap(m) && nb >= mparams.mmap_threshold && m->topsize != 0) {
+    if (use_mmap(m) && nb >= mparams->mmap_threshold && m->topsize != 0) {
         void *mem = mmap_alloc(m, nb);
         if (mem != 0)
             return mem;
@@ -4461,7 +4471,7 @@ static void *sys_alloc(mstate m, size_t nb) {
             m->seg.base = tbase;
             m->seg.size = tsize;
             m->seg.sflags = mmap_flag;
-            m->magic = mparams.magic;
+            m->magic = mparams->magic;
             m->release_checks = MAX_RELEASE_CHECK_RATE;
             init_bins(m);
 #if !ONLY_MSPACES
@@ -4572,13 +4582,14 @@ static size_t release_unused_segments(mstate m) {
 
 static int sys_trim(mstate m, size_t pad) {
     size_t released = 0;
+    struct malloc_params *mparams = GETGCCCRAB()->mparams;
     ensure_initialization();
     if (pad < MAX_REQUEST && is_initialized(m)) {
         pad += TOP_FOOT_SIZE; /* ensure enough room for segment overhead */
 
         if (m->topsize > pad) {
             /* Shrink top space in granularity-size units, keeping at least one */
-            size_t unit = mparams.granularity;
+            size_t unit = mparams->granularity;
             size_t extra = ((m->topsize - pad + (unit - SIZE_T_ONE)) / unit -
                             SIZE_T_ONE) * unit;
             msegmentptr sp = segment_holding(m, (char *) m->top);
@@ -5250,6 +5261,7 @@ static void **ialloc(mstate m,
     flag_t was_enabled;    /* to disable mmap */
     size_t size;
     size_t i;
+    struct malloc_params *mparams = GETGCCCRAB()->mparams;
 
     ensure_initialization();
     /* compute array length, if needed */
@@ -5549,15 +5561,17 @@ int dlposix_memalign(void** pp, size_t alignment, size_t bytes) {
 
 void* dlvalloc(size_t bytes) {
   size_t pagesz;
+  struct malloc_params *mparams = GETGCCCRAB()->mparams;
   ensure_initialization();
-  pagesz = mparams.page_size;
+  pagesz = mparams->page_size;
   return dlmemalign(pagesz, bytes);
 }
 
 void* dlpvalloc(size_t bytes) {
   size_t pagesz;
+  struct malloc_params *mparams = GETGCCCRAB()->mparams;
   ensure_initialization();
-  pagesz = mparams.page_size;
+  pagesz = mparams->page_size;
   return dlmemalign(pagesz, (bytes + pagesz - SIZE_T_ONE) & ~(pagesz - SIZE_T_ONE));
 }
 
@@ -5665,15 +5679,16 @@ static mstate init_user_mstate(char *tbase, size_t tsize) {
     size_t msize = pad_request(sizeof(struct malloc_state));
     mchunkptr mn;
     mchunkptr msp = align_as_chunk(tbase);
+    struct malloc_params *mparams = GETGCCCRAB()->mparams;
     mstate m = (mstate) (chunk2mem(msp));
     memset(m, 0, msize);
     (void) INITIAL_LOCK(&m->mutex);
     msp->head = (msize | INUSE_BITS);
     m->seg.base = m->least_addr = tbase;
     m->seg.size = m->footprint = m->max_footprint = tsize;
-    m->magic = mparams.magic;
+    m->magic = mparams->magic;
     m->release_checks = MAX_RELEASE_CHECK_RATE;
-    m->mflags = mparams.default_mflags;
+    m->mflags = mparams->default_mflags;
     m->extp = 0;
     m->exts = 0;
     disable_contiguous(m);
@@ -5687,10 +5702,11 @@ static mstate init_user_mstate(char *tbase, size_t tsize) {
 CMSINLINE mspace create_mspace(size_t capacity, int locked) {
     mstate m = 0;
     size_t msize;
+    struct malloc_params *mparams = GETGCCCRAB()->mparams;
     ensure_initialization();
     msize = pad_request(sizeof(struct malloc_state));
-    if (capacity < (size_t) -(msize + TOP_FOOT_SIZE + mparams.page_size)) {
-        size_t rs = ((capacity == 0) ? mparams.granularity :
+    if (capacity < (size_t) -(msize + TOP_FOOT_SIZE + mparams->page_size)) {
+        size_t rs = ((capacity == 0) ? mparams->granularity :
                      (capacity + TOP_FOOT_SIZE + msize));
         size_t tsize = granularity_align(rs);
         char *tbase = (char *) (CALL_MMAP(tsize));
@@ -5707,10 +5723,11 @@ CMSINLINE mspace
 create_mspace_with_base(void *base, size_t capacity, int locked) {
     mstate m = 0;
     size_t msize;
+    struct malloc_params *mparams = GETGCCCRAB()->mparams;
     ensure_initialization();
     msize = pad_request(sizeof(struct malloc_state));
     if (capacity > msize + TOP_FOOT_SIZE &&
-        capacity < (size_t) -(msize + TOP_FOOT_SIZE + mparams.page_size)) {
+        capacity < (size_t) -(msize + TOP_FOOT_SIZE + mparams->page_size)) {
         m = init_user_mstate((char *) base, capacity);
         m->seg.sflags = EXTERN_BIT;
         set_lock(m, locked);
@@ -6182,6 +6199,7 @@ CMSINLINE size_t mspace_footprint_limit(mspace msp) {
 CMSINLINE size_t mspace_set_footprint_limit(mspace msp, size_t bytes) {
     size_t result = 0;
     mstate ms = (mstate) msp;
+    struct malloc_params *mparams = GETGCCCRAB()->mparams;
     if (ok_magic(ms)) {
         if (bytes == 0)
             result = granularity_align(1); /* Use minimal size */

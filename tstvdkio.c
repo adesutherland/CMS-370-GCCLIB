@@ -114,7 +114,7 @@ static void fopen_t() {
     /* Finally Check if write deletes */
     ASSERTNOTNULLP("fopen(TEMP FILE A,w)", f = fopen("TEMP FILE A", "w"), f,
                    if (f) fclose(f));
-    ASSERTNULL("fopen(TEMP FILE,r)", f = fopen("TEMP FILE", "r"), f,
+    ASSERTNULL("fopen(TEMP FILE,r)", f = fopen("TEMP FILE A", "r"), f,
                if (f) fclose(f));
 }
 

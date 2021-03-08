@@ -16,7 +16,9 @@
 #include <string.h>
 #include <ctype.h>
 
-static unsigned long myseed = 1;                                 /* seed for random number generator */
+#if !defined(__CMS__) && !defined(__MVS__)
+    static unsigned long myseed = 1;    /* seed for random number generator */
+#endif
 
 void
 __abort(void)
@@ -323,8 +325,10 @@ rand(void)
 
 #if defined(__MVS__) || defined(__CMS__)
     /* This hack should be removed. It is to get around a bug in the GCC 3.2.3 MVS 3.0 optimizer. */
-    myseed = myseed * 1103515245UL;
-    ret = (int) (((myseed + 12345) >> 16) & 0x8fff);
+    unsigned int *seedptr;
+    seedptr = GETGCCCRAB()->randomseed;
+    *seedptr = (*seedptr) * 1103515245UL;
+    ret = (int) ((((*seedptr) + 12345) >> 16) & 0x8fff);
 #else
     myseed = myseed * 1103515245UL + 12345;
     ret = (int) ((myseed >> 16) & 0x8fff);
@@ -339,7 +343,12 @@ srand(unsigned int seed)
 /* void srand(unsigned int seed)                                                                  */
 /**************************************************************************************************/
 {
+#if defined(__CMS__) || defined(__MVS__)
+    unsigned int *seedptr = GETGCCCRAB()->randomseed;
+    *seedptr = seed;
+#else
     myseed = seed;
+#endif
     return;
 }
 

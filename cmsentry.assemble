@@ -1,107 +1,241 @@
-******************************************************************
-* CMSENTRY ASSEMBLE                                              *
-* The main entry point for a module produced by GCC and other    *
-* assembler stubs to be linked to the users program (rather than *
-* resident).                                                     *
-*                                                                *
-* Part of GCCLIB - VM/370 CMS Native Std C Library;              *
-*                  A Historic Computing Toy                      *
-*                                                                *
-* Proud Contributors: See contrib memo                           *
-*                                                                *
-* Released to the public domain.                                 *
-******************************************************************
-CMSENTRY CSECT
-         ENTRY @@CRT0
-***********************************************************************
-* @@CRT0 Entry Point                                                  *
-* We enter here from CMS.  This is the main entry point for a module  *
-* compiled by GCC.  Allocate the bootstrap GCC stack, and call        *
-* __cstub which prepares for the RESLIB hyperjump, which calls __ctart*
-* which sets up the runtime strucures & parameters, which finally     *
-* calls main().                                                       *
-* On return it frees the bootstrap stack and returns to CMS.          *
-***********************************************************************
-@@CRT0   DS    0H
-         USING CMSCRAB,R13
-         STM   R14,R12,GR14
-         LR    R12,R15
-         USING @@CRT0,R12     establish addressability
-         LA    R4,18*4(,R13)  Point to a plist build area
-*                               just past our saved registers
-*                                 in our R13 13 Dword area
-         ST    R1,0(,R4)      Set entry PLIST ptr as parm 1
-         ST    R0,4(,R4)      Set entry EPLIST ptr as parm 2
-* --------------------------------------------------------------------
-* Set up the bootstrap GCC stack.
-* --------------------------------------------------------------------
-         LA    R0,STACKLEN/8  stack length in doublewords
-         DMSFREE DWORDS=(0),ERR=NOMEM,TYPCALL=SVC,TYPE=USER
-         ST    R1,FORWARD     chain backward (our save area)
-         ST    R13,BACK-CMSCRAB(,R1) Chain forward
-*                                       (caller's save area)
-         LR    R13,R1         establish initial stack frame
-         USING CMSCRAB,R13
-         LA    R2,MAINSTK     where the GCC stack begins
-         ST    R2,STACKNXT    next available spot in stack
-         L     R2,=A(STACKLEN)
-         LA    R2,0(R2,R13)   Point past the stack end
-         ST    R2,DSTACK      Dynamic stack control
-         MVI   DSTACK,X'01'   Set flag to 01 = static stack
-* ---------------------------------------------------------------------
-* Now we build the parameters for the user's main program.
-* ---------------------------------------------------------------------
-LAUNCH   DS    0H
-         LR    R1,R4          address of parameters for __cstub
-* ---------------------------------------------------------------------
-* At last we call the user's C main program.
-* ---------------------------------------------------------------------
-         L     R15,=V(@@CSTUB)
-         BALR  R14,R15
-* ---------------------------------------------------------------------
-* Normal return from the user's program.  Clean up and return to CMS.
-* ---------------------------------------------------------------------
-         LR    R9,R15         save the return code from user program
-         LA    R15,@@EXIT     adjust addressability
-         B     THATSALL       branch to clean up
-         SPACE
-NOMEM    DS    0H             memory allocation failed
-         LA    R15,57         perhaps should issue an error message
-         B     RETURN
-         LTORG
-         EJECT
-***********************************************************************
-* @@EXIT Entry Point                                                  *
-* We enter here when the user program calls the exit() function, and  *
-* branch here after a normal return from the user program.  Now we    *
-* free the program stack and return to CMS.                           *
-***********************************************************************
-         ENTRY @@EXIT
-@@EXIT   DS    0H
-         L     R9,0(R1)       get return code from parameter list
-* Join here after normal return from user's program.
-THATSALL DS    0H
-         LR    R12,R15
-         USING @@EXIT,R12     establish addressiblity
-         USING CMSCRAB,R13    save area is a CMSCRAB
-         L     R5,GCCCRABA    get the GCCCRAB
-         USING GCCCRAB,R5
-         L     R13,ROOTCMSC   get the rootcmscrab
-         DROP  R5
-         LA    R0,STACKLEN/8  Stack length in doublewords
-         LR    R1,R13
-         L     R13,BACK       go back to our save area
-         DMSFRET DWORDS=(0),LOC=(1),ERR=*,TYPCALL=SVC
-         LR    R15,R9         set return code
-RETURN   DS    0H
-         L     R14,GR14       restore return address
-         LM    R0,R12,GR0     restore our caller's registers
-         BR    R14            return to CMS
-         EJECT
-         LTORG
-         SPACE
-         REGEQU
-         CMSCRAB
-         GCCCRAB
-         NUCON
-         END
+*********************************************************************** 00001000
+* CMSENTRY ASSEMBLE                                                   * 00002000
+* The main entry point for a module produced by GCC and other         * 00003000
+* assembler stubs to be linked to the users program.                  * 00004000
+*                                                                     * 00005000
+* Part of GCCLIB - the "Native CMS" GCC Runtime Library               * 00006000
+*                                                                     * 00007000
+* Based on code written by Paul Edwards and modified by Dave Wade.    * 00008000
+* Released to the public domain.                                      * 00009000
+*                                                                     * 00010000
+* Robert O'Hara, Redmond Washington, July 2010.                       * 00011000
+*                                                                     * 00012000
+* Proud Contributors: See contrib memo                                * 00013000
+* Not so proud contributors, who knows.                               * 00014000
+*                                                                     * 00015000
+* If &SYSPARM is defined as RES, code is included to search for       * 00016000
+* shared segments named GCCLIB which contain the memory resident      * 00017000
+* version of the GCCLIB Native CMS C runtime library.  If the GCCLIB  * 00018000
+* shared segments are not already loaded, an attempt is made to load  * 00019000
+* them into storage, assuming they are located outside the virtual    * 00020000
+* machine address space.  If this is not successful or if the shared  * 00021000
+* segments address conflicts with the virtual machine address space,  * 00022000
+* an attempt is made to find GCCLIB in the RESLIB library instead.    * 00023000
+* If this is not successful either, the program exits gracefully with * 00024000
+* an error message indicating the required C runtime library couldn't * 00025000
+* be located.  If the GCCLIB runtime library was successfully located * 00026000
+* in shared segments or RESLIB, name and version information is       * 00027000
+* compared with the runtime library present when the program was      * 00028000
+* originally linked.  An attempt to run with a lower version of       * 00029000
+* the runtime library than the program was originally linked with is  * 00030000
+* gracefully rejected.                                                * 00031000
+*                                                                     * 00032000
+*********************************************************************** 00033000
+CMSENTRY CSECT                                                          00034000
+         ENTRY @@CRT0                                                   00035000
+*********************************************************************** 00036000
+* @@CRT0 Entry Point                                                  * 00037000
+* We enter here from CMS.  This is the main entry point for a module  * 00038000
+* compiled by GCC.  Allocate the bootstrap GCC stack, and call        * 00039000
+* __cstub() which initialises global variables and calls __cstart()   * 00040000
+* which sets up the runtime strucures & parameters, which finally     * 00041000
+* calls main().                                                       * 00042000
+* On return it frees the bootstrap stack and returns to CMS.          * 00043000
+*********************************************************************** 00044000
+@@CRT0   DS    0H                                                       00045000
+         USING CMSCRAB,R13                                              00046000
+         STM   R14,R12,GR14                                             00047000
+         LR    R12,R15                                                  00048000
+         USING @@CRT0,R12     establish addressability                  00049000
+         LA    R4,18*4(,R13)  Point to a plist build area               00050000
+*                               just past our saved registers           00051000
+*                                 in our R13 13 Dword area              00052000
+         ST    R1,0(,R4)      Set entry PLIST ptr as parm 1             00053000
+         ST    R0,4(,R4)      Set entry EPLIST ptr as parm 2            00054000
+         XC    8(4,R4),8(R4)  Set parm 3 to zero for now                00055000
+* --------------------------------------------------------------------  00056000
+* Set up the bootstrap GCC stack.                                       00057000
+* --------------------------------------------------------------------  00058000
+         LA    R0,(STACKLEN+7)/8 stack length in doublewords            00059000
+         DMSFREE DWORDS=(0),ERR=NOMEM,TYPCALL=SVC,TYPE=USER             00060000
+         ST    R1,FORWARD     chain backward (our save area)            00061000
+         DROP  R13                                                      00062000
+         ST    R13,BACK-CMSCRAB(,R1) Chain forward                      00063000
+*                                       (caller's save area)            00064000
+         LR    R13,R1         establish initial stack frame             00065000
+         USING CMSCRAB,R13                                              00066000
+         LA    R2,MAINSTK     where the GCC stack begins                00067000
+         ST    R2,STACKNXT    next available spot in stack              00068000
+         L     R2,=A(STACKLEN)                                          00069000
+         LA    R2,0(R2,R13)   Point past the stack end                  00070000
+         ST    R2,DSTACK      Dynamic stack control                     00071000
+         MVI   DSTACK,X'01'   Set flag to 01 = static stack             00072000
+         DROP  R13                                                      00073000
+         AIF  ('&SYSPARM' NE 'RES').SKIP1                               00074000
+* --------------------------------------------------------------------- 00075000
+* Lets see if we can find the runtime library in shared segments.       00076000
+* --------------------------------------------------------------------- 00077000
+         LA    R6,LIBNAME     get name of shared segments               00078000
+         LA    R7,FINDSYS     check if it's loaded or even exists       00079000
+         DIAG  R6,R7,X'064'   find specified shared segments            00080000
+         BZ    GOTRTLIB       shared segment exists and is loaded       00081000
+         BP    NOSHRSEG       shr segment doesn't exist or fatal error  00082000
+         XR    R7,R7          indicate cause of next error              00083000
+         DIAG  R5,0,X'060'    get virtual machine size                  00084000
+         CLR   R6,R5          is shared segment above virtual machine?  00085000
+         BL    NOSHRSEG       no, can't load shr seg inside virt. mach. 00086000
+         LA    R6,LIBNAME     get name of shared segments again         00087000
+         LA    R7,LOADSHR     shared segments to be loaded shared       00088000
+         DIAG  R6,R7,X'064'   load shared segments                      00089000
+         BZ    GOTRTLIB       shared segments loaded successfully       00090000
+NOSHRSEG DS    0H                                                       00091000
+* --------------------------------------------------------------------- 00092000
+* Maybe the runtime library has been loaded in memory with RESLIB?      00093000
+* --------------------------------------------------------------------- 00094000
+         LA    R1,RIARGLST    get argument list to call RESLIBI         00095000
+         L     R15,=V(RESLIBI) get address of RESLIBI routine           00096000
+         BALR  R14,R15        get residence information on GCCLIB       00097000
+         LTR   R15,R15        was the call successful?                  00098000
+         BNZ   NORESLIB       didn't manage to find GCCLIB              00099000
+         L     R6,GCCLSTRT    get starting address of GCCLIB in RESLIB  00100000
+* --------------------------------------------------------------------- 00101000
+* Check library found is compatble with running program                 00102000
+* --------------------------------------------------------------------- 00103000
+GOTRTLIB DS    0H                                                       00104000
+         CLC   LIBNAME,0(R6)  Does name at start of library match?      00105000
+         BNE   BADNAME        something's gone awry                     00106000
+         CLC   MAJOR,8(R6)    check library major version number        00107000
+         BH    BADVERS        library major version number is too low   00108000
+         CLC   MINOR,9(R6)    ckeck library minor version number        00109000
+         BH    BADVERS        library minor version number is too low   00110000
+         LA    R6,16(,R6)     skip over runtime library header          00111000
+         ST    R6,8(,R4)      put address of RTL vector table in parm 3 00112000
+.SKIP1   ANOP                                                           00113000
+* --------------------------------------------------------------------- 00114000
+* Now we build the parameters for the user's main program.              00115000
+* --------------------------------------------------------------------- 00116000
+LAUNCH   DS    0H                                                       00117000
+         LR    R1,R4          address of parameters for __cstub         00118000
+* --------------------------------------------------------------------- 00119000
+* At last we call the user's C main program.                            00120000
+* --------------------------------------------------------------------- 00121000
+         L     R15,=V(@@CSTUB)                                          00122000
+         BALR  R14,R15                                                  00123000
+* --------------------------------------------------------------------- 00124000
+* Normal return from the user's program.  Clean up and return to CMS.   00125000
+* --------------------------------------------------------------------- 00126000
+         LR    R9,R15         save the return code from user program    00127000
+         B     THATSALL       branch to clean up                        00128000
+* --------------------------------------------------------------------- 00129000
+* Error messages                                                        00130000
+* --------------------------------------------------------------------- 00131000
+NOMEM    DS    0H             memory allocation failed                  00132000
+         LA    R2,(STACKLEN+7)/8 stack length in doublewords            00133000
+         DMSERR TEXT='Error allocating ...... doublewords for C stack',+00134000
+               SUB=(DEC,(R2)),NUM=57,LET=E,CSECT=GCC,DOT=NO             00135000
+         LA    R15,57                                                   00136000
+         B     ERREXIT2       exit without freeing stack                00137000
+         SPACE ,                                                        00138000
+         AIF   ('&SYSPARM' NE 'RES').SKIP2                              00139000
+NORESLIB DS    0H                                                       00140000
+         LR    R9,R15         stash return code from RESLIBI            00141000
+         LTR   R7,R7          check reason for shared segment failure   00142000
+         BNZ   ERROR1         due to shared segment inside virt mach?   00143000
+         DMSERR TEXT='........ shared segment cannot be loaded at .....+00144000
+               . within virtual machine',SUB=(CHARA,LIBNAME,HEX,(R6)), +00145000
+               NUM=48,LET=E,CSECT=GCC,DOT=NO,RENT=NO                    00146000
+         B     NEXTERR        go on to report RESLIB error              00147000
+         SPACE ,                                                        00148000
+ERROR1   DS    0H                                                       00149000
+         CH    R7,=H'44'      maybe shared segment doesn't exist?       00150000
+         BNE   ERROR2         not this time                             00151000
+         DMSERR TEXT='........ runtime library shared segment does not +00152000
+               exist',SUB=(CHARA,LIBNAME),NUM=44,LET=E,CSECT=GCC,DOT=NO 00153000
+         B     NEXTERR        go on to report RESLIB error              00154000
+         SPACE ,                                                        00155000
+ERROR2   DS    0H                                                       00156000
+         DMSERR TEXT='Return code ........ encountered accessing ......+00157000
+               .. shared segment',SUB=(DEC,(R7),CHARA,LIBNAME),        +00158000
+               NUM=(R7),LET=E,CSECT=GCC,DOT=NO,RENT=NO                  00159000
+         SPACE ,                                                        00160000
+NEXTERR  DS    0H                                                       00161000
+         DMSERR TEXT='........ runtime library not found in RESLIB libr+00162000
+               ary',SUB=(CHARA,LIBNAME),NUM=(R9),LET=E,CSECT=GCC,      +00163000
+               DOT=NO,RENT=NO                                           00164000
+         B     ERREXIT1       free stack and exit                       00165000
+         SPACE ,                                                        00166000
+BADNAME  DS    0H                                                       00167000
+         LA    R9,52                                                    00168000
+         DMSERR TEXT='Runtime library name ........ does not match expe+00169000
+               cted ........',SUB=(CHARA,(R6),CHARA,LIBNAME),          +00170000
+               NUM=(R9),LET=E,CSECT=GCC,DOT=NO,RENT=NO                  00171000
+         B     ERREXIT1       free stack and exit                       00172000
+         SPACE ,                                                        00173000
+BADVERS  DS    0H                                                       00174000
+         LA    R9,56                                                    00175000
+         DMSERR TEXT='Incompatible ........ runtime library version',  +00176000
+               SUB=(CHARA,LIBNAME),                                    +00177000
+               NUM=(R9),LET=E,CSECT=GCC,DOT=NO,RENT=NO                  00178000
+         B     ERREXIT1       free stack and exit                       00179000
+* --------------------------------------------------------------------- 00180000
+*        Read only data                                                 00181000
+* --------------------------------------------------------------------- 00182000
+MAJOR    DC    AL1(MAJORVR)   minimum runtime library major version     00183000
+MINOR    DC    AL1(MINORVR)   minimum runtime library minor version     00184000
+         DS    0D             DIAG 064 requires name doubleword aligned 00185000
+LIBNAME  DC    CL8'GCCLIB'    name of runtime library shared segments   00186000
+RIARGLST DS    0F             argument list for RESLIBI                 00187000
+         DC    A(LIBNAME)     1. address of name of shared segments     00188000
+         DC    A(GCCLSTRT)    2. returned address of resident GCCLIB    00189000
+         DC    F'0'           3. end of argument list                   00190000
+* --------------------------------------------------------------------- 00191000
+*        Read / Write storage                                           00192000
+* --------------------------------------------------------------------- 00193000
+GCCLSTRT DS    A              start of resident GCCLIB from RESLIBI     00194000
+GCCLVTBL DS    A              GCCLIB vector table address for __cstub() 00195000
+* --------------------------------------------------------------------- 00196000
+*        Constants                                                      00197000
+* --------------------------------------------------------------------- 00198000
+LOADSHR  EQU   X'00'                                                    00199000
+FINDSYS  EQU   X'0C'                                                    00200000
+.SKIP2   ANOP                                                           00201000
+         DROP  R12                                                      00202000
+         SPACE ,                                                        00203000
+         LTORG                                                          00204000
+         EJECT                                                          00205000
+*********************************************************************** 00206000
+* @@EXIT Entry Point                                                  * 00207000
+* We enter here when the user program calls the exit() function, and  * 00208000
+* branch here after a normal return from the user program.  Now we    * 00209000
+* free the program stack and return to CMS.                           * 00210000
+*********************************************************************** 00211000
+         ENTRY @@EXIT                                                   00212000
+@@EXIT   DS    0H                                                       00213000
+         L     R9,0(R1)       get return code from parameter list       00214000
+* Join here after normal return from user's program.  No base required. 00215000
+THATSALL DS    0H                                                       00216000
+         USING CMSCRAB,R13    save area is a CMSCRAB                    00217000
+         L     R5,GCCCRABA    get the GCCCRAB                           00218000
+         USING GCCCRAB,R5                                               00219000
+         L     R13,ROOTCMSC   get the rootcmscrab                       00220000
+         DROP  R5                                                       00221000
+ERREXIT1 DS    0H                                                       00222000
+         LA    R0,(STACKLEN+7)/8 Stack length in doublewords            00223000
+         LR    R1,R13                                                   00224000
+         L     R13,BACK       go back to our save area                  00225000
+         DMSFRET DWORDS=(0),LOC=(1),ERR=*,TYPCALL=SVC                   00226000
+         LR    R15,R9         set return code                           00227000
+ERREXIT2 DS    0H                                                       00228000
+         L     R14,GR14       restore return address                    00229000
+         LM    R0,R12,GR0     restore our caller's registers            00230000
+         BR    R14            return to CMS                             00231000
+         EJECT                                                          00232000
+         LTORG                                                          00233000
+         SPACE                                                          00234000
+         AIF ('&SYSPARM' NE 'RES').SKIP3                                00235000
+         GCCLIBVR                                                       00236000
+.SKIP3   ANOP                                                           00237000
+         REGEQU                                                         00238000
+         CMSCRAB                                                        00239000
+         GCCCRAB                                                        00240000
+         END                                                            00241000

@@ -20,6 +20,7 @@
 
 int __zone();
 
+
 #endif
 
 /* pdos and msdos use the same interface most of the time) */
@@ -196,7 +197,7 @@ char *asctime(const struct tm *timeptr) {
             "Jan", "Feb", "Mar", "Apr", "May", "Jun",
             "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
     };
-    static char result[26];
+    char *result = GETGCCCRAB()->atresult;
 
     sprintf(result, "%.3s %.3s%3d %.2d:%.2d:%.2d %d\n",
             wday_name[timeptr->tm_wday],
@@ -241,7 +242,7 @@ struct tm *localtime(const time_t *timer) {
 }
 
 struct tm *gmtime(const time_t *timer) {
-    static struct tm tms; /* TODO - ADD to GCCCRAB */
+    struct tm *tms = GETGCCCRAB()->gmtimetm;
     unsigned yr, mo, da;
     unsigned long secs;
     unsigned long days;
@@ -249,19 +250,19 @@ struct tm *gmtime(const time_t *timer) {
     days = *timer / (60L * 60 * 24);
     secs = *timer % (60L * 60 * 24);
     scalar_to_ymd(days + ymd_to_scalar(1970, 1, 1), &yr, &mo, &da);
-    tms.tm_year = yr - 1900;
-    tms.tm_mon = mo - 1;
-    tms.tm_mday = da;
-    tms.tm_yday = (int) (ymd_to_scalar(tms.tm_year + 1900, mo, da)
-                         - ymd_to_scalar(tms.tm_year + 1900, 1, 1));
-    tms.tm_wday = dow(tms.tm_year + 1900, mo, da);
-    tms.tm_isdst = -1;
-    tms.tm_sec = (int) (secs % 60);
+    tms->tm_year = yr - 1900;
+    tms->tm_mon = mo - 1;
+    tms->tm_mday = da;
+    tms->tm_yday = (int) (ymd_to_scalar(tms->tm_year + 1900, mo, da)
+                         - ymd_to_scalar(tms->tm_year + 1900, 1, 1));
+    tms->tm_wday = dow(tms->tm_year + 1900, mo, da);
+    tms->tm_isdst = -1;
+    tms->tm_sec = (int) (secs % 60);
     secs /= 60;
-    tms.tm_min = (int) (secs % 60);
+    tms->tm_min = (int) (secs % 60);
     secs /= 60;
-    tms.tm_hour = (int) secs;
-    return (&tms);
+    tms->tm_hour = (int) secs;
+    return (tms);
 }
 
 /*
@@ -277,27 +278,26 @@ struct tm *gmtime(const time_t *timer) {
  * modified 1994-08-26 by Paul Edwards
  */
 
-static char *aday[] = {
+static const char *aday[] = {
         "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"
 };
 
-static char *day[] = {
+static const char *day[] = {
         "Sunday", "Monday", "Tuesday", "Wednesday",
         "Thursday", "Friday", "Saturday"
 };
 
-static char *amonth[] = {
+static const char *amonth[] = {
         "Jan", "Feb", "Mar", "Apr", "May", "Jun",
         "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
 };
 
-static char *month[] = {
+static const char *month[] = {
         "January", "February", "March", "April", "May", "June",
         "July", "August", "September", "October", "November", "December"
 };
 
-static char *__tzname[2] = {"" ""};
-static char buf[26];
+static const char *__tzname[2] = {"" ""};
 
 static void strfmt(char *str, const char *fmt, ...);
 
@@ -370,6 +370,8 @@ static void strfmt(char *str, const char *fmt, ...);
 size_t strftime(char *s, size_t maxs, const char *f, const struct tm *t) {
     int w;
     char *p, *q, *r;
+
+    char *buf = GETGCCCRAB()->strfbuf;
 
     p = s;
     q = s + maxs - 1;
@@ -502,7 +504,7 @@ size_t strftime(char *s, size_t maxs, const char *f, const struct tm *t) {
     return (size_t) (p - s);
 }
 
-static int pow[5] = {1, 10, 100, 1000, 10000};
+static const int pow[5] = {1, 10, 100, 1000, 10000};
 
 /**
  * static void strfmt(char *str, char *fmt);

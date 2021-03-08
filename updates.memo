@@ -1,0 +1,183 @@
+February 2021
+=============
+
+Changed GCCLIB_VERSION from 0.8.2 to 1.3.1 to resume original versioning.
+
+Changes since 0.8.2
+===================
+
+The need for an anchor in NUCON to store address of the vector table at the
+start of the memory-resident version of GCCLIB has been eliminated.  This was
+done by arranging to obtain the address of the start of GCCLIB in memory and
+thus the start of the vector table from RESLIB instead.  This address is now
+stored in GCCLIBVT in the GCCCRAB one time only at program startup time.
+
+It is now possible to load GCCLIB in shared segments saving around 112KB in
+virtual machine storage over using RESLIB and saving around the same amount
+in real storage for each additional userid using GCCLIB.
+
+Programs which are linked with the memory-resident version of GCCLIB either
+in shared segments or RESLIB now check whether the runtime library is actually
+present at program start time before they attempt to jump into it.  An
+informative error message is issued if the runtime library is not present or
+cannot be used instead of an ungraceful program check.  A check is also made
+to ensure the runtime library present at program start time is compatible with
+the runtime library the program was originally linked with.
+
+The above changes are made possible by adding code to CMSENTRY ASSEMBLE to
+locate GCCLIB in shared segments or in RESLIB if the library is not available
+in shared segments or cannot be used due to overlap of the shared segments with
+virtual machine storage and pass the address of GCCLIB to __cstub() which then
+then stores it in GCCLIBVT in the GCCCRAB.  This extra code is not required in
+the case where the non-memory-resident version of GCCLIB is being linked with.
+Therefore, two versions of CMSENTRY are assembled, selected by setting the
+value of SYSPARM.  CMSENTRS TEXT, for inclusion in GCCRES TXTLIB, includes the
+extra code to locate and validate GCCLIB in shared segments or RESLIB while
+CMSENTNR TEXT, for inclusion in GCCLIB TXTLIB, does not include this new code.
+
+MAKELIB C has been updated to generate the code now required for the vector
+table, however using it results in an enormous GCCRES TXTLIB.  It is
+recommended to use the assembly method to generate the vector table as this
+this produces a much smaller GCCRES TXTLIB.  This is the default method now
+specified in MKGCCLIB EXEC.
+
+A number of items in GCCLIB were declared as static globals and ended up with
+storage allocated within the resident part of GCCLIB which made it difficult
+for GCCLIB to be placed in read-only storage such as shared segments and also
+meant that some did not get initialised correctly at program start time.  They
+include the random number seed set by srand() and used by rand(), a counter and
+filename used by tmpnam(), various parameters used by malloc() and buffers for
+asctime(), gmtime() and strftime().  These have been moved into the GCCCRAB
+where they can be initialised at program start time when appropriate and they
+(hopefully) no longer require the resident part of GCCLIB to be written to
+during normal program execution.  Other situations which cause GCCLIB to write
+to itself may have been missed.
+
+A bug in MALLOC C which resulted in a program check on occasions when unaligned
+storage was requested from cmsmmap() because of an fprint() call made before
+malloc() had been initialised properly has been fixed.
+
+Failure to check for overflow of the argv[] array in CMSRUNTM C (which only had
+enough memory for eight program arguments allocated) has been worked around by
+increasing the size of the array to that required for the maximum number of
+arguments that can be specified on a command line.
+
+Problems with incorrectly generated non-extended PLISTs in CMSSYSC C have been
+resolved by restoring the original assembly language version of @@CMSCMD in
+CMSSYS ASSEMBLE and fixing the bugs in that instead.
+
+A bug in CMRUNTM C which required commands which have no arguments to be
+followed by a space was fixed in version 0.8.3.  This fix has also been
+incorporated in this version.
+
+A bug in TSTVDKIO C which resulted in a bogus test error:
+
+TEST ERROR 6.1.24 (fopen(TEMP FILE, r)) TSTVDKIO LINE 118 Value is not NULL
+
+when TEMP FILE existed on another accessed disk has been fixed.
+
+A bug in TSTS C which resulted in files called TEMP FILE A and TEST FILE A
+not getting deleted during test runs because __FSERAS() was called with an
+inappropriately formatted filename has been fixed by changing it to call
+remove() instead.
+
+A less crude method of uppercasing commands and filenames which doesn't take
+take up as much space as a dedicated translate table has been implemented in
+CMSSYS ASSEMBLE.  It is arguable that filename arguments of functions such as
+__FSOPEN() should not be uppercased at all.  However, this is the way it has
+been done since the beginning so it is probably best to maintain compatibility.
+
+Three instances of redundant character string errmsg[80] in CMSSTDIO C removed.
+
+Known issues
+============
+
+Messages such as:  "WARNING: MEMORY FREED (40 BYTES LEAKED)" may result when
+programs using the library exit.  They may be due to memory leaks either in
+GCCLIB or in the user program linked with it.  Apparantly these messages are
+benign.
+
+
+To build GCCLIB:
+================
+
+Log on to GCCCMS.
+Release ALL minidisks except A and H (that is release B, C, D, E, F and G).
+
+EXEC MKGCCMAC
+EXEC MKGCCLIB
+
+No errors should be reported by the above.
+
+Access the 202 disk as some convenient free filemode.  Copy GCCLIB MACLIB A and
+all the H files from the H (891) disk plus GCCLIB PARM H onto the 202 disk.
+This will make them available to other users when they use GCC EXEC Y to
+compile C programs.
+
+Please note that MKGCCLIB EXEC checks for ASSEMBLE or C source files that are
+newer than their associated TEXT files and assembles/compiles them if found.
+However, included files are not checked.  If any MACRO files or H files are
+modified, it is best to erase all the TEXT files on the 891 H disk before
+running MKGCCLIB EXEC.  If any MACRO files are modified, it is also necessary
+to run MKGCCMAC EXEC before running MKGCCLIB EXEC.
+
+
+To make the newly built GCCLIB available to the system:
+=======================================================
+
+Log on to MAINT.
+Get a read link to GCCCMS 191, something like LINK GCCCMS 191 991 RR
+Copy GCCLIB TEXT, GCCLIB TXTLIB and GCCRES TXTLIB from there to the S disk.
+Save the CMS shared system so that all users can see the updated files.
+
+To create or update the GCCLIB shared segments:
+===============================================
+
+While logged on to MAINT after copying the latest GCCLIB files onto the S disk:
+
+DEFINE STOR 16M
+IPL 190 CLEAR
+ACCESS (NOPROF
+ACCESS 093 B
+GLOBAL TXTLIB GCCRES
+EXEC GCCLIBGN F90000
+
+Read in and save the shared segment map which gets sent to MAINTs reader.
+
+Note that the address F90000 must correspond with the details specified for
+the GCCLIB shared segments in DMKSNT ASSEMBLE.
+
+If major changes have been made to GCCLIB, check that the code still fits in
+the space allocated for the GCCLIB shared segments in DMKSNT.
+
+
+To test the newly built GCCLIB:
+===============================
+
+Log back onto GCCCMS.  Ensure this user has been logged off or CMS was reipled
+after the CMS system was saved.
+
+Release ALL minidisks (ie A, B, C, D, E, F, G and H) and access 891 as A.
+
+Save any valuable spool files in the virtual card reader as running the test
+sequence may eat them.
+
+EXEC MKTEST
+
+Expect 23 or 25 errors out of 1380 to be reported, centred on fgets()
+and lot of crud to be left on the 891 disk.  On further investigation, it
+appears that TSTS MODULE is very sensitive to the spooling condition and/or
+contents of the virtual card reader.  By playing around with combinations of:
+
+SPOOL RDR CLASS *
+PURGE RDR
+CLOSE RDR
+
+and re-running TSTS, it may be possible to get the number of errors down to 3
+out of 1378 or even 0 out of 1378, or if it's not done right, it's possible to
+end up with a program check in strcat() when it starts running across memory it
+is not supposed to.  Other than that, I can only suggest looking at the source
+of the test programs as I am unaware of any other documentation of them.
+
+If you experience any problems, post a message on the h390-vm@groups.io mailing
+list.

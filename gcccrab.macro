@@ -1,51 +1,58 @@
-******************************************************************
-* GCCCRAB MACRO                                                  *
-* The GCCCRAB (C Runtime Anchor Block) defines the area for      *
-* for global veriables used by the GCCLIB run time library       *
-* These are declared / allocated / linked to the user program    *
-* but are made available to code in RESLIB land by passing the   *
-* address up the stack frame                                     *
-*                                                                *
-* Part of GCCLIB - VM/370 CMS Native Std C Library;              *
-*                  A Historic Computing Toy                      *
-*                                                                *
-* Proud Contributors: See contrib memo                           *
-*                                                                *
-* Released to the public domain.                                 *
-******************************************************************
-*
-***********************************************************************
-***   M U S T   B E   S Y N C E D   W I T H   G C C C R A B . H     ***
-***********************************************************************
-*
-         MACRO
-         GCCCRAB
-         SPACE
-*
-GCCCRAB  DSECT                GCCCRAB
-ROOTCMSC DS    F              CMSCRAB *rootcmscrab;
-AUXSTCK  DS    F              CMSCRAB *auxstack;
-DYNMSTCK DS    F              CMSCRAB *dynamicstack;
-EXITFUNC DS    F              EXITFUNC *exitfunc;
-DLMSPACE DS    F              mspace dlmspace;
-STMEMUSE DS    F              size_t startmemoryusage;
-GSTDIO   DS    F              FILE *gstdin;
-GSTDOUT  DS    F              FILE *gstdout;
-GSTDERR  DS    F              FILE *gstderr;
-GERRNO   DS    F              int gerrno;
-HANFLERS DS    F              SIGHANDLER **handlers;
-USREXITS DS    F              USEREXIT **userexits;
-FILEHNDL DS    F              FILE* filehandles;
-STRTOKOL DS    F              char *strtok_old;
-PGLOBAL  DS    F              void *process_global;
-ARGV     DS    F              char **argv;
-ARGBUF   DS    F              char *argbuffer;
-PLIST    DS    F              PLIST *plist;
-EPLIST   DS    F              EPLIST *eplist;
-CALLTYPE DS    F              int calltype;
-EVALBLOK DS    F              EVALBLOK *evalblok;
-ISPROC   DS    F              int isproc;
-ARGC     DS    F              int argc;
-         SPACE
-GCCGLEN  EQU   *-GCCCRAB      length of the CRAB / Global Area
-         MEND
+******************************************************************      00001000
+* GCCCRAB MACRO                                                  *      00002000
+* The GCCCRAB (C Runtime Anchor Block) defines the area for      *      00003000
+* for global veriables used by the GCCLIB run time library       *      00004000
+* These are declared / allocated / linked to the user program    *      00005000
+* but are made available to code in read only storage by passing *      00006000
+* the address up the stack frame                                 *      00007000
+*                                                                *      00008000
+* Part of GCCLIB, the "Native CMS" GCC Runtime Library           *      00009000
+*                                                                *      00010000
+* Proud Contributors: See contrib memo                           *      00011000
+*                                                                *      00012000
+* Released to the public domain.                                 *      00013000
+******************************************************************      00014000
+*                                                                       00015000
+*********************************************************************** 00016000
+***   M U S T   B E   S Y N C E D   W I T H   G C C C R A B . H     *** 00017000
+*********************************************************************** 00018000
+*                                                                       00019000
+         MACRO                                                          00020000
+         GCCCRAB                                                        00021000
+         SPACE                                                          00022000
+*                                                                       00023000
+GCCCRAB  DSECT                GCCCRAB                                   00024000
+ROOTCMSC DS    F              CMSCRAB *rootcmscrab;                     00025000
+AUXSTCK  DS    F              CMSCRAB *auxstack;                        00026000
+DYNMSTCK DS    F              CMSCRAB *dynamicstack;                    00027000
+EXITFUNC DS    F              EXITFUNC *exitfunc;                       00028000
+DLMSPACE DS    F              mspace dlmspace;                          00029000
+STMEMUSE DS    F              size_t startmemoryusage;                  00030000
+GSTDIO   DS    F              FILE *gstdin;                             00031000
+GSTDOUT  DS    F              FILE *gstdout;                            00032000
+GSTDERR  DS    F              FILE *gstderr;                            00033000
+GERRNO   DS    F              int gerrno;                               00034000
+HANFLERS DS    F              SIGHANDLER **handlers;                    00035000
+USREXITS DS    F              USEREXIT **userexits;                     00036000
+FILEHNDL DS    F              FILE* filehandles;                        00037000
+STRTOKOL DS    F              char *strtok_old;                         00038000
+PGLOBAL  DS    F              void *process_global;                     00039000
+ARGV     DS    F              char **argv;                              00040000
+ARGBUF   DS    F              char *argbuffer;                          00041000
+PLIST    DS    F              PLIST *plist;                             00042000
+EPLIST   DS    F              EPLIST *eplist;                           00043000
+CALLTYPE DS    F              int calltype;                             00044000
+EVALBLOK DS    F              EVALBLOK *evalblok;                       00045000
+ISPROC   DS    F              int isproc;                               00046000
+ARGC     DS    F              int argc;                                 00047000
+GCCLIBVT DS    F              void *gcclibvt;                           00048000
+RANDSEED DS    F              int *randomseed;                          00049000
+TEMPCNTR DS    F              int *tempcounter;                         00050000
+TEMPNAME DS    F              char *tempname;                           00051000
+MPARAMS  DS    F              struct *mparams;                          00052000
+ATRESULT DS    F              char *atresult;                           00053000
+GMTIMETM DS    F              struct tm *gmtimetm;                      00054000
+STRFBUF  DS    F              char *strfbuf;                            00055000
+         SPACE                                                          00056000
+GCCGLEN  EQU   *-GCCCRAB      length of the CRAB / Global Area          00057000
+         MEND                                                           00058000

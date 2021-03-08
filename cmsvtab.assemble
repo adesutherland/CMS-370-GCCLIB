@@ -1,11 +1,23 @@
-***********************************************************************
-* CMSVTAB is the vector table for the memory-resident GCC runtime     *
-* routines.                                                           *
-*                                                                     *
-* Robert O'Hara, Redmond Washington, April 2009.                      *
-***********************************************************************
-CMSVTAB  CSECT
-         VTABLE CODE
-         LTORG
-         REGEQU
-         END
+*********************************************************************** 00001000
+* CMSVTAB is the vector table for the memory-resident GCC runtime     * 00002000
+* routines.                                                           * 00003000
+*                                                                     * 00004000
+* The initial 16 bytes before the vector table contain the name of    * 00005000
+* the library and version information to enable the suitability of    * 00006000
+* of the library to be tested by programs proposing to make us of it. * 00007000
+*                                                                     * 00008000
+* Robert O'Hara, Redmond Washington, April 2009.                      * 00009000
+*********************************************************************** 00010000
+CMSVTAB  CSECT                                                          00011000
+         DC    CL8'GCCLIB'                                              00012000
+         DC    AL1(MAJORVR)                                             00013000
+         DC    AL1(MINORVR)                                             00014000
+         DC    AL1(REVISION)                                            00015000
+         DC    AL1(0)                                                   00016000
+         DC    AL4(0)                                                   00017000
+*                                                                       00018000
+         VTABLE CODE                                                    00019000
+         LTORG                                                          00020000
+         GCCLIBVR                                                       00021000
+         REGEQU                                                         00022000
+         END                                                            00023000

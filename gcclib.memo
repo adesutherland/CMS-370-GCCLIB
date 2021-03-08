@@ -1,10 +1,11 @@
-GCCLIB, The "Native CMS" GCC Runtime Library
+GCCLIB, The "Native CMS" GCC Runtime Library, version 1.3.1 February 2021
 
-Version 1.2
-As implemented in the VM/370 Sixpack Version 1.2
+As implemented in the VM/370 Sixpack Version 1.2 and updated for Sixpack 1.3.
 
 Robert O'Hara, Redmond Washington, July 2010
-rpohara@msn.com
+
+For the latest documentation updates and changes, see GCCLIB NOTES.
+
 
 Many thanks to Paul Edwards and Dave Wade
 
@@ -49,20 +50,23 @@ This means it is now possible to write programs that execute in the 8K CMS
 transient area, and can be called in CMS Subset mode from within EDIT or other
 programs.  Type HELP RESLIB for more information.
 
-In the VM/370 Sixpack version 1.2 the GCCLIB runtime library is automatically
-loaded into CMS resident memory during CMS initialization.
+In the VM/370 Sixpack version 1.3 the runtime library is automatically loaded
+loaded into CMS resident memory at CMS initialization time by SYSPROF EXEC S.
 
 
 Using GCCLIB
 ------------
 
-To compile programs with GCCLIB, put these commands in your PROFILE EXEC:
-   GLOBAL TXTLIB GCCLIB
-
 Use the GCC command to compile and assemble a C program, specifying the CMS or
-LIB GCCLIB option.  Type HELP GCC for information on it the GCC command.  Use
-the standard CMS LOAD and GENMOD commands to build an executable.  For example:
-!!!!!!!!!!!!!!!!!!!!!!!
+LIB GCCLIB option.  Type HELP GCC for information on it the GCC command.
+
+To load or run the program using the non-resident GCCLIB runtime library, give
+the command GLOBAL TXTLIB GCCLIB before using the standard CMS LOAD command
+followed by the GENMOD or START command.
+
+To load or run the program using the resident GCCLIB runtime library, give
+the command GLOBAL TXTLIB GCCRES before using the standard CMS LOAD command
+followed by the GENMOD or START command.
 
 
 CMS-Specific Functions in GCCLIB
@@ -101,12 +105,11 @@ Limitations
 -----------
 
 GCCLIB does not yet implement the complete C runtime library.  The following
-routines are not yet implemented:
+routine is not yet implemented:
    snprintf()        stdio.h
 
-The resident version of the GCC library uses the nucleus field DOSTRANS as an
-anchor address.  This field is unused during normal CMS use.  If you are using
-DOS under CMS this probably won't work.
+This version of GCCLIB no longer (ab)uses the DOSTRANS nucleus field which
+avoids any difficulties caused by earlier versions with DOS under CMS.
 
 Since GCCLIB does not use OS simulation, it is not necessary (or possible) to
 use the FILEDEF command to define a file via an OS DDNAME.  Instead, the
@@ -125,7 +128,7 @@ fopen() function has been extended:
                      disk file (read or write), where:
                      filename is the up to 8 character name.
                      filetype is the up to 8 character type.
-                     filemode is the up to 2 character disk mode leter and
+                     filemode is the up to 2 character disk mode letter and
                               optional number.
                      F|V      specifies the record format fixed or variable.
                               It is ignored when opening a file for reading.
@@ -171,6 +174,6 @@ Finally
 This code has not been thoroughly tested.  Don't use it for anything important
 like controlling a nuclear reactor.  I'm just a hobbyist!
 
-Questions, comments?  Post them to the H390-VM group on Yahoo!
+Questions, comments?  Post them to the H390-VM group on groups.io
 
 Robert O'Hara

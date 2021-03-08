@@ -1,14 +1,13 @@
-***********************************************************************
-* CMSSTUBS is the vector table containing stubs to indirectly         *
-* branch to GCC library routines in resident memory.                  *
-*                                                                     *
-* Robert O'Hara, Redmond Washington, April 2009.                      *
-***********************************************************************
-CMSSTUBS CSECT
-         USING NUCON,0
-         VTABLE STUBS
-         LTORG
-         REGEQU
-         NUCON ,
-GCCPTR   EQU   NUCRSV7        Reserved word for the last 45 years
-         END
+*********************************************************************** 00001000
+* CMSSTUBS is the vector table containing stubs to indirectly         * 00002000
+* branch to GCC library routines in resident memory.                  * 00003000
+*                                                                     * 00004000
+* Robert O'Hara, Redmond Washington, April 2009.                      * 00005000
+*********************************************************************** 00006000
+CMSSTUBS CSECT                                                          00007000
+         VTABLE STUBS                                                   00008000
+         LTORG                                                          00009000
+         CMSCRAB                                                        00010000
+         GCCCRAB                                                        00011000
+         REGEQU                                                         00012000
+         END                                                            00013000

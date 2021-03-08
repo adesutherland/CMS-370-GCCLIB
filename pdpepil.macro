@@ -1,16 +1,15 @@
-******************************************************************
-* PDPEPIL ASSEMBLE                                               *
-* The GCC exit epilog macro                                      *
-*                                                                *
-* Part of GCCLIB - VM/370 CMS Native Std C Library;              *
-*                  A Historic Computing Toy                      *
-*                                                                *
-* Proud Contributors: See contrib memo                           *
-*                                                                *
-* Released to the public domain.                                 *
-******************************************************************
-         MACRO
-&N       PDPEPIL
-&N       L     5,=V(@DSTAKOT)
-         BR    5
-         MEND
+******************************************************************      00001000
+* PDPEPIL MACRO                                                  *      00002000
+* The GCC exit epilog macro                                      *      00003000
+*                                                                *      00004000
+* Part of GCCLIB, the "Native CMS" GCC Runtime Library           *      00005000
+*                                                                *      00006000
+* Proud Contributors: See contrib memo                           *      00007000
+*                                                                *      00008000
+* Released to the public domain.                                 *      00009000
+******************************************************************      00010000
+         MACRO                                                          00011000
+&N       PDPEPIL                                                        00012000
+&N       L     5,=V(@DSTAKOT)                                           00013000
+         BR    5                                                        00014000
+         MEND                                                           00015000

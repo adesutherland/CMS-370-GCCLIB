@@ -1,7 +1,7 @@
 /**************************************************************************************************/
 /* STDIO.H                                                                                        */
 /*                                                                                                */
-/* Part of GCCLIB - VM/370 CMS Native Std C Library; A Historic Computing Toy                     */
+/* Part of GCCLIB - the "Native CMS" GCC Runtime Library                                          */
 /*                                                                                                */
 /* Contributors: See contrib memo                                                                 */
 /*                                                                                                */

@@ -1,1262 +1,1446 @@
-***********************************************************************
-* CMSSYS contains C interfaces to CMS system services:                *
-*    @@DEBUG  A dummy routine callable from C (set breakpoint here).  *
-*    @@ATTN   Place a line on the CMS console stack.                  *
-*    @@SVC202 Invoke a CMS system service or command.                 *
-*    @@DMSFRE Allocate free memory.                                   *
-*    @@DMSFRT Release allocated memory.                               *
-*    @@FSCLOS Close an open file and save it to disk.                 *
-*    @@FSERAS Delete a CMS file.                                      *
-*    @@FSOPEN Open a CMS file for reading or writing.                 *
-*    @@FSPOIN Set the next item in a file to be read or written.      *
-*    @@FSREAD Read a record from an open file.                        *
-*    @@FSSTAT Determine whether a file exists.                        *
-*    @@FSWRIT Write a record to an open file.                         *
-*    @@GETCLK Get the system clock time.                              *
-*    @@PRINTL Write a line to the virtual printer.                    *
-*    @@PUNCHC Write a line to the virtual card punch.                 *
-*    @@RDCARD Read a line from the virtual card reader.               *
-* #  @@RDTAPE Read a record from a virtual tape drive.                *
-*    @@RDTERM Read a line from the terminal.                          *
-*    @@RENAME Rename a CMS file.                                      *
-*    @@STACKN Return number of lines in the CMS console stack.        *
-* #  @@TAPCTL Position the tape on a virtual tape drive.              *
-* #  @@WAITD  Wait for the next interrupt on a device.                *
-*    @@WAITT  Wait for terminal I/O to complete.                      *
-* #  @@WRTAPE Write a record to a virtual tape drive.                 *
-*    @@WRTERM Display a line on the terminal.                         *
-* # not yet implemented.                                              *
-*                                                                     *
-* This version will run in 24-bit mode only.  Support for 31-bit      *
-* addressing is a future objective.                                   *
-*                                                                     *
-* TODO:  Detect if we are in resident memory, and if so, BALR to the  *
-*        system functions instead of using SVC 202...                 *
-*                                                                     *
-* This code is not yet reentrant, but it is reuseable.                *
-*                                                                     *
-* Robert O'Hara, Redmond Washington, July 2010.                       *
-* Released to the public domain.                                      *
-***********************************************************************
-CMSSYS   CSECT
-         USING CMSSYS,R12
-         USING CMSCRAB,R13    map the save area
-         USING FSCBD,R8       CMS File System Control Block
-         SPACE 3
-***********************************************************************
-* @@DEBUG Entry Point                                                 *
-* Return to caller.  This is a place to set a breakpoint.             *
-*                                                                     *
-* Syntax is:                                                          *
-*    int __DEBUG(int retcode)                                         *
-* where:                                                              *
-*    retcode   is a number to be returned to the caller.              *
-* returns:                                                            *
-*    (int)     The number passed to this function.                    *
-***********************************************************************
-         ENTRY @@DEBUG
-@@DEBUG  DS    0H
-         L     R15,0(R1)      get the desired return code
-         BR    R14            return to our caller
-         EJECT
-***********************************************************************
-* CMSSetNU                                                            *
-* void CMSSetNUCON(void *address, int value)                         *
-*                                                                     *
-* Set memory in NUCON                                                 *
-***********************************************************************
-         ENTRY CMSSETNU
-CMSSETNU DS    0H
-         STM   R14,R12,12(R13)
-         LR    R12,R15
-         LA    R15,CMSSETNU-CMSSYS
-         SLR   R12,R15
-         USING NUCON,0
-         L     R5,0(R1)       get Address
-         L     R3,4(R1)       get Value
-         IPK   ,
-         SPKA  0
-         SSM   *+1
-         ST    R3,0(R5)       Save Value
-         SPKA  0(R2)
-         SSM   =X'FF'
-         L     R14,12(R13)    restore our return address
-         LM    R0,R12,20(R13) restore the registers
-         BR    R14            return to our caller
-         EJECT
-***********************************************************************
-* void CMSSetFlag(int flag, int value) - thanks to Bob Bolch          *
-*                                                                     *
-* Set the value of the CMS Flag (TRACEFLAG or HALTFLAG)               *
-* Args flag and value (0 or 1)                                        *
-***********************************************************************
-         ENTRY CMSSETFL
-CMSSETFL DS    0H
-         STM   R14,R12,12(R13)
-         LR    R12,R15
-         LA    R15,CMSSETFL-CMSSYS
-         SLR   R12,R15
-         USING NUCON,0
-         L     R5,0(R1)       get Flag
-         L     R3,4(R1)       get Value
-         LTR   R3,R3
-         BZ    SETFOFF        branch to reset flag
-         IPK   ,
-         SPKA  0
-         SSM   *+1
-         IC    R4,EXECFLAG    Get Flag
-         OR    R4,R5          Set Flag On
-         STC   R4,EXECFLAG    Save Flag
-         B     SETFDONE
-SETFOFF  DS    0H
-         IPK   ,
-         SPKA  0
-         SSM   *+1
-         LA    R6,X'FF'       For Anding the Flag
-         SR    R6,R5
-         IC    R4,EXECFLAG    Get Flag
-         NR    R4,R6          Set Flag Off
-         STC   R4,EXECFLAG    Save Flag
-SETFDONE DS    0H
-         SPKA  0(R2)
-         SSM   =X'FF'
-         L     R14,12(R13)    restore our return address
-         LM    R0,R12,20(R13) restore the registers
-         BR    R14            return to our caller
-         EJECT
-***********************************************************************
-* @@ATTN  Entry Point                                                 *
-* Place a line on the CMS console stack.                              *
-*                                                                     *
-* Syntax is:                                                          *
-*    int __ATTN(char * line, int order)                               *
-* where:                                                              *
-*    line      is a pointer to the line to be stacked.  It must be no *
-*              more than 130 on VM/370, no more than 256 on VM/SP or  *
-*              z/VM.                                                  *
-*    order     is 0 if the line is to be stacked 'LIFO', anything     *
-*              else if it is to be stacked 'FIFO'.                    *
-* returns:                                                            *
-*    (int)     Return code from the ATTN function, always 0.          *
-***********************************************************************
-@@ATTN   PDPPRLG CINDEX=0,FRAME=CMSSVALN,BASER=12,ENTRY=YES
-         LA    R15,@@ATTN-CMSSYS
-         SLR   R12,R15
-         USING CMSSYS,R12
-         MVC   ATTNPL,=CL8'ATTN'
-         L     R6,0(R1)       R6 is start of line to stack
-         LA    R3,LINELEN(R6) last possible char to stack
-         LA    R2,1           loop increment
-         LR    R4,R6          start of line to stack
-ATTN1    DS    0H             determine the length of the line
-         CLI   0(R4),X'00'    look for end of the C string
-         BE    ATTN2          found it
-         BXLE  R4,R2,ATTN1    keep looping if not
-ATTN2    DS    0H             we have the end of the line
-         SR    R4,R6          length of line to stack
-         ST    R6,ATTNLN      put line addr in ATTN plist
-         STC   R4,ATTNLN      put line length in ATTN plist
-* Now check for FIFO or LIFO.
-         L     R2,4(R1)       get 'order'
-         LTR   R2,R2          FIFO or LIFO?
-         BZ    ATTN3          LIFO it is
-         MVC   ATTNOD(4),=C'FIFO'
-         B     ATTN4
-ATTN3    DS    0H
-         MVC   ATTNOD(4),=C'LIFO'
-ATTN4    DS    0H
-* Use the ATTN function to stack the line.
-         LA    R1,ATTNPL
-         SVC   202            stack the line
-         DC    AL4(ATTNRT)    go here if an error
-ATTNRT   DS    0H
-         SR    R15,R15        zero return code
-         PDPEPIL
-         EJECT
-***********************************************************************
-* @@SVC202  Entry Point                                               *
-* Invoke a CMS system service or command.  Both a standard and        *
-* extended parameter list are passed to the command.                  *
-*                                                                     *
-* Syntax is:                                                          *
-*    int __SVC202(void *plist , void* eplist, int calltype)           *
-* where:                                                              *
-*    plistr, eplist pointers to the parameters in both formats        *
-*    calltype  specifies the type of call:                            *
-*               0   indicates the command is to be invoked as a       *
-*                   function. (REALLY? CHECK!)                        *
-*               1   indicates the command is invoked as if from a CMS *
-*                   EXEC.  For example, if you want to invoke ABC     *
-*                   EXEC you must                                     *
-*                   code 'EXEC ABC'.                                  *
-*              11   indicates the command is invoked as if typed by   *
-*                   the user at the terminal.                         *
-* returns:                                                            *
-*    (int)     Return code from the invoked service or command.       *
-***********************************************************************
-         ENTRY @@SVC202
-@@SVC202 DS    0H
-         STM   R14,R12,12(R13)
-         LR    R12,R15
-         LA    R15,@@SVC202-CMSSYS
-         SLR   R12,R15
-         LR    R2,R1          save C parameter list
-         L     R1,0(R2)       plist
-         L     R0,4(R2)       eplist
-         ICM   R1,8,11(R2)    CALLTYPE flag byte
-         SVC   202            call the command
-         DC    AL4(*+4)       error address
-         L     R14,12(R13)    restore our return address
-         LM    R0,R12,20(R13) restore the registers
-         BR    R14            return to our caller
-         EJECT
-***********************************************************************
-* @DMSFREE                                                            *
-* DMSFREE Stub                                                        *
-* Allocate free memory.                                               *
-*                                                                     *
-* Syntax is:                                                          *
-*    _DMSFREE(int doublewords)                                        *
-* returns:                                                            *
-*    (int)     Address of the allocated memory, or 0 if the memory    *
-*              could not be allocated.                                *
-***********************************************************************
-         ENTRY @DMSFREE
-@DMSFREE DS    0H
-         STM   R14,R12,12(R13)
-         LR    R12,R15
-         LA    R15,@DMSFREE-CMSSYS
-         SLR   R12,R15
-         L     R0,0(R1)       get number of dounlewords to allocate
-* Use DMSFREE to allocate the memory.
-         DMSFREE DWORDS=(0),TYPE=USER,ERR=DMSFREE2
-         LTR   R15,R15        did we get the memory?
-         BNZ   DMSFREE2       no, quit now
-         LR    R15,R1
-DMSFREE1 DS    0H
-         L     R14,12(R13)    restore our return address
-         LM    R0,R12,20(R13) restore the registers
-         BR    R14            return to our caller
-DMSFREE2 DS    0H             no memory
-         SR    R15,R15        indicate no memory allocated
-         B     DMSFREE1
-         EJECT
-***********************************************************************
-* @DMSFRET                                                            *
-* DMSFRET Stub                                                        *
-* Release allocated memory.                                           *
-*                                                                     *
-* Syntax is:                                                          *
-*    int _DMSFRET(void *address, int doublewords)                     *
-* where:                                                              *
-*    memory    is a pointer to the memory to be freed.                *
-* returns:                                                            *
-*     0        Success.                                               *
-*     1        Error.                                                 *
-***********************************************************************
-         ENTRY @DMSFRET
-@DMSFRET DS    0H
-         STM   R14,R12,12(R13)
-         LR    R12,R15
-         LA    R15,@DMSFRET-CMSSYS
-         SLR   R12,R15
-         L     R0,4(R1)       get doublewords to return
-         L     R1,0(R1)       get address of memory to return
-* Use DMSFRET to return the memory.
-         DMSFRET DWORDS=(0),LOC=(1),ERR=DMSFRET2
-         SR    R15,R15        indicate all OK
-DMSFRET1 DS    0H
-         L     R14,12(R13)    restore our return address
-         LM    R0,R12,20(R13) restore the registers
-         BR    R14            return to our caller
-DMSFRET2 DS    0H             no memory
-         LA    R15,1          indicate error
-         B     DMSFRET1
-         EJECT
-***********************************************************************
-* @@DMSFRE  Entry Point                                               *
-* Allocate free memory.                                               *
-*                                                                     *
-* Syntax is:                                                          *
-*    __DMSFRE(int bytes, int type)                                    *
-* where:                                                              *
-*    bytes     is the number of bytes to be allocated.                *
-*    type      is the type of memory: 0 for NUCLEUS, 1 for USER.      *
-* returns:                                                            *
-*    (int)     Address of the allocated memory, or 0 if the memory    *
-*              could not be allocated.                                *
-* Notes:                                                              *
-* 1. Since CMS allocates memory in doublewords, we divide the bytes   *
-*    requested by 8 then add 2 to effectively round up, and add an    *
-*    additional doubleword which we use in note 2.                    *
-* 2. The first word is used to store the number of doublewords        *
-*    allocated, needed in @@DMSFRT.  The next word is 'GCC' followed  *
-*    by a 0 byte.  This helps detect memory overruns, I hope.         *
-* 3. Memory returned to the caller starts 8 bytes after the memory    *
-*    allocated to us by CMS.                                          *
-* 4. If you allocate NUCLEUS memory, your program must be generated   *
-*    with the SYSTEM option.  Note that if such a program abnormally  *
-*    terminates, CMS does not release this memory.                    *
-***********************************************************************
-@@DMSFRE PDPPRLG CINDEX=0,FRAME=CMSSVALN,BASER=12,ENTRY=YES
-         LA    R15,@@DMSFRE-CMSSYS
-         SLR   R12,R15
-         USING CMSSYS,R12
-         L     R2,0(R1)       get number of bytes to allocate
-         SRL   R2,3           convert to doublewords
-         LA    R0,2(R2)       round up plus 1 for housekeeping
-         L     R2,4(R1)       get type parameter
-* ---------------------------------------------------------------------
-* For debugging...
-         L     R3,0(R1)       get number of bytes to allocate
-         L     R4,=F'1000000'
-         SR    R4,R3
-         BP    OKAY
-         MVC   LINEDITL(LINEDISZ),LINEDITP Set pattern
-         MVI   OUTBUF,255         Set buffer size in byte 1
-         LINEDIT TEXT='Attempting to allocate ........ bytes',         X
-               SUB=(DEC,(3)),COMP=NO,BUFFA=OUTBUF,                     X
-               MF=(E,LINEDITL)
-         SR    R0,R0
-         SR    R1,R1
-         B     NOMEMORY
-OKAY     DS    0H
-* End of debugging...
-* ---------------------------------------------------------------------
-         LTR   R2,R2
-         BZ    NUCMEM         get nucleus memory
-* Use DMSFREE to allocate the memory.
-         DMSFREE DWORDS=(0),TYPE=USER,ERR=NOMEMORY
-         B     POSTMEM
-NUCMEM   DS    0H
-         DMSFREE DWORDS=(0),TYPE=NUCLEUS,ERR=NOMEMORY
-POSTMEM  DS    0H
-         LTR   R15,R15        did we get the memory?
-         BNZ   NOMEMORY       no, quit now
-         ST    R0,0(R1)       store number of doublewords allocated
-         MVC   4(4,R1),=X'C7C3C300' store marker: "GCC" C string
-         LA    R15,8(R1)      here is where user memory starts
-         B     FREERET        remove this for debugging message
-* ---------------------------------------------------------------------
-* For debugging...
-         LR    R2,R15
-         LR    R3,R0
-         LR    R4,R1
-         MVC   LINEDITL(LINEDISZ),LINEDITP Set pattern
-         MVI   OUTBUF,255         Set buffer size in byte 1
-         LINEDIT TEXT='Allocated ...... dwords of memory at ......',   X
-               SUB=(DEC,(3),HEX,(4)),COMP=NO,                          X
-               MF=(E,LINEDITL)
-         LR    R15,R2
-* End of debugging...
-* ---------------------------------------------------------------------
-FREERET  DS    0H
-         PDPEPIL
-NOMEMORY DS    0H
-         SR    R15,R15        indicate no memory allocated
-         B     FREERET
-         EJECT
-***********************************************************************
-* @@DMSFRT  Entry Point                                               *
-* Release allocated memory.                                           *
-*                                                                     *
-* Syntax is:                                                          *
-*    int __DMSFRT(void * memory)                                      *
-* where:                                                              *
-*    memory    is a pointer to the memory to be freed.                *
-* returns:                                                            *
-*     0        Success.                                               *
-*     5        Returned size not positive (no doubt memory was        *
-*              overwritten.                                           *
-*     6        Memory block overlaps other memory.                    *
-*     7        Returned block is not double-word aligned.             *
-*     8        Illegal code or argument.                              *
-***********************************************************************
-@@DMSFRT PDPPRLG CINDEX=0,FRAME=CMSSVALN,BASER=12,ENTRY=YES
-         LA    R15,@@DMSFRT-CMSSYS
-         SLR   R12,R15
-         USING CMSSYS,R12
-         L     R1,0(R1)       get address of memory to return
-         LTR   R1,R1          check the address
-         BP    FRTOK
-         MVC   LINEDITL(LINEDISZ),LINEDITP Set pattern
-         MVI   OUTBUF,255         Set buffer size in byte 1
-         LINEDIT TEXT='Invalid address passed to __DMSFRT',            X
-               MF=(E,LINEDITL)
-         LA    R15,8          indicate bad pointer
-         B     FRTEND
-FRTOK    DS    0H
-         S     R1,=F'8'       get to real start of memory
-* Complain if our label has been overwritten.
-         CLC   4(4,R1),=X'C7C3C300'
-         BE    ALLSWELL       looks good
-         LR    R2,R1
-         MVC   LINEDITL(LINEDISZ),LINEDITP Set pattern
-         MVI   OUTBUF,255         Set buffer size in byte 1
-         LINEDIT TEXT='Memory overwrite detected by __DMSFRT at ......'X
-               ,SUB=(HEX,(2)),                                         X
-               MF=(E,LINEDITL)
-         LA    R15,5          indicate memory overwrite
-         B     FRTEND
-ALLSWELL DS    0H
-         L     R0,0(R1)       get doublewords to return
-* Use DMSFRET to return the memory.
-         DMSFRET DWORDS=(0),LOC=(1)
-         B     FRTEND
-* ---------------------------------------------------------------------
-* For debugging...
-         LR    R2,R15
-         LR    R3,R0
-         LR    R4,R1
-         MVC   LINEDITL(LINEDISZ),LINEDITP Set pattern
-         MVI   OUTBUF,255         Set buffer size in byte 1
-         LINEDIT TEXT='Freed     ...... dwords of memory at ......',   X
-               SUB=(DEC,(3),HEX,(4)),COMP=NO,                          X
-               MF=(E,LINEDITL)
-         LR    R15,R2
-* End of debugging...
-* ---------------------------------------------------------------------
-FRTEND   DS    0H
-         PDPEPIL
-         EJECT
-***********************************************************************
-* @@FSCLOS  Entry Point                                               *
-* Close an open file and save it to disk.                             *
-*                                                                     *
-* Syntax is:                                                          *
-*    int __FSCLOS(FSCB * fscb)                                        *
-* where:                                                              *
-*    fscb      is a pointer to the FSCB returned from __FSOPEN.       *
-* returns:                                                            *
-*     0        Success.                                               *
-*     6        The file is not open.                                  *
-***********************************************************************
-         ENTRY @@FSCLOS
-@@FSCLOS DS    0H
-         STM   R14,R12,12(R13)
-         LR    R12,R15
-         LA    R15,@@FSCLOS-CMSSYS
-         SLR   R12,R15
-         L     R8,0(R1)       get FSCB
-* Use FSCLOSE to close the file.
-         FSCLOSE FSCB=(R8)
-         L     R14,12(R13)    restore our return address
-         LM    R0,R12,20(R13) restore the registers
-         BR    R14            return to our caller
-         EJECT
-***********************************************************************
-* @@FSERAS  Entry Point                                               *
-* Delete a CMS file.                                                  *
-*                                                                     *
-* Syntax is:                                                          *
-*    int __FSERAS(char * fileid)                                      *
-* where:                                                              *
-*    fileid    is a pointer to the CMS fileid, an 18 character field. *
-*              The first 8 characters are the filename, the next 8    *
-*              are the filetype, and the last 2 are the filemode.     *
-*              This string is not NULL terminated.                    *
-* returns:                                                            *
-*     0        Success.                                               *
-*    24        Parameter list error (invalid character in fileid).    *
-*    28        The file was not found.                                *
-*    36        Disk not accessed.                                     *
-***********************************************************************
-@@FSERAS PDPPRLG CINDEX=0,FRAME=CMSSVALN,BASER=12,ENTRY=YES
-         LA    R15,@@FSERAS-CMSSYS
-         SLR   R12,R15
-         USING CMSSYS,R12
-         L     R2,0(R1)       get address of fileid
-         LA    R8,WORKFSCB    FSCB is built here
-         XC    0(FSCBLEN,R8),0(R8)
-         MVI   FSCBFN,C' '
-         MVC   FSCBFN+1(18-1),FSCBFN blank out fileid
-         OC    FSCBFN(18),0(R2)   copy FILEID and uppercase
-* Use FSERASE to delete the file.
-         FSERASE FSCB=WORKFSCB
-         PDPEPIL
-         EJECT
-***********************************************************************
-* @@FSOPEN  Entry Point                                               *
-* Open a CMS file for reading or writing.                             *
-*                                                                     *
-* Syntax is:                                                          *
-*    int __FSOPEN(char * fileid, void * buffer, int bsize,            *
-*                 char recfm, int numrec, int recnum, FSCB * fscb)    *
-* where:                                                              *
-*    fileid    is a pointer to the CMS fileid, an 18 character field. *
-*              The first 8 characters are the filename, the next 8    *
-*              are the filetype, and the last 2 are the filemode.     *
-*              This string is not NULL terminated.                    *
-*    buffer    is a pointer to the buffer from which records are read *
-*              from or written to.                                    *
-*    bsize     is the size of the buffer.                             *
-*    recfm     is 'F' if you are writing a file of fixed-length       *
-*              records, 'V' if you are writing a file of variable-    *
-*              length records.  This parameter is ignored if you are  *
-*              reading from the file.                                 *
-*    numrec    is the number of records to be read or written at a    *
-*              time.  This parameter can be greater than 1 only when  *
-*              reading or writing fixed-length records.               *
-*    recnum    is the record number at which to begin reading or      *
-*              writing.                                               *
-*    fscb      is a pointer to an FSCB.  It is updated by FSOPEN.     *
-*              Pass this as an argument to other file I/O functions.  *
-* returns:                                                            *
-*     0        Success.                                               *
-*    20        The fileid is invalid.                                 *
-*    28        The file was not found.                                *
-***********************************************************************
-         ENTRY @@FSOPEN
-@@FSOPEN DS    0H
-         STM   R14,R12,12(R13)
-         LR    R12,R15
-         LA    R15,@@FSOPEN-CMSSYS
-         SLR   R12,R15
-         LM    R2,R8,0(R1)    get address of parameters
-*              R2             address of fileid
-*              R3             buffer address
-*              R4             buffer length
-*              R5             record format
-*              R6             number of records to read or write
-*              R7             record number
-*              R8             FSCB is built here
-         XC    0(FSCBLEN,R8),0(R8)
-         MVI   FSCBFN,C' '
-         MVC   FSCBFN+1(18-1),FSCBFN blank out fileid
-         OC    FSCBFN(18),0(R2)   copy FILEID and uppercase
-* Use FSOPEN to open the file.
-         FSOPEN BUFFER=(R3),BSIZE=(R4),RECFM=(R5),                     *
-               NOREC=(R6),RECNO=(R7),                                  *
-               FSCB=(R8)
-         L     R14,12(R13)    restore our return address
-         LM    R0,R12,20(R13) restore the registers
-         BR    R14            return to our caller
-         EJECT
-         ENTRY @@FSPOIN
-***********************************************************************
-* @@FSPOIN  Entry Point                                               *
-* Set the next item number (record) to read or write from a CMS file. *
-*                                                                     *
-* Syntax is:                                                          *
-*    int __FSPOIN(FSCB * fscb, int recnum, int rw)                    *
-* where:                                                              *
-*    fscb      is a pointer to an FSCB.  It is updated by FSPOINT.    *
-*              Pass this as an argument to other file I/O functions.  *
-*    recnum    is the record number at which to begin reading or      *
-*              writing.                                               *
-*    rw        is 0 to set the read pointer, 1 to set the write       *
-*              pointer.                                               *
-* returns:                                                            *
-*     0        Success.                                               *
-*     1        The file was not found.                                *
-*     2        Parameter list error.                                  *
-* Notes:                                                              *
-* 1. Pointing to an record number greater than the number of records  *
-*    in the file yields unpredictable results.                        *
-***********************************************************************
-@@FSPOIN DS    0H
-         STM   R14,R12,12(R13)
-         LR    R12,R15
-         LA    R15,@@FSPOIN-CMSSYS
-         SLR   R12,R15
-         L     R8,0(,R1)      FSCB
-         LM    R3,R4,0(R1)
-*              R3             record number
-*              R4             read or write flag
-         LTR   R4,R4
-         BZ    POINTRD        set the read pointer
-* Use FSPOINT to set the write pointer
-         FSPOINT FSCB=(R8),WRPNT=(R3)
-         B     POINTED
-POINTRD  DS    0H
-* Use FSPOINT to set the read pointer
-         FSPOINT FSCB=(R8),RDPNT=(R3)
-POINTED  DS    0H
-         L     R14,12(R13)    restore our return address
-         LM    R0,R12,20(R13) restore the registers
-         BR    R14            return to our caller
-         EJECT
-***********************************************************************
-* @@FSREAD  Entry Point                                               *
-* Read a record from an open file.                                    *
-*                                                                     *
-* Syntax is:                                                          *
-*    int __FSREAD(FSCB * fscb, int RECNUM, int * bytesread)           *
-* where:                                                              *
-*    fscb      is a pointer to the FSCB of the open file.             *
-*    recnum    is the record number at which to begin reading.  To    *
-*              read sequential records, specify 1 on the first call   *
-*              to __FSREAD, 0 on subsequent calls.  Alternately,      *
-*              specify 1 as the 'recnum' parameter in __FSOPEN, and   *
-*              set 'recnum' to 0 on all __FSREAD calls.  To use the   *
-*              record number currently set in the FSCB, specify -1.   *
-*    bytesread (returned) is a pointer to the number of bytes         *
-*              actually read.                                         *
-* returns:                                                            *
-*     0        Success.                                               *
-*     1        The file was not found.                                *
-*     2        Invalid buffer address.                                *
-*     3        Permanent I/O error.                                   *
-*     5        Number of records is less than 1, or greater than      *
-*              32,768.                                                *
-*     7        Invalid record format (only checked when file is first *
-*              opened for reading).                                   *
-*     8        Incorrect length.                                      *
-*     9        File open for output.                                  *
-*    11        Number of records greater than 1 for variable-length   *
-*              file.                                                  *
-*    12        End of file reached.                                   *
-*    13        Variable-length file has invalid displacement in the   *
-*              active file table.                                     *
-*    14        Invalid character in filename.                         *
-*    15        Invalid character in filetype.                         *
-* Notes:                                                              *
-* 1. The bytes placed into the FSCB buffer are NOT terminated with a  *
-*    null character.                                                  *
-***********************************************************************
-         ENTRY @@FSREAD
-@@FSREAD DS    0H
-         STM   R14,R12,12(R13)
-         LR    R12,R15
-         LA    R15,@@FSREAD-CMSSYS
-         SLR   R12,R15
-         LR    R2,R1          save our plist pointer
-         L     R8,0(,R1)      FSCB
-         LM    R4,R5,4(R1)
-*              R4             record number
-*              R5             where to store number of bytes read
-         LTR   R4,R4
-         BH    READREC        if record number > 0, use it
-         BL    READNREC       if record number < 0, use FSCB recnum
-* The caller specified 0 as the record number to read.  If the FSCB is
-* set to read record 1, read that, then set the FSCB record number to 0
-* after the FSREAD has completed.
-         LH    R1,FSCBITNO    get the record number from the FSCB
-         C     R1,=F'1'
-         BH    READREC        it was >1, so read next record instead
-READNREC DS    0H
-* Use FSREAD to read from the file, using the recnum in the FSCB
-         FSREAD FSCB=(R8)
-         LTR   R4,R4          did the user specify recnum of 0?
-         BNZ   DONEREAD       no, so we are done
-         STH   R4,FSCBITNO    yes, set the FSCB record number to 0
-         B     DONEREAD
-READREC  DS    0H
-* Use FSREAD to read from the file, specifying the recnum
-         FSREAD FSCB=(R8),RECNO=(R4)
-DONEREAD DS    0H
-         ST    R0,0(R5)       return number of bytes read
-         L     R14,12(R13)    restore our return address
-         LM    R0,R12,20(R13) restore the registers
-         BR    R14            return to our caller
-         EJECT
-***********************************************************************
-* @@FSSTAT  Entry Point                                               *
-* Determine whether a file exists.                                    *
-*                                                                     *
-* Syntax is:                                                          *
-*    int __FSSTAT(char * fileid, FST ** fst)                          *
-* where:                                                              *
-*    fileid    is a pointer to the CMS fileid, an 18 character field. *
-*              The first 8 characters are the filename, the next 8    *
-*              are the filetype, and the last 2 are the filemode.     *
-*              The filename, filetype, and filemode may each be       *
-*              specified as *, in which case the first file           *
-*              satisfying the rest of the fileid is used.  This       *
-*              string is not NULL terminated.                         *
-*    fst       is a handle to a copy of the CMS file state table      *
-*              (FST) for this file.  It provides details of the       *
-*              specified file.                                        *
-* returns:                                                            *
-*     0        Success.                                               *
-*    20        The fileid is invalid.                                 *
-*    24        Invalid filemode.                                      *
-*    28        The file was not found.                                *
-*    36        Disk not accessed.                                     *
-***********************************************************************
-@@FSSTAT PDPPRLG CINDEX=0,FRAME=CMSSVALN,BASER=12,ENTRY=YES
-         LA    R15,@@FSSTAT-CMSSYS
-         SLR   R12,R15
-         USING CMSSYS,R12
-         LM    R2,R3,0(R1)
-*              R2             address of fileid
-*              R3             address to receive FST ptr
-         LA    R8,WORKFSCB    FSCB is built here
-         XC    0(FSCBLEN,R8),0(R8)
-         MVI   FSCBFN,C' '
-         MVC   FSCBFN+1(18-1),FSCBFN Blank out FILEID
-         OC    FSCBFN(18),0(R2)   copy fileid and uppercase
-* Use FSSTATE to determine if the file exists.
-         FSSTATE FSCB=WORKFSCB
-         ST    R1,0(,R3)      store FST
-         PDPEPIL
-         EJECT
-         ENTRY @@FSWRIT
-***********************************************************************
-* @@FSWRIT  Entry Point                                               *
-* Write a record to an open file.                                     *
-*                                                                     *
-* Syntax is:                                                          *
-*    int __FSWRIT(FSCB fscb, int recnum, int reclen)                  *
-* where:                                                              *
-*    fscb      is a pointer to the FSCB of the open file.             *
-*    recnum    is the record number at which to begin writing.  To    *
-*              write sequential records, specify 1 on the first call  *
-*              to __FSWRIT, 0 on subsequent calls.  To use the record *
-*              number currently set in the FSCB, specify -1.          *
-*    reclen    is the length of the record to be written.             *
-* returns:                                                            *
-*     0        Success.                                               *
-*     2        Invalid buffer address.                                *
-*     4        First character of filemode is illegal.                *
-*     5        Second character of filemode is illegal.               *
-*     6        Record number too large.                               *
-*     7        Attempt to skip over unwritten variable-length record. *
-*     8        Buffer size not specified.                             *
-*     9        File open for input.                                   *
-*    10        Maximum number of files reached.                       *
-*    11        Record format not F or V.                              *
-*    12        Attempt to write on read-only disk.                    *
-*    13        Disk is full.                                          *
-*    14        Number of bytes written is not integrally divisible by *
-*              the number of records to be written.                   *
-*    15        Length of fixed-length recod not the same as previous  *
-*              record.                                                *
-*    16        Record format specified is not the same as that of the *
-*              file.                                                  *
-*    17        Variable-length record is greater than 65K bytes.      *
-*    18        Number of records to write is greater than 1 for a     *
-*              variable length file.                                  *
-*    19        Maximum number of data blocks per file (16060) has     *
-*              been reached.                                          *
-*    20        Invalid character detected in filename.                *
-*    21        Invalid character detected in filetype.                *
-*    22        Virtual storage capacity exceeded.                     *
-*    25        Insufficent free storage available for file directory  *
-*              buffers.                                               *
-* Notes:                                                              *
-* 1. It is possible to overwrite a record within a file.  However,    *
-*    care must be taken that the record being written is the same     *
-*    length as the one it is replacing.  Failing to do this can       *
-*    result in corruption of the file and possibly the entire         *
-*    mini-disk.                                                       *
-* 2. To overwrite an existing file with new records, call             *
-*    @@FSERAS to first erase the file, then open the file and begin   *
-*    writing from record 1.                                           *
-***********************************************************************
-@@FSWRIT DS    0H
-         STM   R14,R12,12(R13)
-         LR    R12,R15
-         LA    R15,@@FSWRIT-CMSSYS
-         SLR   R12,R15
-         LM    R2,R4,0(R1)
-*              R2             FSCB
-*              R3             record number
-*              R4             record length
-* Use FSWRITE to write to the file.
-         LTR   R3,R3
-         BNL   WRECNO         if record number is 0 or higher, use it
-         FSWRITE FSCB=(R2),BSIZE=(R4)
-         B     DONEWRIT
-WRECNO   DS    0H
-         FSWRITE FSCB=(R2),RECNO=(R3),BSIZE=(R4)
-DONEWRIT DS    0H
-         L     R14,12(R13)    restore our return address
-         LM    R0,R12,20(R13) restore the registers
-         BR    R14            return to our caller
-         EJECT
-***********************************************************************
-* @@GETCLK  Entry Point                                               *
-* Get the system clock time.                                          *
-*                                                                     *
-* Syntax is:                                                          *
-*    int __GETCLK(clock)                                              *
-* where:                                                              *
-*    clock     is an 8-byte variable into which the clock will be     *
-*              stored.                                                *
-* returns:                                                            *
-*    (int)     The number of seconds since 1/1/1970.                  *
-***********************************************************************
-         ENTRY @@GETCLK
-@@GETCLK DS    0H
-         STM   R14,R12,12(R13)
-         LR    R12,R15
-         LA    R15,@@GETCLK-CMSSYS
-         SLR   R12,R15
-         L     R2,0(R1)       get address of 'clock'
-         STCK  0(R2)          store the clock there
-         L     R4,0(R2)       calculate seconds since 1/1/1970
-         L     R5,4(R2)
-         SRDL  R4,12
-         SL    R4,=X'0007D910'
-         D     R4,=F'1000000'
-         SL    R5,=F'1220'
-         LR    R15,R5         and return it
-         L     R14,12(R13)    restore our return address
-         LM    R0,R12,20(R13) restore the registers
-         BR    R14            return to our caller
-         EJECT
-***********************************************************************
-* @@PRINTL  Entry Point                                               *
-* Write a line to the virtual printer.                                *
-*                                                                     *
-* Syntax is:                                                          *
-*    int __PRINTL(char * line)                                        *
-* where:                                                              *
-*    line      is a pointer to the line to be printed.  The first     *
-*              character of the line must be a carriage control       *
-*              character (a blank skips to a new line).  The string   *
-*              must be NULL terminated.  The maximum length of the    *
-*              line is 133 characters for a virtual 1403 printer (the *
-*              default), 151 characters for a virtual 3211 printer; a *
-*              line longer than this results in an error.             *
-* returns:                                                            *
-*     0        Success.                                               *
-*     1        Line too long.                                         *
-*     2        Channel 12 punch sensed (virtual 3211 only).           *
-*     3        Channel 9 punch sensed (virtual 3211 only).            *
-*     4        Intervention required.                                 *
-*     5        Unknown error.                                         *
-*   100        Printer not attached.                                  *
-* Notes:                                                              *
-* 1. Use the CP CLOSE command to close the virtual printer.  You can  *
-*    issue this via the @@CMSCMD entry point.                         *
-***********************************************************************
-@@PRINTL PDPPRLG CINDEX=0,FRAME=CMSSVALN,BASER=12,ENTRY=YES
-         LA    R15,@@PRINTL-CMSSYS
-         SLR   R12,R15
-         USING CMSSYS,R12
-         L     R6,0(R1)       R6 is start of line to display
-         LA    R3,151(R6)     last possible char to display
-         LA    R2,1           loop increment
-         LR    R4,R6          start of line to display
-PRINTL1  DS    0H
-* Loop to determine the length of the line to display.
-         CLI   0(R4),X'00'    look for end of the C string
-         BE    PRINTL2        found it
-         BXLE  R4,R2,PRINTL1  keep looping if not
-PRINTL2  DS    0H
-         SR    R4,R6          length of line to display
-* Use PRINTL to display the line.
-*         PRINTL (R6),(R4)
-         MVC   PRINTLE(PRINTLPL),PRINTLP SET PATTERN
-         LA    R9,PRINTLE     BRANCH THERE TO CALL IT
-         BR    R9
-PRINTLND DS    0H             IT RETURNS HERE
-*
-         PDPEPIL
-*
-         DS    0D             ALIGN TO AVOID GENERATED CNOP
-         USING PRINTLP,R9
-PRINTLP  PRINTL (R6),(R4)
-         DROP  R9
-         B     PRINTLND
-PRINTLPL EQU   *-PRINTLP
-         EJECT
-***********************************************************************
-* @@PUNCHC  Entry Point                                               *
-* Write a line to the virtual card punch.                             *
-*                                                                     *
-* Syntax is:                                                          *
-*    int __PUNCHC(char * line)                                        *
-* where:                                                              *
-*    line      is a pointer to the line to be written to the punch.   *
-*              The line must be 80 bytes long.                        *
-* returns:                                                            *
-*     0        Success.                                               *
-*     2        Unit check.                                            *
-*     3        Unknown error.                                         *
-*   100        Punch not attached.                                    *
-* Notes:                                                              *
-* 1. Use the CP CLOSE command to close the virtual card punch.  You   *
-*    can issue this via the @@CMSCMD entry point.                     *
-***********************************************************************
-@@PUNCHC PDPPRLG CINDEX=0,FRAME=CMSSVALN,BASER=12,ENTRY=YES
-         LA    R15,@@PUNCHC-CMSSYS
-         SLR   R12,R15
-         USING CMSSYS,R12
-         L     R6,0(R1)       R6 is start of line to punch
-* Use PUNCHC to punch the card.
-*        PUNCHC (6)
-         MVC   PUNCHCE(PUNCHCPL),PUNCHCP set pattern
-         LA    R9,PUNCHCE     branch there to call it
-         BR    R9
-PUNCHCND DS    0H             it returns here
-*
-         PDPEPIL
-*
-         DS    0D             align to avoid generated CNOP
-         USING PUNCHCP,R9
-PUNCHCP  PUNCHC (6)
-         DROP  R9
-         B     PUNCHCND
-PUNCHCPL EQU   *-PUNCHCP
-         EJECT
-***********************************************************************
-* @@RDCARD  Entry Point                                               *
-* Read a line from the virtual card reader.                           *
-*                                                                     *
-* Syntax is:                                                          *
-*    int __RDCARD(char * line, int * len)                             *
-* where:                                                              *
-*    line      is a pointer to the buffer into which the line is      *
-*              read.  As it is possible to read printer output files, *
-*              the buffer must be at least 133 bytes in size.  The    *
-*              incoming line is terminated with a null character,     *
-*              forming a C string.                                    *
-*    len       is a pointer to a variable that on:                    *
-*                 input  - holds the line lenght expected             *
-*                 output - the line the number of characters read     *
-* returns:                                                            *
-*     0        Success.                                               *
-*     1        End-of-file.                                           *
-*     2        Unit check.                                            *
-*     3        Unknown error.                                         *
-*     5        Length not equal to requested length.                  *
-*   100        Punch not attached.                                    *
-***********************************************************************
-@@RDCARD PDPPRLG CINDEX=0,FRAME=CMSSVALN,BASER=12,ENTRY=YES
-         LA    R15,@@RDCARD-CMSSYS
-         SLR   R12,R15
-         USING CMSSYS,R12
-         L     R2,0(R1)       get buffer address
-         L     R4,4(R1)       get address of length variable
-         L     R3,0(R4)       length of line to read
-* Use RDCARD to read the line.
-*        RDCARD (R2),(R3)
-         MVC   RDCARDE(RDCARDPL),RDCARDP set pattern
-         LA    R9,RDCARDE     branch there to call it
-         BR    R9
-RDCARDND DS    0H             it returns here
-*
-         ST    R0,0(R4)       return number of bytes read in 'len'
-         SR    R1,R1
-         STC   R1,0(R3,R2)    place null character at end of line
-         PDPEPIL
-*
-         DS    0D             align to avoid generated CNOP
-         USING RDCARDP,R9
-RDCARDP  RDCARD (R2),(R3)
-         DROP  R9
-         B     RDCARDND
-RDCARDPL EQU   *-RDCARDP
-         EJECT
-***********************************************************************
-* @@RDTERM  Entry Point                                               *
-* Read a line from the terminal.                                      *
-*                                                                     *
-* Syntax is:                                                          *
-*    int __RDTERM(char * line)                                        *
-* where:                                                              *
-*    line      is a pointer to the 131-character buffer into which    *
-*              the line is read.  This line will be terminated with a *
-*              null character, forming a C string.                    *
-* returns:                                                            *
-*    (int)     Length of the string placed in the buffer.             *
-***********************************************************************
-@@RDTERM PDPPRLG CINDEX=0,FRAME=CMSSVALN,BASER=12,ENTRY=YES
-         LA    R15,@@RDTERM-CMSSYS
-         SLR   R12,R15
-         USING CMSSYS,R12
-         L     R2,0(R1)       get buffer address
-* Use RDTERM to read the line.
-*        RDTERM (2),EDIT=NO
-         MVC   RDTERME(RDTERMPL),RDTERMP set pattern
-         LA    R9,RDTERME     branch there to call it
-         BR    R9
-RDTERMND DS    0H             it returns here
-         LH    R0,14(,R1)     Length returned here
-*
-         LR    R15,R0         get number of bytes read as return code
-         SR    R1,R1
-         STC   R1,0(R15,R2)   place null character at end of line
-         PDPEPIL
-*
-         DS    0D             align to avoid generated CNOP
-         USING RDTERMP,R9
-RDTERMP  RDTERM (2),EDIT=NO
-         DROP  R9
-         B     RDTERMND
-RDTERMPL EQU   *-RDTERMP
-         EJECT
-***********************************************************************
-* @@RENAME  Entry Point                                               *
-* Rename a CMS file.                                                  *
-*                                                                     *
-* Syntax is:                                                          *
-*    int __RENAME(char * fileid, char * newfileid)                    *
-* where:                                                              *
-*    fileid    is a pointer to the CMS fileid of the file to be       *
-*              renamed.                                               *
-*    newfileid is a pointer to the CMS fileid of the new name for the *
-*              file.                                                  *
-*    Both fileid and newfileid point to an 18 character field.  The   *
-*    first 8 characters are the filename, the next 8 are the          *
-*    filetype, and the last 2 are the filemode.  Neither string is    *
-*    NULL terminated.                                                 *
-* returns:                                                            *
-*     0        Success.                                               *
-*    20        Invalid character detected in filename.                *
-*    24        Parameter list error.                                  *
-*    28        The file was not found, or NEWFILEID already exists.   *
-* Notes:                                                              *
-* 1. This function calls the CMS RENAME command, which executes in    *
-*    the CMS transient area.  Thus this function cannot be called     *
-*    from a C program executing in the transient area.                *
-* 2. The RENAME command may issue error messages for certain errors.  *
-***********************************************************************
-@@RENAME PDPPRLG CINDEX=0,FRAME=CMSSVALN,BASER=12,ENTRY=YES
-         LA    R15,@@RENAME-CMSSYS
-         SLR   R12,R15
-         USING CMSSYS,R12
-         MVC   RENAMEPL(8),=CL8'RENAME'
-         MVC   RENFENCE(8),=XL8'FFFFFFFFFFFFFFFF'
-         L     R2,0(R1)       get address of old fileid
-         MVI   RENOLDN,C' '
-         MVC   RENOLDN+1(24-1),RENOLDN
-         OC    RENOLDN(18),0(R2) copy fileid and uppercase
-         L     R2,4(R1)       get address of new fileid
-         MVI   RENNEWN,C' '
-         MVC   RENNEWN+1(24-1),RENNEWN
-         OC    RENNEWN(18),0(R2) copy fileid and uppercase
-* Use the RENAME command to rename the file.
-         LA    R1,RENAMEPL
-         SVC   202            rename the file
-         DC    AL4(RENAMERT)  go here if an error
-RENAMERT DS    0H
-         PDPEPIL
-         EJECT
-         ENTRY @@STACKN
-***********************************************************************
-* @@STACKN  Entry Point                                               *
-* Return the number of lines currently in the CMS console stack.      *
-*                                                                     *
-* Syntax is:                                                          *
-*    int __STACKN(void)                                               *
-* returns:                                                            *
-*    (int)     Number of lines in the CMS console stack.              *
-***********************************************************************
-@@STACKN DS    0H
-         STM   R14,R12,12(R13)
-         LR    R12,R15
-         LA    R15,@@STACKN-CMSSYS
-         SLR   R12,R15
-         LA    R1,SENTRIES
-         SVC   202
-         DC    AL4(*+4)
-         LTR   R15,R15
-         BNM   STKDONE
-         USING NUCON,R0
-         LH    R15,NUMFINRD   put number of lines in stack in R15
-STKDONE  DS    0H
-         L     R14,12(R13)    restore our return address
-         LM    R0,R12,20(R13) restore the registers
-         BR    R14            return to our caller
-SENTRIES DS    0D
-         DC    CL8'SENTRIES'
-         DC    8X'FF'
-         EJECT
-         ENTRY @@WAITT
-***********************************************************************
-* @@WAITT   Entry Point                                               *
-* Waits for terminal I/O to complete.                                 *
-*                                                                     *
-* Syntax is:                                                          *
-*    int __WAITT(void)                                                *
-* returns:                                                            *
-*    (int)     Return code from the WAITT function, always 0.         *
-***********************************************************************
-@@WAITT  DS    0H
-         STM   R14,R12,12(R13)
-         LR    R12,R15
-         LA    R15,@@WAITT-CMSSYS
-         SLR   R12,R15
-         WAITT
-         L     R14,12(R13)    restore our return address
-         LM    R0,R12,20(R13) restore the registers
-         BR    R14            return to our caller
-         EJECT
-***********************************************************************
-* @@WRTERM  Entry Point                                               *
-* Display a line on the terminal.                                     *
-*                                                                     *
-* Syntax is:                                                          *
-*    int __WRTERM(char * line, int edit)                              *
-* where:                                                              *
-*    line      is a pointer to the line to be displayed.  The line    *
-*              may contain embedded newline characters (x'15') which  *
-*              are honored.  Normally the line should end with a      *
-*              newline character, unless a subsequent call is to      *
-*              continue writing on the same line.  The string must be *
-*              NULL terminated.  The maximum number of characters to  *
-*              be displayed is 130; a line longer than this is        *
-*              truncated without warning.                             *
-*    edit      is 1 if trailing blanks are to be removed and a        *
-*              newline character added to the end of the line; 0 if   *
-*              not.                                                   *
-* returns:                                                            *
-*    (int)     Return code from the WRTERM function, always 0.        *
-***********************************************************************
-@@WRTERM PDPPRLG CINDEX=0,FRAME=CMSSVALN,BASER=12,ENTRY=YES
-         LA    R15,@@WRTERM-CMSSYS
-         SLR   R12,R15
-         USING CMSSYS,R12
-         L     R6,0(R1)       R6 is start of line to display
-         L     R7,4(R1)       get edit setting
-         LA    R3,129(R6)     last possible char to display
-         LA    R2,1           loop increment
-         LR    R4,R6          start of line to display
-WRTERM1  DS    0H
-* Loop to determine the length of the line to display.
-         CLI   0(R4),X'00'    look for end of the C string
-         BE    WRTERM2        found it
-         BXLE  R4,R2,WRTERM1  keep looping if not
-WRTERM2  DS    0H
-         SR    R4,R6          length of line to display
-* Use WRTERM to display the line.
-         LTR   R7,R7          edit the line?
-         BZ    WRTERM3        no
-* Use WRTERM to write the line.
-*        WRTERM (R6),(R4),EDIT=YES
-         MVC   WRTRM1E(WRTRM1PL),WRTRM1P set pattern
-         LA    R9,WRTRM1E     branch there to call it
-         BR    R9
-WRTRM1ND DS    0H             it returns here
-         B     WRTERM4
-WRTERM3  DS    0H
-* Use WRTERM to write the line.
-*        WRTERM (6),(4),EDIT=NO
-         MVC   WRTRM2E(WRTRM2PL),WRTRM2P set pattern
-         LA    R9,WRTRM2E     branch there to call it
-         BR    R9
-WRTRM2ND DS    0H             it returns here
-WRTERM4  DS    0H
-         PDPEPIL
-*
-         DS    0D             align to avoid generated CNOP
-         USING WRTRM1P,R9
-WRTRM1P  WRTERM (R6),(R4),EDIT=YES
-         DROP  R9
-         B     WRTRM1ND
-WRTRM1PL EQU   *-WRTRM1P
-*
-         DS    0D             align to avoid generated CNOP
-         USING WRTRM2P,R9
-WRTRM2P  WRTERM (6),(4),EDIT=NO
-         DROP  R9
-         B     WRTRM2ND
-WRTRM2PL EQU   *-WRTRM2P
-         EJECT
-***********************************************************************
-* @@ZONE    Entry Point                                               *
-* Return the offset for the local time zone from GMT.                 *
-* It is the value set in DMSSYSTZ by the SYSTIME MACRO in DMKSYS.     *
-*                                                                     *
-* Syntax is:                                                          *
-*    int __ZONE()                                                     *
-* returns:                                                            *
-*    (int)     Time zone offset in seconds from GMT.                  *
-*              Negative values are west of GMT, positive values are   *
-*              east of GMT.                                           *
-***********************************************************************
-@@ZONE   PDPPRLG CINDEX=0,FRAME=CMSSVALN,BASER=12,ENTRY=YES
-         LA    R15,@@ZONE-CMSSYS
-         SLR   R12,R15
-         USING CMSSYS,R12
-         LA    R1,DIAG0BUF
-         LA    R0,40
-         DC    X'83100000'     Issue Diagnose instruction for
-*                               code X'0000' to fetch CP info
-         LTR   R0,R0           Is R0 Positive?
-         BC    2,ZONE1         Yeah R0 > 0 so no time zone info
-         L     R15,DIAG0BUF+32 Return the time zone offset
-         B     ZONE2
-ZONE1    SR    R15,R15
-ZONE2    PDPEPIL
-         EJECT
-* ---------------------------------------------------------------------
-* Literal pool
-* ---------------------------------------------------------------------
-         LTORG ,
-LINEDITP LINEDIT MF=L,MAXSUBS=5
-LINEDISZ EQU   *-LINEDITP
-         EJECT
-* ---------------------------------------------------------------------
-* To do:  try and get addressability to xlate table in DMSCRD!!!!!!!!!!
-* ---------------------------------------------------------------------
-LINELEN  EQU   130            130 for VM/370; 256 for VM/SP or z/VM
-         SPACE
-         CMSCRAB              COntinually addressed by R13
-         ORG   MAINSTK        Local variables start here
-WORKFSCB FSCB  'WORK FILE A'  File System Control Block
-*
-ATTNPL   DS    0D             ATTN parameter list
-         DC    CL8'ATTN'
-ATTNOD   DC    CL4'XXXX'      'FIFO' or 'LIFO'
-ATTNLN   DC    AL1(0)         length of line to be stacked
-ATTNAD   DC    AL3(0)         address of line to be stacked
-*
-LINEDITL LINEDIT MF=L,MAXSUBS=5
-*
-RENAMEPL DS    0D             RENAME parameter list
-         DC    CL8'RENAME'
-RENOLDN  DS    CL18           old fileid
-         DC    CL6'      '
-RENNEWN  DS    CL18           new fileid
-         DC    CL6'      '
-RENFENCE DC    XL8'FFFFFFFFFFFFFFFF'
-*
-PLSTAREA DS    0D             BUILD PLISTS HERE FOR PRINTL, PUNCHL,
-*                                                   RDCARD,
-*                                                   RDTERM, and WRTERM
-         ORG   PLSTAREA
-         USING RDTERME,R9
-RDTERME  RDTERM (2),EDIT=NO
-         DROP  R9
-         B     RDTERMND
-****
-         ORG   PLSTAREA
-         USING WRTRM1E,R9
-WRTRM1E  WRTERM (R6),(R4),EDIT=YES
-         DROP  R9
-         B     WRTRM1ND
-****
-         ORG   PLSTAREA
-         USING WRTRM2E,R9
-WRTRM2E  WRTERM (6),(4),EDIT=NO
-         DROP  R9
-         B     WRTRM2ND
-*
-****
-         ORG   PLSTAREA
-         USING RDCARDE,R9
-RDCARDE  RDCARD (R2),(R3)
-         DROP  R9
-         B     RDCARDND
-*
-****
-         ORG   PLSTAREA
-         USING PRINTLE,R9
-PRINTLE  PRINTL (R6),(R4)
-         DROP  R9
-         B     PRINTLND
-*
-****
-         ORG   PLSTAREA
-         USING PUNCHCE,R9
-PUNCHCE  PUNCHC (R6)
-         DROP  R9
-         B     PUNCHCND
-*
-         ORG   PLSTAREA
-DIAG0BUF DS    5D             Diagnose X'00' buffer area
-*
-         ORG   ,
-OUTBUF   DS    CL256          Terminal buffer
-CMSSVALN EQU   *-CMSCRAB      Save area length
-*
-FSCB     FSCBD                File System Control Block
-FSCBLEN  EQU   *-FSCBD        Length of FSCB
-         NUCON ,
-         REGEQU ,
-         END
+*********************************************************************** 00001000
+* CMSSYS contains C interfaces to CMS system services:                * 00002000
+*    @@DEBUG  A dummy routine callable from C (set breakpoint here).  * 00003000
+*    @@ATTN   Place a line on the CMS console stack.                  * 00004000
+*    @@SVC202 Invoke a CMS system service or command.                 * 00005000
+*    @@CMSCMD Invoke a CMS system service or command.                 * 00006000
+*    @@DMSFRE Allocate free memory.                                   * 00007000
+*    @@DMSFRT Release allocated memory.                               * 00008000
+*    @@FSCLOS Close an open file and save it to disk.                 * 00009000
+*    @@FSERAS Delete a CMS file.                                      * 00010000
+*    @@FSOPEN Open a CMS file for reading or writing.                 * 00011000
+*    @@FSPOIN Set the next item in a file to be read or written.      * 00012000
+*    @@FSREAD Read a record from an open file.                        * 00013000
+*    @@FSSTAT Determine whether a file exists.                        * 00014000
+*    @@FSWRIT Write a record to an open file.                         * 00015000
+*    @@GETCLK Get the system clock time.                              * 00016000
+*    @@PRINTL Write a line to the virtual printer.                    * 00017000
+*    @@PUNCHC Write a line to the virtual card punch.                 * 00018000
+*    @@RDCARD Read a line from the virtual card reader.               * 00019000
+* #  @@RDTAPE Read a record from a virtual tape drive.                * 00020000
+*    @@RDTERM Read a line from the terminal.                          * 00021000
+*    @@RENAME Rename a CMS file.                                      * 00022000
+*    @@STACKN Return number of lines in the CMS console stack.        * 00023000
+* #  @@TAPCTL Position the tape on a virtual tape drive.              * 00024000
+* #  @@WAITD  Wait for the next interrupt on a device.                * 00025000
+*    @@WAITT  Wait for terminal I/O to complete.                      * 00026000
+* #  @@WRTAPE Write a record to a virtual tape drive.                 * 00027000
+*    @@WRTERM Display a line on the terminal.                         * 00028000
+* # not yet implemented.                                              * 00029000
+*                                                                     * 00030000
+* This version will run in 24-bit mode only.  Support for 31-bit      * 00031000
+* addressing is a future objective.                                   * 00032000
+*                                                                     * 00033000
+* TODO:  Detect if we are in resident memory, and if so, BALR to the  * 00034000
+*        system functions instead of using SVC 202...                 * 00035000
+*                                                                     * 00036000
+* This code is not yet reentrant, but it is reuseable.                * 00037000
+*                                                                     * 00038000
+* Robert O'Hara, Redmond Washington, July 2010.                       * 00039000
+* Released to the public domain.                                      * 00040000
+*********************************************************************** 00041000
+CMSSYS   CSECT                                                          00042000
+         USING CMSSYS,R12                                               00043000
+         USING CMSCRAB,R13    map the save area                         00044000
+         SPACE 3                                                        00045000
+*********************************************************************** 00046000
+* @@DEBUG Entry Point                                                 * 00047000
+* Return to caller.  This is a place to set a breakpoint.             * 00048000
+*                                                                     * 00049000
+* Syntax is:                                                          * 00050000
+*    int __DEBUG(int retcode)                                         * 00051000
+* where:                                                              * 00052000
+*    retcode   is a number to be returned to the caller.              * 00053000
+* returns:                                                            * 00054000
+*    (int)     The number passed to this function.                    * 00055000
+*********************************************************************** 00056000
+         ENTRY @@DEBUG                                                  00057000
+@@DEBUG  DS    0H                                                       00058000
+         L     R15,0(R1)      get the desired return code               00059000
+         BR    R14            return to our caller                      00060000
+         EJECT                                                          00061000
+*********************************************************************** 00062000
+* CMSSetNU                                                            * 00063000
+* void CMSSetNUCON(void *address, int value)                         *  00064000
+*                                                                     * 00065000
+* Set memory in NUCON                                                 * 00066000
+*********************************************************************** 00067000
+         ENTRY CMSSETNU                                                 00068000
+CMSSETNU DS    0H                                                       00069000
+         STM   R14,R12,12(R13)                                          00070000
+         LR    R12,R15                                                  00071000
+         LA    R15,CMSSETNU-CMSSYS                                      00072000
+         SLR   R12,R15                                                  00073000
+         USING NUCON,0                                                  00074000
+         L     R5,0(R1)       get Address                               00075000
+         L     R3,4(R1)       get Value                                 00076000
+         IPK   ,                                                        00077000
+         SPKA  0                                                        00078000
+         SSM   *+1                                                      00079000
+         ST    R3,0(R5)       Save Value                                00080000
+         SPKA  0(R2)                                                    00081000
+         SSM   =X'FF'                                                   00082000
+         L     R14,12(R13)    restore our return address                00083000
+         LM    R0,R12,20(R13) restore the registers                     00084000
+         BR    R14            return to our caller                      00085000
+         EJECT                                                          00086000
+*********************************************************************** 00087000
+* void CMSSetFlag(int flag, int value) - thanks to Bob Bolch          * 00088000
+*                                                                     * 00089000
+* Set the value of the CMS Flag (TRACEFLAG or HALTFLAG)               * 00090000
+* Args flag and value (0 or 1)                                        * 00091000
+*********************************************************************** 00092000
+         ENTRY CMSSETFL                                                 00093000
+CMSSETFL DS    0H                                                       00094000
+         STM   R14,R12,12(R13)                                          00095000
+         LR    R12,R15                                                  00096000
+         LA    R15,CMSSETFL-CMSSYS                                      00097000
+         SLR   R12,R15                                                  00098000
+         USING NUCON,0                                                  00099000
+         L     R5,0(R1)       get Flag                                  00100000
+         L     R3,4(R1)       get Value                                 00101000
+         LTR   R3,R3                                                    00102000
+         BZ    SETFOFF        branch to reset flag                      00103000
+         IPK   ,                                                        00104000
+         SPKA  0                                                        00105000
+         SSM   *+1                                                      00106000
+         IC    R4,EXECFLAG    Get Flag                                  00107000
+         OR    R4,R5          Set Flag On                               00108000
+         STC   R4,EXECFLAG    Save Flag                                 00109000
+         B     SETFDONE                                                 00110000
+SETFOFF  DS    0H                                                       00111000
+         IPK   ,                                                        00112000
+         SPKA  0                                                        00113000
+         SSM   *+1                                                      00114000
+         LA    R6,X'FF'       For Anding the Flag                       00115000
+         SR    R6,R5                                                    00116000
+         IC    R4,EXECFLAG    Get Flag                                  00117000
+         NR    R4,R6          Set Flag Off                              00118000
+         STC   R4,EXECFLAG    Save Flag                                 00119000
+SETFDONE DS    0H                                                       00120000
+         SPKA  0(R2)                                                    00121000
+         SSM   =X'FF'                                                   00122000
+         L     R14,12(R13)    restore our return address                00123000
+         LM    R0,R12,20(R13) restore the registers                     00124000
+         BR    R14            return to our caller                      00125000
+         EJECT                                                          00126000
+*********************************************************************** 00127000
+* @@ATTN  Entry Point                                                 * 00128000
+* Place a line on the CMS console stack.                              * 00129000
+*                                                                     * 00130000
+* Syntax is:                                                          * 00131000
+*    int __ATTN(char * line, int order)                               * 00132000
+* where:                                                              * 00133000
+*    line      is a pointer to the line to be stacked.  It must be no * 00134000
+*              more than 130 on VM/370, no more than 256 on VM/SP or  * 00135000
+*              z/VM.                                                  * 00136000
+*    order     is 0 if the line is to be stacked 'LIFO', anything     * 00137000
+*              else if it is to be stacked 'FIFO'.                    * 00138000
+* returns:                                                            * 00139000
+*    (int)     Return code from the ATTN function, always 0.          * 00140000
+*********************************************************************** 00141000
+@@ATTN   PDPPRLG CINDEX=0,FRAME=CMSSVALN,BASER=12,ENTRY=YES             00142000
+         LA    R15,@@ATTN-CMSSYS                                        00143000
+         SLR   R12,R15                                                  00144000
+         USING CMSSYS,R12                                               00145000
+         MVC   ATTNPL,=CL8'ATTN'                                        00146000
+         L     R6,0(R1)       R6 is start of line to stack              00147000
+         LA    R3,LINELEN(R6) last possible char to stack               00148000
+         LA    R2,1           loop increment                            00149000
+         LR    R4,R6          start of line to stack                    00150000
+ATTN1    DS    0H             determine the length of the line          00151000
+         CLI   0(R4),X'00'    look for end of the C string              00152000
+         BE    ATTN2          found it                                  00153000
+         BXLE  R4,R2,ATTN1    keep looping if not                       00154000
+ATTN2    DS    0H             we have the end of the line               00155000
+         SR    R4,R6          length of line to stack                   00156000
+         ST    R6,ATTNLN      put line addr in ATTN plist               00157000
+         STC   R4,ATTNLN      put line length in ATTN plist             00158000
+* Now check for FIFO or LIFO.                                           00159000
+         L     R2,4(R1)       get 'order'                               00160000
+         LTR   R2,R2          FIFO or LIFO?                             00161000
+         BZ    ATTN3          LIFO it is                                00162000
+         MVC   ATTNOD(4),=C'FIFO'                                       00163000
+         B     ATTN4                                                    00164000
+ATTN3    DS    0H                                                       00165000
+         MVC   ATTNOD(4),=C'LIFO'                                       00166000
+ATTN4    DS    0H                                                       00167000
+* Use the ATTN function to stack the line.                              00168000
+         LA    R1,ATTNPL                                                00169000
+         SVC   202            stack the line                            00170000
+         DC    AL4(ATTNRT)    go here if an error                       00171000
+ATTNRT   DS    0H                                                       00172000
+         SR    R15,R15        zero return code                          00173000
+         PDPEPIL                                                        00174000
+         EJECT                                                          00175000
+*********************************************************************** 00176000
+* @@SVC202  Entry Point                                               * 00177000
+* Invoke a CMS system service or command.  Both a standard and        * 00178000
+* extended parameter list are passed to the command.                  * 00179000
+*                                                                     * 00180000
+* Syntax is:                                                          * 00181000
+*    int __SVC202(void *plist , void* eplist, int calltype)           * 00182000
+* where:                                                              * 00183000
+*    plistr, eplist pointers to the parameters in both formats        * 00184000
+*    calltype  specifies the type of call:                            * 00185000
+*               0   indicates the command is to be invoked as a       * 00186000
+*                   function. (REALLY? CHECK!)                        * 00187000
+*               1   indicates the command is invoked as if from a CMS * 00188000
+*                   EXEC.  For example, if you want to invoke ABC     * 00189000
+*                   EXEC you must                                     * 00190000
+*                   code 'EXEC ABC'.                                  * 00191000
+*              11   indicates the command is invoked as if typed by   * 00192000
+*                   the user at the terminal.                         * 00193000
+* returns:                                                            * 00194000
+*    (int)     Return code from the invoked service or command.       * 00195000
+*********************************************************************** 00196000
+         ENTRY @@SVC202                                                 00197000
+@@SVC202 DS    0H                                                       00198000
+         STM   R14,R12,12(R13)                                          00199000
+         LR    R12,R15                                                  00200000
+         LA    R15,@@SVC202-CMSSYS                                      00201000
+         SLR   R12,R15                                                  00202000
+         LR    R2,R1          save C parameter list                     00203000
+         L     R1,0(R2)       plist                                     00204000
+         L     R0,4(R2)       eplist                                    00205000
+         ICM   R1,8,11(R2)    CALLTYPE flag byte                        00206000
+         SVC   202            call the command                          00207000
+         DC    AL4(*+4)       error address                             00208000
+         L     R14,12(R13)    restore our return address                00209000
+         LM    R0,R12,20(R13) restore the registers                     00210000
+         BR    R14            return to our caller                      00211000
+         EJECT                                                          00212000
+         ENTRY @@CMSCMD                                                 00213000
+*********************************************************************** 00214000
+* @@CMSCMD  Entry Point                                               * 00215000
+* Invoke a CMS system service or command.  Both a standard and        * 00216000
+* extended parameter list are passed to the command.                  * 00217000
+*                                                                     * 00218000
+* Syntax is:                                                          * 00219000
+*    int __CMSCMD(char * cmdline, int calltype)                       * 00220000
+* where:                                                              * 00221000
+*    cmdline   is a pointer to the command line to be executed.       * 00222000
+*    calltype  specifies the type of call:                            * 00223000
+*               0   indicates the command is to be invoked as a       * 00224000
+*                   function.                                         * 00225000
+*               1   indicates the command is invoked as if from a CMS * 00226000
+*                   EXEC.  For example, if you want to invoke ABC     * 00227000
+*                   EXEC you must                                     * 00228000
+*                   code 'EXEC ABC'.                                  * 00229000
+*              11   indicates the command is invoked as if typed by   * 00230000
+*                   the user at the terminal.                         * 00231000
+* returns:                                                            * 00232000
+*    (int)     Return code from the invoked service or command.       * 00233000
+*********************************************************************** 00234000
+@@CMSCMD DS    0H                                                       00235000
+         STM   R14,R12,12(R13)                                          00236000
+         LR    R12,R15                                                  00237000
+         LA    R15,@@CMSCMD-CMSSYS                                      00238000
+         SLR   R12,R15        Get address of CMSSYS in R12              00239000
+         LR    R11,R1         Save original parameter list address      00240000
+         LA    R0,EPWRKLEN    Get length of workspace required          00241000
+         DMSFREE DWORDS=(0),TYPE=USER,ERR=CMDFAIL Get workspace         00242000
+         LR    R9,R1          use R9 to address workspace               00243000
+         USING EPWRKSPC,R9    map workspace                             00244000
+         L     R4,0(R11)      get the command line string               00245000
+         LA    R3,256(,R4)    don't look for terminator forever         00246000
+         LA    R2,1           loop increment                            00247000
+CMD1     DS    0H             find first non-blank character            00248000
+         CLI   0(R4),X'00'    look for C terminator                     00249000
+         BE    NOCMD          no command present                        00250000
+         CLI   0(R4),C' '     is this a space?                          00251000
+         BNE   CMD2           found first character in command          00252000
+         BXLE  R4,R2,CMD1     keep looping if not                       00253000
+         B     NOCMD          no command found after 256 characters     00254000
+CMD2     DS    0H                                                       00255000
+         LA    R3,LINELEN(,R4) last character of longest command        00256000
+         ST    R4,EPWCMD      save address of start of command          00257000
+         XC    EPWARGB(12),EPWARGB zero remainder of EPLIST             00258000
+         LA    R5,EPWTOKPL    tokens go here                            00259000
+* --------------------------------------------------------------------- 00260000
+* Loop through the words in the command line, copy them into EWTOKPL    00261000
+* and uppercase them.  In this section:                                 00262000
+*    R5  is where in EWTOKPL next token goes                            00263000
+*    R4  is the next byte in cmdline to scan                            00264000
+*    R3  is the last character of the longest possible command          00265000
+*    R2  is the scan increment                                          00266000
+* At this point we are at the beginning of the next argument.           00267000
+* --------------------------------------------------------------------- 00268000
+TOKSCAN  DS    0H                                                       00269000
+         LR    R6,R4          save start of this token                  00270000
+TOKSCAN1 DS    0H                                                       00271000
+         CLI   0(R4),C' '     look for end of this argument             00272000
+         BE    TOKSCAN2       found it                                  00273000
+         CLI   0(R4),C'('     a paren could end it too                  00274000
+         BE    TOKSCAN2       found it                                  00275000
+         CLI   0(R4),C')'     so could a close paren                    00276000
+         BE    TOKSCAN2       found it                                  00277000
+         CLI   0(R4),X'00'    c string terminator?                      00278000
+         BE    TOKSCAN2       that'll do it too                         00279000
+         BXLE  R4,R2,TOKSCAN1 keep looping if not                       00280000
+TOKSCAN2 DS    0H             we are at the end of the argument         00281000
+         LR    R7,R4          point to 1st byte after argument          00282000
+         SR    R7,R6          get length of this argument               00283000
+         BNZ   TOKSCAN3       if len > 0, copy it                       00284000
+         CLI   0(R4),X'00'    c string terminator?                      00285000
+         BE    TOKFENCE       finish up and add fence                   00286000
+         LA    R4,1(R4)       this arg is a paren, must bump scan ptr   00287000
+         B     TOKSCAN4                                                 00288000
+TOKSCAN3 DS    0H                                                       00289000
+         BCTR  R7,0           less 1 for EX of MVC                      00290000
+TOKSCAN4 DS    0H                                                       00291000
+         MVC   0(8,R5),=CL8' ' Blank token first                        00292000
+         EX    R7,COPYTOK     copy token to EPWTOKPL                    00293000
+         LA    R0,8           Length of character string to uppercase   00294000
+         LR    R1,R5          Address of character string to uppercase  00295000
+         BAL   R10,UPCASE     uppercase the token                       00296000
+         LA    R5,8(R5)       bump token pointer                        00297000
+NEXTTOK  DS    0H             scan past any blanks before next arg      00298000
+         CLI   0(R4),C' '     look for start of next argument           00299000
+         BNE   NEXTTOK2       found start of arg or end of list         00300000
+         BXLE  R4,R2,NEXTTOK  keep looping if not                       00301000
+NEXTTOK2 DS    0H                                                       00302000
+         ICM   R7,B'1111',EPWARGB Load register and test for zero       00303000
+         BNZ   TOKSKIP        we've already found first argument        00304000
+         ST    R4,EPWARGB    store start of first argument              00305000
+TOKSKIP  DS    0H                                                       00306000
+         CLI   0(R4),X'00'    are we at the end?                        00307000
+         BE    TOKFENCE       yes, we are getting there                 00308000
+         CLI   0(R4),C'('     but wait, we could be at a paren          00309000
+         BE    NEXTTOK3                                                 00310000
+         CLI   0(R4),C')'     or a close paren                          00311000
+         BE    NEXTTOK3                                                 00312000
+         B     TOKSCAN                                                  00313000
+NEXTTOK3 DS    0H                                                       00314000
+         LR    R6,R4          save start of this argument               00315000
+         LA    R4,1(R4)       point to character after paren            00316000
+         B     TOKSCAN2       process the paren as an argument          00317000
+COPYTOK  MVC   0(0,R5),0(R6)  copy token                                00318000
+TOKFENCE DS    0H                                                       00319000
+         MVC   0(8,R5),=X'FFFFFFFFFFFFFFFF'                             00320000
+         ICM   R7,B'1111',EPWARGB did we find arguments?                00321000
+         BZ    TOKDONE        no sign of any                            00322000
+         ST    R4,EPWARGE     store end of argument list                00323000
+TOKDONE  DS    0H                                                       00324000
+* --------------------------------------------------------------------- 00325000
+* At last we issue the CMS command and return to our caller.            00326000
+* --------------------------------------------------------------------- 00327000
+         LA    R0,EPWEPLST    set the extended plist                    00328000
+         LA    R1,EPWTOKPL    set the tokenized plist                   00329000
+         DROP  R9             Finished with workspace                   00330000
+         ICM   R1,B'1000',7(R11) get the CALLTYPE flag byte             00331000
+         SVC   202            call the command                          00332000
+         DC    AL4(*+4)       error address                             00333000
+         ST    R15,16(R13)    save returned command status              00334000
+         LA    R0,EPWRKLEN    get length of workspace                   00335000
+         LR    R1,R9          get address of workspace                  00336000
+         DMSFRET DWORDS=(0),LOC=(1),ERR=CMDFAIL Free workspace          00337000
+CMDREST  DS    0H                                                       00338000
+         LM    R14,R12,12(R13) restore the registers                    00339000
+         BR    R14            return to our caller                      00340000
+NOCMD    DS    0H                                                       00341000
+         XR    R15,R15                                                  00342000
+CMDRTRC  DS    0H                                                       00343000
+         ST    R15,16(R13)                                              00344000
+         B     CMDREST                                                  00345000
+CMDFAIL  DS    0H                                                       00346000
+         L     R15,=F'-4'                                               00347000
+         B     CMDRTRC                                                  00348000
+*                                                                       00349000
+EPWRKSPC DSECT                                                          00350000
+EPWTOKPL DS    32D            CMS tokenized plist                       00351000
+EPWEPLST DS    0F             CMS extended parameter list               00352000
+EPWCMD   DS    A              address of the command                    00353000
+EPWARGB  DS    A              address of beginning of the arguments     00354000
+EPWARGE  DS    A              address of character after the arguments  00355000
+EPWUWORD DS    F              the user word                             00356000
+EPWRKLEN EQU   (*-EPWRKSPC+7)/8 Length of workspace in doublewords      00357000
+         EJECT                                                          00358000
+CMSSYS   CSECT                                                          00359000
+*********************************************************************** 00360000
+* @DMSFREE                                                            * 00361000
+* DMSFREE Stub                                                        * 00362000
+* Allocate free memory.                                               * 00363000
+*                                                                     * 00364000
+* Syntax is:                                                          * 00365000
+*    _DMSFREE(int doublewords)                                        * 00366000
+* returns:                                                            * 00367000
+*    (int)     Address of the allocated memory, or 0 if the memory    * 00368000
+*              could not be allocated.                                * 00369000
+*********************************************************************** 00370000
+         ENTRY @DMSFREE                                                 00371000
+@DMSFREE DS    0H                                                       00372000
+         STM   R14,R12,12(R13)                                          00373000
+         LR    R12,R15                                                  00374000
+         LA    R15,@DMSFREE-CMSSYS                                      00375000
+         SLR   R12,R15                                                  00376000
+         L     R0,0(R1)       get number of dounlewords to allocate     00377000
+* Use DMSFREE to allocate the memory.                                   00378000
+         DMSFREE DWORDS=(0),TYPE=USER,ERR=DMSFREE2                      00379000
+         LTR   R15,R15        did we get the memory?                    00380000
+         BNZ   DMSFREE2       no, quit now                              00381000
+         LR    R15,R1                                                   00382000
+DMSFREE1 DS    0H                                                       00383000
+         L     R14,12(R13)    restore our return address                00384000
+         LM    R0,R12,20(R13) restore the registers                     00385000
+         BR    R14            return to our caller                      00386000
+DMSFREE2 DS    0H             no memory                                 00387000
+         SR    R15,R15        indicate no memory allocated              00388000
+         B     DMSFREE1                                                 00389000
+         EJECT                                                          00390000
+*********************************************************************** 00391000
+* @DMSFRET                                                            * 00392000
+* DMSFRET Stub                                                        * 00393000
+* Release allocated memory.                                           * 00394000
+*                                                                     * 00395000
+* Syntax is:                                                          * 00396000
+*    int _DMSFRET(void *address, int doublewords)                     * 00397000
+* where:                                                              * 00398000
+*    memory    is a pointer to the memory to be freed.                * 00399000
+* returns:                                                            * 00400000
+*     0        Success.                                               * 00401000
+*     1        Error.                                                 * 00402000
+*********************************************************************** 00403000
+         ENTRY @DMSFRET                                                 00404000
+@DMSFRET DS    0H                                                       00405000
+         STM   R14,R12,12(R13)                                          00406000
+         LR    R12,R15                                                  00407000
+         LA    R15,@DMSFRET-CMSSYS                                      00408000
+         SLR   R12,R15                                                  00409000
+         L     R0,4(R1)       get doublewords to return                 00410000
+         L     R1,0(R1)       get address of memory to return           00411000
+* Use DMSFRET to return the memory.                                     00412000
+         DMSFRET DWORDS=(0),LOC=(1),ERR=DMSFRET2                        00413000
+         SR    R15,R15        indicate all OK                           00414000
+DMSFRET1 DS    0H                                                       00415000
+         L     R14,12(R13)    restore our return address                00416000
+         LM    R0,R12,20(R13) restore the registers                     00417000
+         BR    R14            return to our caller                      00418000
+DMSFRET2 DS    0H             no memory                                 00419000
+         LA    R15,1          indicate error                            00420000
+         B     DMSFRET1                                                 00421000
+         EJECT                                                          00422000
+*********************************************************************** 00423000
+* @@DMSFRE  Entry Point                                               * 00424000
+* Allocate free memory.                                               * 00425000
+*                                                                     * 00426000
+* Syntax is:                                                          * 00427000
+*    __DMSFRE(int bytes, int type)                                    * 00428000
+* where:                                                              * 00429000
+*    bytes     is the number of bytes to be allocated.                * 00430000
+*    type      is the type of memory: 0 for NUCLEUS, 1 for USER.      * 00431000
+* returns:                                                            * 00432000
+*    (int)     Address of the allocated memory, or 0 if the memory    * 00433000
+*              could not be allocated.                                * 00434000
+* Notes:                                                              * 00435000
+* 1. Since CMS allocates memory in doublewords, we divide the bytes   * 00436000
+*    requested by 8 then add 2 to effectively round up, and add an    * 00437000
+*    additional doubleword which we use in note 2.                    * 00438000
+* 2. The first word is used to store the number of doublewords        * 00439000
+*    allocated, needed in @@DMSFRT.  The next word is 'GCC' followed  * 00440000
+*    by a 0 byte.  This helps detect memory overruns, I hope.         * 00441000
+* 3. Memory returned to the caller starts 8 bytes after the memory    * 00442000
+*    allocated to us by CMS.                                          * 00443000
+* 4. If you allocate NUCLEUS memory, your program must be generated   * 00444000
+*    with the SYSTEM option.  Note that if such a program abnormally  * 00445000
+*    terminates, CMS does not release this memory.                    * 00446000
+*********************************************************************** 00447000
+@@DMSFRE PDPPRLG CINDEX=0,FRAME=CMSSVALN,BASER=12,ENTRY=YES             00448000
+         LA    R15,@@DMSFRE-CMSSYS                                      00449000
+         SLR   R12,R15                                                  00450000
+         USING CMSSYS,R12                                               00451000
+         L     R2,0(R1)       get number of bytes to allocate           00452000
+         SRL   R2,3           convert to doublewords                    00453000
+         LA    R0,2(R2)       round up plus 1 for housekeeping          00454000
+         L     R2,4(R1)       get type parameter                        00455000
+* --------------------------------------------------------------------- 00456000
+* For debugging...                                                      00457000
+         L     R3,0(R1)       get number of bytes to allocate           00458000
+         L     R4,=F'1000000'                                           00459000
+         SR    R4,R3                                                    00460000
+         BP    OKAY                                                     00461000
+         MVC   LINEDITL(LINEDISZ),LINEDITP Set pattern                  00462000
+         MVI   OUTBUF,255         Set buffer size in byte 1             00463000
+         LINEDIT TEXT='Attempting to allocate ........ bytes',         X00464000
+               SUB=(DEC,(3)),COMP=NO,BUFFA=OUTBUF,                     X00465000
+               MF=(E,LINEDITL)                                          00466000
+         SR    R0,R0                                                    00467000
+         SR    R1,R1                                                    00468000
+         B     NOMEMORY                                                 00469000
+OKAY     DS    0H                                                       00470000
+* End of debugging...                                                   00471000
+* --------------------------------------------------------------------- 00472000
+         LTR   R2,R2                                                    00473000
+         BZ    NUCMEM         get nucleus memory                        00474000
+* Use DMSFREE to allocate the memory.                                   00475000
+         DMSFREE DWORDS=(0),TYPE=USER,ERR=NOMEMORY                      00476000
+         B     POSTMEM                                                  00477000
+NUCMEM   DS    0H                                                       00478000
+         DMSFREE DWORDS=(0),TYPE=NUCLEUS,ERR=NOMEMORY                   00479000
+POSTMEM  DS    0H                                                       00480000
+         LTR   R15,R15        did we get the memory?                    00481000
+         BNZ   NOMEMORY       no, quit now                              00482000
+         ST    R0,0(R1)       store number of doublewords allocated     00483000
+         MVC   4(4,R1),=X'C7C3C300' store marker: "GCC" C string        00484000
+         LA    R15,8(R1)      here is where user memory starts          00485000
+         B     FREERET        remove this for debugging message         00486000
+* --------------------------------------------------------------------- 00487000
+* For debugging...                                                      00488000
+         LR    R2,R15                                                   00489000
+         LR    R3,R0                                                    00490000
+         LR    R4,R1                                                    00491000
+         MVC   LINEDITL(LINEDISZ),LINEDITP Set pattern                  00492000
+         MVI   OUTBUF,255         Set buffer size in byte 1             00493000
+         LINEDIT TEXT='Allocated ...... dwords of memory at ......',   X00494000
+               SUB=(DEC,(3),HEX,(4)),COMP=NO,                          X00495000
+               MF=(E,LINEDITL)                                          00496000
+         LR    R15,R2                                                   00497000
+* End of debugging...                                                   00498000
+* --------------------------------------------------------------------- 00499000
+FREERET  DS    0H                                                       00500000
+         PDPEPIL                                                        00501000
+NOMEMORY DS    0H                                                       00502000
+         SR    R15,R15        indicate no memory allocated              00503000
+         B     FREERET                                                  00504000
+         EJECT                                                          00505000
+*********************************************************************** 00506000
+* @@DMSFRT  Entry Point                                               * 00507000
+* Release allocated memory.                                           * 00508000
+*                                                                     * 00509000
+* Syntax is:                                                          * 00510000
+*    int __DMSFRT(void * memory)                                      * 00511000
+* where:                                                              * 00512000
+*    memory    is a pointer to the memory to be freed.                * 00513000
+* returns:                                                            * 00514000
+*     0        Success.                                               * 00515000
+*     5        Returned size not positive (no doubt memory was        * 00516000
+*              overwritten.                                           * 00517000
+*     6        Memory block overlaps other memory.                    * 00518000
+*     7        Returned block is not double-word aligned.             * 00519000
+*     8        Illegal code or argument.                              * 00520000
+*********************************************************************** 00521000
+@@DMSFRT PDPPRLG CINDEX=0,FRAME=CMSSVALN,BASER=12,ENTRY=YES             00522000
+         LA    R15,@@DMSFRT-CMSSYS                                      00523000
+         SLR   R12,R15                                                  00524000
+         USING CMSSYS,R12                                               00525000
+         L     R1,0(R1)       get address of memory to return           00526000
+         LTR   R1,R1          check the address                         00527000
+         BP    FRTOK                                                    00528000
+         MVC   LINEDITL(LINEDISZ),LINEDITP Set pattern                  00529000
+         MVI   OUTBUF,255         Set buffer size in byte 1             00530000
+         LINEDIT TEXT='Invalid address passed to __DMSFRT',            X00531000
+               MF=(E,LINEDITL)                                          00532000
+         LA    R15,8          indicate bad pointer                      00533000
+         B     FRTEND                                                   00534000
+FRTOK    DS    0H                                                       00535000
+         S     R1,=F'8'       get to real start of memory               00536000
+* Complain if our label has been overwritten.                           00537000
+         CLC   4(4,R1),=X'C7C3C300'                                     00538000
+         BE    ALLSWELL       looks good                                00539000
+         LR    R2,R1                                                    00540000
+         MVC   LINEDITL(LINEDISZ),LINEDITP Set pattern                  00541000
+         MVI   OUTBUF,255         Set buffer size in byte 1             00542000
+         LINEDIT TEXT='Memory overwrite detected by __DMSFRT at ......'X00543000
+               ,SUB=(HEX,(2)),                                         X00544000
+               MF=(E,LINEDITL)                                          00545000
+         LA    R15,5          indicate memory overwrite                 00546000
+         B     FRTEND                                                   00547000
+ALLSWELL DS    0H                                                       00548000
+         L     R0,0(R1)       get doublewords to return                 00549000
+* Use DMSFRET to return the memory.                                     00550000
+         DMSFRET DWORDS=(0),LOC=(1)                                     00551000
+         B     FRTEND                                                   00552000
+* --------------------------------------------------------------------- 00553000
+* For debugging...                                                      00554000
+         LR    R2,R15                                                   00555000
+         LR    R3,R0                                                    00556000
+         LR    R4,R1                                                    00557000
+         MVC   LINEDITL(LINEDISZ),LINEDITP Set pattern                  00558000
+         MVI   OUTBUF,255         Set buffer size in byte 1             00559000
+         LINEDIT TEXT='Freed     ...... dwords of memory at ......',   X00560000
+               SUB=(DEC,(3),HEX,(4)),COMP=NO,                          X00561000
+               MF=(E,LINEDITL)                                          00562000
+         LR    R15,R2                                                   00563000
+* End of debugging...                                                   00564000
+* --------------------------------------------------------------------- 00565000
+FRTEND   DS    0H                                                       00566000
+         PDPEPIL                                                        00567000
+         EJECT                                                          00568000
+*********************************************************************** 00569000
+* @@FSCLOS  Entry Point                                               * 00570000
+* Close an open file and save it to disk.                             * 00571000
+*                                                                     * 00572000
+* Syntax is:                                                          * 00573000
+*    int __FSCLOS(FSCB * fscb)                                        * 00574000
+* where:                                                              * 00575000
+*    fscb      is a pointer to the FSCB returned from __FSOPEN.       * 00576000
+* returns:                                                            * 00577000
+*     0        Success.                                               * 00578000
+*     6        The file is not open.                                  * 00579000
+*********************************************************************** 00580000
+         ENTRY @@FSCLOS                                                 00581000
+@@FSCLOS DS    0H                                                       00582000
+         STM   R14,R12,12(R13)                                          00583000
+         LR    R12,R15                                                  00584000
+         LA    R15,@@FSCLOS-CMSSYS                                      00585000
+         SLR   R12,R15                                                  00586000
+         L     R8,0(R1)       get FSCB                                  00587000
+         USING FSCBD,R8       map CMS File System Control Block         00588000
+* Use FSCLOSE to close the file.                                        00589000
+         FSCLOSE FSCB=(R8)                                              00590000
+         DROP  R8             finished with FSCB                        00591000
+         L     R14,12(R13)    restore our return address                00592000
+         LM    R0,R12,20(R13) restore the registers                     00593000
+         BR    R14            return to our caller                      00594000
+         EJECT                                                          00595000
+*********************************************************************** 00596000
+* @@FSERAS  Entry Point                                               * 00597000
+* Delete a CMS file.                                                  * 00598000
+*                                                                     * 00599000
+* Syntax is:                                                          * 00600000
+*    int __FSERAS(char * fileid)                                      * 00601000
+* where:                                                              * 00602000
+*    fileid    is a pointer to the CMS fileid, an 18 character field. * 00603000
+*              The first 8 characters are the filename, the next 8    * 00604000
+*              are the filetype, and the last 2 are the filemode.     * 00605000
+*              This string is not NULL terminated.                    * 00606000
+* returns:                                                            * 00607000
+*     0        Success.                                               * 00608000
+*    24        Parameter list error (invalid character in fileid).    * 00609000
+*    28        The file was not found.                                * 00610000
+*    36        Disk not accessed.                                     * 00611000
+*********************************************************************** 00612000
+@@FSERAS PDPPRLG CINDEX=0,FRAME=CMSSVALN,BASER=12,ENTRY=YES             00613000
+         LA    R15,@@FSERAS-CMSSYS                                      00614000
+         SLR   R12,R15                                                  00615000
+         USING CMSSYS,R12                                               00616000
+         L     R2,0(R1)       get address of fileid                     00617000
+         LA    R8,WORKFSCB    FSCB is built here                        00618000
+         USING FSCBD,R8       map CMS File System Control Block         00619000
+         XC    0(FSCBLEN,R8),0(R8)     zero FSCB                        00620000
+         MVC   FSCBFN(18),0(R2)        copy FILEID into FSCB            00621000
+         LA    R0,18          get length of FILEID                      00622000
+         LA    R1,FSCBFN      get address of FILEID                     00623000
+         BAL   R10,UPCASE     uppercase it                              00624000
+* Use FSERASE to delete the file.                                       00625000
+         FSERASE FSCB=WORKFSCB                                          00626000
+         DROP  R8             finished with FSCB                        00627000
+         PDPEPIL                                                        00628000
+         EJECT                                                          00629000
+*********************************************************************** 00630000
+* @@FSOPEN  Entry Point                                               * 00631000
+* Open a CMS file for reading or writing.                             * 00632000
+*                                                                     * 00633000
+* Syntax is:                                                          * 00634000
+*    int __FSOPEN(char * fileid, void * buffer, int bsize,            * 00635000
+*                 char recfm, int numrec, int recnum, FSCB * fscb)    * 00636000
+* where:                                                              * 00637000
+*    fileid    is a pointer to the CMS fileid, an 18 character field. * 00638000
+*              The first 8 characters are the filename, the next 8    * 00639000
+*              are the filetype, and the last 2 are the filemode.     * 00640000
+*              This string is not NULL terminated.                    * 00641000
+*    buffer    is a pointer to the buffer from which records are read * 00642000
+*              from or written to.                                    * 00643000
+*    bsize     is the size of the buffer.                             * 00644000
+*    recfm     is 'F' if you are writing a file of fixed-length       * 00645000
+*              records, 'V' if you are writing a file of variable-    * 00646000
+*              length records.  This parameter is ignored if you are  * 00647000
+*              reading from the file.                                 * 00648000
+*    numrec    is the number of records to be read or written at a    * 00649000
+*              time.  This parameter can be greater than 1 only when  * 00650000
+*              reading or writing fixed-length records.               * 00651000
+*    recnum    is the record number at which to begin reading or      * 00652000
+*              writing.                                               * 00653000
+*    fscb      is a pointer to an FSCB.  It is updated by FSOPEN.     * 00654000
+*              Pass this as an argument to other file I/O functions.  * 00655000
+* returns:                                                            * 00656000
+*     0        Success.                                               * 00657000
+*    20        The fileid is invalid.                                 * 00658000
+*    28        The file was not found.                                * 00659000
+*********************************************************************** 00660000
+         ENTRY @@FSOPEN                                                 00661000
+@@FSOPEN DS    0H                                                       00662000
+         STM   R14,R12,12(R13)                                          00663000
+         LR    R12,R15                                                  00664000
+         LA    R15,@@FSOPEN-CMSSYS                                      00665000
+         SLR   R12,R15                                                  00666000
+         LM    R2,R8,0(R1)    get address of parameters                 00667000
+*              R2             address of fileid                         00668000
+*              R3             buffer address                            00669000
+*              R4             buffer length                             00670000
+*              R5             record format                             00671000
+*              R6             number of records to read or write        00672000
+*              R7             record number                             00673000
+*              R8             FSCB is built here                        00674000
+         USING FSCBD,R8       map CMS File System Control Block         00675000
+         XC    0(FSCBLEN,R8),0(R8)     zero FSCB                        00676000
+         MVC   FSCBFN(18),0(R2)        copy FILEID into FSCB            00677000
+         LA    R0,18          get length of FILEID                      00678000
+         LA    R1,FSCBFN      get address of FILEID                     00679000
+         BAL   R10,UPCASE     uppercase it                              00680000
+* Use FSOPEN to open the file.                                          00681000
+         FSOPEN BUFFER=(R3),BSIZE=(R4),RECFM=(R5),                     *00682000
+               NOREC=(R6),RECNO=(R7),                                  *00683000
+               FSCB=(R8)                                                00684000
+         DROP  R8             finished with FSCB                        00685000
+         L     R14,12(R13)    restore our return address                00686000
+         LM    R0,R12,20(R13) restore the registers                     00687000
+         BR    R14            return to our caller                      00688000
+         EJECT                                                          00689000
+         ENTRY @@FSPOIN                                                 00690000
+*********************************************************************** 00691000
+* @@FSPOIN  Entry Point                                               * 00692000
+* Set the next item number (record) to read or write from a CMS file. * 00693000
+*                                                                     * 00694000
+* Syntax is:                                                          * 00695000
+*    int __FSPOIN(FSCB * fscb, int recnum, int rw)                    * 00696000
+* where:                                                              * 00697000
+*    fscb      is a pointer to an FSCB.  It is updated by FSPOINT.    * 00698000
+*              Pass this as an argument to other file I/O functions.  * 00699000
+*    recnum    is the record number at which to begin reading or      * 00700000
+*              writing.                                               * 00701000
+*    rw        is 0 to set the read pointer, 1 to set the write       * 00702000
+*              pointer.                                               * 00703000
+* returns:                                                            * 00704000
+*     0        Success.                                               * 00705000
+*     1        The file was not found.                                * 00706000
+*     2        Parameter list error.                                  * 00707000
+* Notes:                                                              * 00708000
+* 1. Pointing to an record number greater than the number of records  * 00709000
+*    in the file yields unpredictable results.                        * 00710000
+*********************************************************************** 00711000
+@@FSPOIN DS    0H                                                       00712000
+         STM   R14,R12,12(R13)                                          00713000
+         LR    R12,R15                                                  00714000
+         LA    R15,@@FSPOIN-CMSSYS                                      00715000
+         SLR   R12,R15                                                  00716000
+         L     R8,0(,R1)      FSCB                                      00717000
+         USING FSCBD,R8       map CMS File System Control Block         00718000
+         LM    R3,R4,0(R1)                                              00719000
+*              R3             record number                             00720000
+*              R4             read or write flag                        00721000
+         LTR   R4,R4                                                    00722000
+         BZ    POINTRD        set the read pointer                      00723000
+* Use FSPOINT to set the write pointer                                  00724000
+         FSPOINT FSCB=(R8),WRPNT=(R3)                                   00725000
+         B     POINTED                                                  00726000
+POINTRD  DS    0H                                                       00727000
+* Use FSPOINT to set the read pointer                                   00728000
+         FSPOINT FSCB=(R8),RDPNT=(R3)                                   00729000
+         DROP  R8             finished with FSCB                        00730000
+POINTED  DS    0H                                                       00731000
+         L     R14,12(R13)    restore our return address                00732000
+         LM    R0,R12,20(R13) restore the registers                     00733000
+         BR    R14            return to our caller                      00734000
+         EJECT                                                          00735000
+*********************************************************************** 00736000
+* @@FSREAD  Entry Point                                               * 00737000
+* Read a record from an open file.                                    * 00738000
+*                                                                     * 00739000
+* Syntax is:                                                          * 00740000
+*    int __FSREAD(FSCB * fscb, int RECNUM, int * bytesread)           * 00741000
+* where:                                                              * 00742000
+*    fscb      is a pointer to the FSCB of the open file.             * 00743000
+*    recnum    is the record number at which to begin reading.  To    * 00744000
+*              read sequential records, specify 1 on the first call   * 00745000
+*              to __FSREAD, 0 on subsequent calls.  Alternately,      * 00746000
+*              specify 1 as the 'recnum' parameter in __FSOPEN, and   * 00747000
+*              set 'recnum' to 0 on all __FSREAD calls.  To use the   * 00748000
+*              record number currently set in the FSCB, specify -1.   * 00749000
+*    bytesread (returned) is a pointer to the number of bytes         * 00750000
+*              actually read.                                         * 00751000
+* returns:                                                            * 00752000
+*     0        Success.                                               * 00753000
+*     1        The file was not found.                                * 00754000
+*     2        Invalid buffer address.                                * 00755000
+*     3        Permanent I/O error.                                   * 00756000
+*     5        Number of records is less than 1, or greater than      * 00757000
+*              32,768.                                                * 00758000
+*     7        Invalid record format (only checked when file is first * 00759000
+*              opened for reading).                                   * 00760000
+*     8        Incorrect length.                                      * 00761000
+*     9        File open for output.                                  * 00762000
+*    11        Number of records greater than 1 for variable-length   * 00763000
+*              file.                                                  * 00764000
+*    12        End of file reached.                                   * 00765000
+*    13        Variable-length file has invalid displacement in the   * 00766000
+*              active file table.                                     * 00767000
+*    14        Invalid character in filename.                         * 00768000
+*    15        Invalid character in filetype.                         * 00769000
+* Notes:                                                              * 00770000
+* 1. The bytes placed into the FSCB buffer are NOT terminated with a  * 00771000
+*    null character.                                                  * 00772000
+*********************************************************************** 00773000
+         ENTRY @@FSREAD                                                 00774000
+@@FSREAD DS    0H                                                       00775000
+         STM   R14,R12,12(R13)                                          00776000
+         LR    R12,R15                                                  00777000
+         LA    R15,@@FSREAD-CMSSYS                                      00778000
+         SLR   R12,R15                                                  00779000
+         LR    R2,R1          save our plist pointer                    00780000
+         L     R8,0(,R1)      FSCB                                      00781000
+         USING FSCBD,R8       map CMS File System Control Block         00782000
+         LM    R4,R5,4(R1)                                              00783000
+*              R4             record number                             00784000
+*              R5             where to store number of bytes read       00785000
+         LTR   R4,R4                                                    00786000
+         BH    READREC        if record number > 0, use it              00787000
+         BL    READNREC       if record number < 0, use FSCB recnum     00788000
+* The caller specified 0 as the record number to read.  If the FSCB is  00789000
+* set to read record 1, read that, then set the FSCB record number to 0 00790000
+* after the FSREAD has completed.                                       00791000
+         LH    R1,FSCBITNO    get the record number from the FSCB       00792000
+         C     R1,=F'1'                                                 00793000
+         BH    READREC        it was >1, so read next record instead    00794000
+READNREC DS    0H                                                       00795000
+* Use FSREAD to read from the file, using the recnum in the FSCB        00796000
+         FSREAD FSCB=(R8)                                               00797000
+         LTR   R4,R4          did the user specify recnum of 0?         00798000
+         BNZ   DONEREAD       no, so we are done                        00799000
+         STH   R4,FSCBITNO    yes, set the FSCB record number to 0      00800000
+         B     DONEREAD                                                 00801000
+READREC  DS    0H                                                       00802000
+* Use FSREAD to read from the file, specifying the recnum               00803000
+         FSREAD FSCB=(R8),RECNO=(R4)                                    00804000
+DONEREAD DS    0H                                                       00805000
+         DROP  R8             finished with FSCB                        00806000
+         ST    R0,0(R5)       return number of bytes read               00807000
+         L     R14,12(R13)    restore our return address                00808000
+         LM    R0,R12,20(R13) restore the registers                     00809000
+         BR    R14            return to our caller                      00810000
+         EJECT                                                          00811000
+*********************************************************************** 00812000
+* @@FSSTAT  Entry Point                                               * 00813000
+* Determine whether a file exists.                                    * 00814000
+*                                                                     * 00815000
+* Syntax is:                                                          * 00816000
+*    int __FSSTAT(char * fileid, FST ** fst)                          * 00817000
+* where:                                                              * 00818000
+*    fileid    is a pointer to the CMS fileid, an 18 character field. * 00819000
+*              The first 8 characters are the filename, the next 8    * 00820000
+*              are the filetype, and the last 2 are the filemode.     * 00821000
+*              The filename, filetype, and filemode may each be       * 00822000
+*              specified as *, in which case the first file           * 00823000
+*              satisfying the rest of the fileid is used.  This       * 00824000
+*              string is not NULL terminated.                         * 00825000
+*    fst       is a handle to a copy of the CMS file state table      * 00826000
+*              (FST) for this file.  It provides details of the       * 00827000
+*              specified file.                                        * 00828000
+* returns:                                                            * 00829000
+*     0        Success.                                               * 00830000
+*    20        The fileid is invalid.                                 * 00831000
+*    24        Invalid filemode.                                      * 00832000
+*    28        The file was not found.                                * 00833000
+*    36        Disk not accessed.                                     * 00834000
+*********************************************************************** 00835000
+@@FSSTAT PDPPRLG CINDEX=0,FRAME=CMSSVALN,BASER=12,ENTRY=YES             00836000
+         LA    R15,@@FSSTAT-CMSSYS                                      00837000
+         SLR   R12,R15                                                  00838000
+         USING CMSSYS,R12                                               00839000
+         LM    R2,R3,0(R1)                                              00840000
+*              R2             address of fileid                         00841000
+*              R3             address to receive FST ptr                00842000
+         LA    R8,WORKFSCB    FSCB is built here                        00843000
+         USING FSCBD,R8       map CMS File System Control Block         00844000
+         XC    0(FSCBLEN,R8),0(R8)     zero FSCB                        00845000
+         MVC   FSCBFN(18),0(R2)        copy FILEID into FSCB            00846000
+         LA    R0,18          get length of FILEID                      00847000
+         LA    R1,FSCBFN      get address of FILEID                     00848000
+         BAL   R10,UPCASE     uppercase it                              00849000
+* Use FSSTATE to determine if the file exists.                          00850000
+         FSSTATE FSCB=WORKFSCB                                          00851000
+         DROP  R8             finished with FSCB                        00852000
+         ST    R1,0(,R3)      store FST                                 00853000
+         PDPEPIL                                                        00854000
+         EJECT                                                          00855000
+         ENTRY @@FSWRIT                                                 00856000
+*********************************************************************** 00857000
+* @@FSWRIT  Entry Point                                               * 00858000
+* Write a record to an open file.                                     * 00859000
+*                                                                     * 00860000
+* Syntax is:                                                          * 00861000
+*    int __FSWRIT(FSCB fscb, int recnum, int reclen)                  * 00862000
+* where:                                                              * 00863000
+*    fscb      is a pointer to the FSCB of the open file.             * 00864000
+*    recnum    is the record number at which to begin writing.  To    * 00865000
+*              write sequential records, specify 1 on the first call  * 00866000
+*              to __FSWRIT, 0 on subsequent calls.  To use the record * 00867000
+*              number currently set in the FSCB, specify -1.          * 00868000
+*    reclen    is the length of the record to be written.             * 00869000
+* returns:                                                            * 00870000
+*     0        Success.                                               * 00871000
+*     2        Invalid buffer address.                                * 00872000
+*     4        First character of filemode is illegal.                * 00873000
+*     5        Second character of filemode is illegal.               * 00874000
+*     6        Record number too large.                               * 00875000
+*     7        Attempt to skip over unwritten variable-length record. * 00876000
+*     8        Buffer size not specified.                             * 00877000
+*     9        File open for input.                                   * 00878000
+*    10        Maximum number of files reached.                       * 00879000
+*    11        Record format not F or V.                              * 00880000
+*    12        Attempt to write on read-only disk.                    * 00881000
+*    13        Disk is full.                                          * 00882000
+*    14        Number of bytes written is not integrally divisible by * 00883000
+*              the number of records to be written.                   * 00884000
+*    15        Length of fixed-length recod not the same as previous  * 00885000
+*              record.                                                * 00886000
+*    16        Record format specified is not the same as that of the * 00887000
+*              file.                                                  * 00888000
+*    17        Variable-length record is greater than 65K bytes.      * 00889000
+*    18        Number of records to write is greater than 1 for a     * 00890000
+*              variable length file.                                  * 00891000
+*    19        Maximum number of data blocks per file (16060) has     * 00892000
+*              been reached.                                          * 00893000
+*    20        Invalid character detected in filename.                * 00894000
+*    21        Invalid character detected in filetype.                * 00895000
+*    22        Virtual storage capacity exceeded.                     * 00896000
+*    25        Insufficent free storage available for file directory  * 00897000
+*              buffers.                                               * 00898000
+* Notes:                                                              * 00899000
+* 1. It is possible to overwrite a record within a file.  However,    * 00900000
+*    care must be taken that the record being written is the same     * 00901000
+*    length as the one it is replacing.  Failing to do this can       * 00902000
+*    result in corruption of the file and possibly the entire         * 00903000
+*    mini-disk.                                                       * 00904000
+* 2. To overwrite an existing file with new records, call             * 00905000
+*    @@FSERAS to first erase the file, then open the file and begin   * 00906000
+*    writing from record 1.                                           * 00907000
+*********************************************************************** 00908000
+@@FSWRIT DS    0H                                                       00909000
+         STM   R14,R12,12(R13)                                          00910000
+         LR    R12,R15                                                  00911000
+         LA    R15,@@FSWRIT-CMSSYS                                      00912000
+         SLR   R12,R15                                                  00913000
+         LM    R2,R4,0(R1)                                              00914000
+*              R2             FSCB                                      00915000
+*              R3             record number                             00916000
+*              R4             record length                             00917000
+* Use FSWRITE to write to the file.                                     00918000
+         LTR   R3,R3                                                    00919000
+         BNL   WRECNO         if record number is 0 or higher, use it   00920000
+         FSWRITE FSCB=(R2),BSIZE=(R4)                                   00921000
+         B     DONEWRIT                                                 00922000
+WRECNO   DS    0H                                                       00923000
+         FSWRITE FSCB=(R2),RECNO=(R3),BSIZE=(R4)                        00924000
+DONEWRIT DS    0H                                                       00925000
+         L     R14,12(R13)    restore our return address                00926000
+         LM    R0,R12,20(R13) restore the registers                     00927000
+         BR    R14            return to our caller                      00928000
+         EJECT                                                          00929000
+*********************************************************************** 00930000
+* @@GETCLK  Entry Point                                               * 00931000
+* Get the system clock time.                                          * 00932000
+*                                                                     * 00933000
+* Syntax is:                                                          * 00934000
+*    int __GETCLK(clock)                                              * 00935000
+* where:                                                              * 00936000
+*    clock     is an 8-byte variable into which the clock will be     * 00937000
+*              stored.                                                * 00938000
+* returns:                                                            * 00939000
+*    (int)     The number of seconds since 1/1/1970.                  * 00940000
+*********************************************************************** 00941000
+         ENTRY @@GETCLK                                                 00942000
+@@GETCLK DS    0H                                                       00943000
+         STM   R14,R12,12(R13)                                          00944000
+         LR    R12,R15                                                  00945000
+         LA    R15,@@GETCLK-CMSSYS                                      00946000
+         SLR   R12,R15                                                  00947000
+         L     R2,0(R1)       get address of 'clock'                    00948000
+         STCK  0(R2)          store the clock there                     00949000
+         L     R4,0(R2)       calculate seconds since 1/1/1970          00950000
+         L     R5,4(R2)                                                 00951000
+         SRDL  R4,12                                                    00952000
+         SL    R4,=X'0007D910'                                          00953000
+         D     R4,=F'1000000'                                           00954000
+         SL    R5,=F'1220'                                              00955000
+         LR    R15,R5         and return it                             00956000
+         L     R14,12(R13)    restore our return address                00957000
+         LM    R0,R12,20(R13) restore the registers                     00958000
+         BR    R14            return to our caller                      00959000
+         EJECT                                                          00960000
+*********************************************************************** 00961000
+* @@PRINTL  Entry Point                                               * 00962000
+* Write a line to the virtual printer.                                * 00963000
+*                                                                     * 00964000
+* Syntax is:                                                          * 00965000
+*    int __PRINTL(char * line)                                        * 00966000
+* where:                                                              * 00967000
+*    line      is a pointer to the line to be printed.  The first     * 00968000
+*              character of the line must be a carriage control       * 00969000
+*              character (a blank skips to a new line).  The string   * 00970000
+*              must be NULL terminated.  The maximum length of the    * 00971000
+*              line is 133 characters for a virtual 1403 printer (the * 00972000
+*              default), 151 characters for a virtual 3211 printer; a * 00973000
+*              line longer than this results in an error.             * 00974000
+* returns:                                                            * 00975000
+*     0        Success.                                               * 00976000
+*     1        Line too long.                                         * 00977000
+*     2        Channel 12 punch sensed (virtual 3211 only).           * 00978000
+*     3        Channel 9 punch sensed (virtual 3211 only).            * 00979000
+*     4        Intervention required.                                 * 00980000
+*     5        Unknown error.                                         * 00981000
+*   100        Printer not attached.                                  * 00982000
+* Notes:                                                              * 00983000
+* 1. Use the CP CLOSE command to close the virtual printer.  You can  * 00984000
+*    issue this via the @@CMSCMD entry point.                         * 00985000
+*********************************************************************** 00986000
+@@PRINTL PDPPRLG CINDEX=0,FRAME=CMSSVALN,BASER=12,ENTRY=YES             00987000
+         LA    R15,@@PRINTL-CMSSYS                                      00988000
+         SLR   R12,R15                                                  00989000
+         USING CMSSYS,R12                                               00990000
+         L     R6,0(R1)       R6 is start of line to display            00991000
+         LA    R3,151(R6)     last possible char to display             00992000
+         LA    R2,1           loop increment                            00993000
+         LR    R4,R6          start of line to display                  00994000
+PRINTL1  DS    0H                                                       00995000
+* Loop to determine the length of the line to display.                  00996000
+         CLI   0(R4),X'00'    look for end of the C string              00997000
+         BE    PRINTL2        found it                                  00998000
+         BXLE  R4,R2,PRINTL1  keep looping if not                       00999000
+PRINTL2  DS    0H                                                       01000000
+         SR    R4,R6          length of line to display                 01001000
+* Use PRINTL to display the line.                                       01002000
+*         PRINTL (R6),(R4)                                              01003000
+         MVC   PRINTLE(PRINTLPL),PRINTLP SET PATTERN                    01004000
+         LA    R9,PRINTLE     BRANCH THERE TO CALL IT                   01005000
+         BR    R9                                                       01006000
+PRINTLND DS    0H             IT RETURNS HERE                           01007000
+*                                                                       01008000
+         PDPEPIL                                                        01009000
+*                                                                       01010000
+         DS    0D             ALIGN TO AVOID GENERATED CNOP             01011000
+         USING PRINTLP,R9                                               01012000
+PRINTLP  PRINTL (R6),(R4)                                               01013000
+         DROP  R9                                                       01014000
+         B     PRINTLND                                                 01015000
+PRINTLPL EQU   *-PRINTLP                                                01016000
+         EJECT                                                          01017000
+*********************************************************************** 01018000
+* @@PUNCHC  Entry Point                                               * 01019000
+* Write a line to the virtual card punch.                             * 01020000
+*                                                                     * 01021000
+* Syntax is:                                                          * 01022000
+*    int __PUNCHC(char * line)                                        * 01023000
+* where:                                                              * 01024000
+*    line      is a pointer to the line to be written to the punch.   * 01025000
+*              The line must be 80 bytes long.                        * 01026000
+* returns:                                                            * 01027000
+*     0        Success.                                               * 01028000
+*     2        Unit check.                                            * 01029000
+*     3        Unknown error.                                         * 01030000
+*   100        Punch not attached.                                    * 01031000
+* Notes:                                                              * 01032000
+* 1. Use the CP CLOSE command to close the virtual card punch.  You   * 01033000
+*    can issue this via the @@CMSCMD entry point.                     * 01034000
+*********************************************************************** 01035000
+@@PUNCHC PDPPRLG CINDEX=0,FRAME=CMSSVALN,BASER=12,ENTRY=YES             01036000
+         LA    R15,@@PUNCHC-CMSSYS                                      01037000
+         SLR   R12,R15                                                  01038000
+         USING CMSSYS,R12                                               01039000
+         L     R6,0(R1)       R6 is start of line to punch              01040000
+* Use PUNCHC to punch the card.                                         01041000
+*        PUNCHC (6)                                                     01042000
+         MVC   PUNCHCE(PUNCHCPL),PUNCHCP set pattern                    01043000
+         LA    R9,PUNCHCE     branch there to call it                   01044000
+         BR    R9                                                       01045000
+PUNCHCND DS    0H             it returns here                           01046000
+*                                                                       01047000
+         PDPEPIL                                                        01048000
+*                                                                       01049000
+         DS    0D             align to avoid generated CNOP             01050000
+         USING PUNCHCP,R9                                               01051000
+PUNCHCP  PUNCHC (6)                                                     01052000
+         DROP  R9                                                       01053000
+         B     PUNCHCND                                                 01054000
+PUNCHCPL EQU   *-PUNCHCP                                                01055000
+         EJECT                                                          01056000
+*********************************************************************** 01057000
+* @@RDCARD  Entry Point                                               * 01058000
+* Read a line from the virtual card reader.                           * 01059000
+*                                                                     * 01060000
+* Syntax is:                                                          * 01061000
+*    int __RDCARD(char * line, int * len)                             * 01062000
+* where:                                                              * 01063000
+*    line      is a pointer to the buffer into which the line is      * 01064000
+*              read.  As it is possible to read printer output files, * 01065000
+*              the buffer must be at least 133 bytes in size.  The    * 01066000
+*              incoming line is terminated with a null character,     * 01067000
+*              forming a C string.                                    * 01068000
+*    len       is a pointer to a variable that on:                    * 01069000
+*                 input  - holds the line lenght expected             * 01070000
+*                 output - the line the number of characters read     * 01071000
+* returns:                                                            * 01072000
+*     0        Success.                                               * 01073000
+*     1        End-of-file.                                           * 01074000
+*     2        Unit check.                                            * 01075000
+*     3        Unknown error.                                         * 01076000
+*     5        Length not equal to requested length.                  * 01077000
+*   100        Punch not attached.                                    * 01078000
+*********************************************************************** 01079000
+@@RDCARD PDPPRLG CINDEX=0,FRAME=CMSSVALN,BASER=12,ENTRY=YES             01080000
+         LA    R15,@@RDCARD-CMSSYS                                      01081000
+         SLR   R12,R15                                                  01082000
+         USING CMSSYS,R12                                               01083000
+         L     R2,0(R1)       get buffer address                        01084000
+         L     R4,4(R1)       get address of length variable            01085000
+         L     R3,0(R4)       length of line to read                    01086000
+* Use RDCARD to read the line.                                          01087000
+*        RDCARD (R2),(R3)                                               01088000
+         MVC   RDCARDE(RDCARDPL),RDCARDP set pattern                    01089000
+         LA    R9,RDCARDE     branch there to call it                   01090000
+         BR    R9                                                       01091000
+RDCARDND DS    0H             it returns here                           01092000
+*                                                                       01093000
+         ST    R0,0(R4)       return number of bytes read in 'len'      01094000
+         SR    R1,R1                                                    01095000
+         STC   R1,0(R3,R2)    place null character at end of line       01096000
+         PDPEPIL                                                        01097000
+*                                                                       01098000
+         DS    0D             align to avoid generated CNOP             01099000
+         USING RDCARDP,R9                                               01100000
+RDCARDP  RDCARD (R2),(R3)                                               01101000
+         DROP  R9                                                       01102000
+         B     RDCARDND                                                 01103000
+RDCARDPL EQU   *-RDCARDP                                                01104000
+         EJECT                                                          01105000
+*********************************************************************** 01106000
+* @@RDTERM  Entry Point                                               * 01107000
+* Read a line from the terminal.                                      * 01108000
+*                                                                     * 01109000
+* Syntax is:                                                          * 01110000
+*    int __RDTERM(char * line)                                        * 01111000
+* where:                                                              * 01112000
+*    line      is a pointer to the 131-character buffer into which    * 01113000
+*              the line is read.  This line will be terminated with a * 01114000
+*              null character, forming a C string.                    * 01115000
+* returns:                                                            * 01116000
+*    (int)     Length of the string placed in the buffer.             * 01117000
+*********************************************************************** 01118000
+@@RDTERM PDPPRLG CINDEX=0,FRAME=CMSSVALN,BASER=12,ENTRY=YES             01119000
+         LA    R15,@@RDTERM-CMSSYS                                      01120000
+         SLR   R12,R15                                                  01121000
+         USING CMSSYS,R12                                               01122000
+         L     R2,0(R1)       get buffer address                        01123000
+* Use RDTERM to read the line.                                          01124000
+*        RDTERM (2),EDIT=NO                                             01125000
+         MVC   RDTERME(RDTERMPL),RDTERMP set pattern                    01126000
+         LA    R9,RDTERME     branch there to call it                   01127000
+         BR    R9                                                       01128000
+RDTERMND DS    0H             it returns here                           01129000
+         LH    R0,14(,R1)     Length returned here                      01130000
+*                                                                       01131000
+         LR    R15,R0         get number of bytes read as return code   01132000
+         SR    R1,R1                                                    01133000
+         STC   R1,0(R15,R2)   place null character at end of line       01134000
+         PDPEPIL                                                        01135000
+*                                                                       01136000
+         DS    0D             align to avoid generated CNOP             01137000
+         USING RDTERMP,R9                                               01138000
+RDTERMP  RDTERM (2),EDIT=NO                                             01139000
+         DROP  R9                                                       01140000
+         B     RDTERMND                                                 01141000
+RDTERMPL EQU   *-RDTERMP                                                01142000
+         EJECT                                                          01143000
+*********************************************************************** 01144000
+* @@RENAME  Entry Point                                               * 01145000
+* Rename a CMS file.                                                  * 01146000
+*                                                                     * 01147000
+* Syntax is:                                                          * 01148000
+*    int __RENAME(char * fileid, char * newfileid)                    * 01149000
+* where:                                                              * 01150000
+*    fileid    is a pointer to the CMS fileid of the file to be       * 01151000
+*              renamed.                                               * 01152000
+*    newfileid is a pointer to the CMS fileid of the new name for the * 01153000
+*              file.                                                  * 01154000
+*    Both fileid and newfileid point to an 18 character field.  The   * 01155000
+*    first 8 characters are the filename, the next 8 are the          * 01156000
+*    filetype, and the last 2 are the filemode.  Neither string is    * 01157000
+*    NULL terminated.                                                 * 01158000
+* returns:                                                            * 01159000
+*     0        Success.                                               * 01160000
+*    20        Invalid character detected in filename.                * 01161000
+*    24        Parameter list error.                                  * 01162000
+*    28        The file was not found, or NEWFILEID already exists.   * 01163000
+* Notes:                                                              * 01164000
+* 1. This function calls the CMS RENAME command, which executes in    * 01165000
+*    the CMS transient area.  Thus this function cannot be called     * 01166000
+*    from a C program executing in the transient area.                * 01167000
+* 2. The RENAME command may issue error messages for certain errors.  * 01168000
+*********************************************************************** 01169000
+@@RENAME PDPPRLG CINDEX=0,FRAME=CMSSVALN,BASER=12,ENTRY=YES             01170000
+         LA    R15,@@RENAME-CMSSYS                                      01171000
+         SLR   R12,R15                                                  01172000
+         USING CMSSYS,R12                                               01173000
+         MVC   RENAMEPL(8),=CL8'RENAME'                                 01174000
+         MVC   RENFENCE(8),=XL8'FFFFFFFFFFFFFFFF'                       01175000
+         LM    R2,R3,0(R1)    get addresses of old and new fileids      01176000
+         MVC   RENOLDN(18),0(R2)       copy FILEID into PLIST           01177000
+         MVC   RENNEWN(18),0(R3)       copy FILEID into PLIST           01178000
+         LA    R0,18+6+18+6   get length of FILEIDs                     01179000
+         LA    R1,RENOLDN     get address of FILEIDs                    01180000
+         BAL   R10,UPCASE     uppercase them                            01181000
+* Use the RENAME command to rename the file.                            01182000
+         LA    R1,RENAMEPL                                              01183000
+         SVC   202            rename the file                           01184000
+         DC    AL4(RENAMERT)  go here if an error                       01185000
+RENAMERT DS    0H                                                       01186000
+         PDPEPIL                                                        01187000
+         EJECT                                                          01188000
+         ENTRY @@STACKN                                                 01189000
+*********************************************************************** 01190000
+* @@STACKN  Entry Point                                               * 01191000
+* Return the number of lines currently in the CMS console stack.      * 01192000
+*                                                                     * 01193000
+* Syntax is:                                                          * 01194000
+*    int __STACKN(void)                                               * 01195000
+* returns:                                                            * 01196000
+*    (int)     Number of lines in the CMS console stack.              * 01197000
+*********************************************************************** 01198000
+@@STACKN DS    0H                                                       01199000
+         STM   R14,R12,12(R13)                                          01200000
+         LR    R12,R15                                                  01201000
+         LA    R15,@@STACKN-CMSSYS                                      01202000
+         SLR   R12,R15                                                  01203000
+         LA    R1,SENTRIES                                              01204000
+         SVC   202                                                      01205000
+         DC    AL4(*+4)                                                 01206000
+         LTR   R15,R15                                                  01207000
+         BNM   STKDONE                                                  01208000
+         USING NUCON,R0                                                 01209000
+         LH    R15,NUMFINRD   put number of lines in stack in R15       01210000
+STKDONE  DS    0H                                                       01211000
+         L     R14,12(R13)    restore our return address                01212000
+         LM    R0,R12,20(R13) restore the registers                     01213000
+         BR    R14            return to our caller                      01214000
+SENTRIES DS    0D                                                       01215000
+         DC    CL8'SENTRIES'                                            01216000
+         DC    8X'FF'                                                   01217000
+         EJECT                                                          01218000
+         ENTRY @@WAITT                                                  01219000
+*********************************************************************** 01220000
+* @@WAITT   Entry Point                                               * 01221000
+* Waits for terminal I/O to complete.                                 * 01222000
+*                                                                     * 01223000
+* Syntax is:                                                          * 01224000
+*    int __WAITT(void)                                                * 01225000
+* returns:                                                            * 01226000
+*    (int)     Return code from the WAITT function, always 0.         * 01227000
+*********************************************************************** 01228000
+@@WAITT  DS    0H                                                       01229000
+         STM   R14,R12,12(R13)                                          01230000
+         LR    R12,R15                                                  01231000
+         LA    R15,@@WAITT-CMSSYS                                       01232000
+         SLR   R12,R15                                                  01233000
+         WAITT                                                          01234000
+         L     R14,12(R13)    restore our return address                01235000
+         LM    R0,R12,20(R13) restore the registers                     01236000
+         BR    R14            return to our caller                      01237000
+         EJECT                                                          01238000
+*********************************************************************** 01239000
+* @@WRTERM  Entry Point                                               * 01240000
+* Display a line on the terminal.                                     * 01241000
+*                                                                     * 01242000
+* Syntax is:                                                          * 01243000
+*    int __WRTERM(char * line, int edit)                              * 01244000
+* where:                                                              * 01245000
+*    line      is a pointer to the line to be displayed.  The line    * 01246000
+*              may contain embedded newline characters (x'15') which  * 01247000
+*              are honored.  Normally the line should end with a      * 01248000
+*              newline character, unless a subsequent call is to      * 01249000
+*              continue writing on the same line.  The string must be * 01250000
+*              NULL terminated.  The maximum number of characters to  * 01251000
+*              be displayed is 130; a line longer than this is        * 01252000
+*              truncated without warning.                             * 01253000
+*    edit      is 1 if trailing blanks are to be removed and a        * 01254000
+*              newline character added to the end of the line; 0 if   * 01255000
+*              not.                                                   * 01256000
+* returns:                                                            * 01257000
+*    (int)     Return code from the WRTERM function, always 0.        * 01258000
+*********************************************************************** 01259000
+@@WRTERM PDPPRLG CINDEX=0,FRAME=CMSSVALN,BASER=12,ENTRY=YES             01260000
+         LA    R15,@@WRTERM-CMSSYS                                      01261000
+         SLR   R12,R15                                                  01262000
+         USING CMSSYS,R12                                               01263000
+         L     R6,0(R1)       R6 is start of line to display            01264000
+         L     R7,4(R1)       get edit setting                          01265000
+         LA    R3,129(R6)     last possible char to display             01266000
+         LA    R2,1           loop increment                            01267000
+         LR    R4,R6          start of line to display                  01268000
+WRTERM1  DS    0H                                                       01269000
+* Loop to determine the length of the line to display.                  01270000
+         CLI   0(R4),X'00'    look for end of the C string              01271000
+         BE    WRTERM2        found it                                  01272000
+         BXLE  R4,R2,WRTERM1  keep looping if not                       01273000
+WRTERM2  DS    0H                                                       01274000
+         SR    R4,R6          length of line to display                 01275000
+* Use WRTERM to display the line.                                       01276000
+         LTR   R7,R7          edit the line?                            01277000
+         BZ    WRTERM3        no                                        01278000
+* Use WRTERM to write the line.                                         01279000
+*        WRTERM (R6),(R4),EDIT=YES                                      01280000
+         MVC   WRTRM1E(WRTRM1PL),WRTRM1P set pattern                    01281000
+         LA    R9,WRTRM1E     branch there to call it                   01282000
+         BR    R9                                                       01283000
+WRTRM1ND DS    0H             it returns here                           01284000
+         B     WRTERM4                                                  01285000
+WRTERM3  DS    0H                                                       01286000
+* Use WRTERM to write the line.                                         01287000
+*        WRTERM (6),(4),EDIT=NO                                         01288000
+         MVC   WRTRM2E(WRTRM2PL),WRTRM2P set pattern                    01289000
+         LA    R9,WRTRM2E     branch there to call it                   01290000
+         BR    R9                                                       01291000
+WRTRM2ND DS    0H             it returns here                           01292000
+WRTERM4  DS    0H                                                       01293000
+         PDPEPIL                                                        01294000
+*                                                                       01295000
+         DS    0D             align to avoid generated CNOP             01296000
+         USING WRTRM1P,R9                                               01297000
+WRTRM1P  WRTERM (R6),(R4),EDIT=YES                                      01298000
+         DROP  R9                                                       01299000
+         B     WRTRM1ND                                                 01300000
+WRTRM1PL EQU   *-WRTRM1P                                                01301000
+*                                                                       01302000
+         DS    0D             align to avoid generated CNOP             01303000
+         USING WRTRM2P,R9                                               01304000
+WRTRM2P  WRTERM (6),(4),EDIT=NO                                         01305000
+         DROP  R9                                                       01306000
+         B     WRTRM2ND                                                 01307000
+WRTRM2PL EQU   *-WRTRM2P                                                01308000
+         EJECT                                                          01309000
+*********************************************************************** 01310000
+* @@ZONE    Entry Point                                               * 01311000
+* Return the offset for the local time zone from GMT.                 * 01312000
+* It is the value set in DMSSYSTZ by the SYSTIME MACRO in DMKSYS.     * 01313000
+*                                                                     * 01314000
+* Syntax is:                                                          * 01315000
+*    int __ZONE()                                                     * 01316000
+* returns:                                                            * 01317000
+*    (int)     Time zone offset in seconds from GMT.                  * 01318000
+*              Negative values are west of GMT, positive values are   * 01319000
+*              east of GMT.                                           * 01320000
+*********************************************************************** 01321000
+@@ZONE   PDPPRLG CINDEX=0,FRAME=CMSSVALN,BASER=12,ENTRY=YES             01322000
+         LA    R15,@@ZONE-CMSSYS                                        01323000
+         SLR   R12,R15                                                  01324000
+         USING CMSSYS,R12                                               01325000
+         LA    R1,DIAG0BUF                                              01326000
+         LA    R0,40                                                    01327000
+         DC    X'83100000'     Issue Diagnose instruction for           01328000
+*                               code X'0000' to fetch CP info           01329000
+         LTR   R0,R0           Is R0 Positive?                          01330000
+         BC    2,ZONE1         Yeah R0 > 0 so no time zone info         01331000
+         L     R15,DIAG0BUF+32 Return the time zone offset              01332000
+         B     ZONE2                                                    01333000
+ZONE1    SR    R15,R15                                                  01334000
+ZONE2    PDPEPIL                                                        01335000
+         EJECT                                                          01336000
+*********************************************************************** 01337000
+* UPCASE  internal subroutine to upper case a character string        * 01338000
+*        On entry:                                                    * 01339000
+*        R0  - length of string to be upper cased                     * 01340000
+*        R1  - address of string to be upper cased                    * 01341000
+*        R10 - Return address                                         * 01342000
+*********************************************************************** 01343000
+UPCASE   DS    0H                                                       01344000
+         CLI   0(R1),C'a'                                               01345000
+         BL    UPCSKIP                                                  01346000
+         CLI   0(R1),C'i'                                               01347000
+         BNH   UPCMOD                                                   01348000
+         CLI   0(R1),C'j'                                               01349000
+         BL    UPCSKIP                                                  01350000
+         CLI   0(R1),C'r'                                               01351000
+         BNH   UPCMOD                                                   01352000
+         CLI   0(R1),C's'                                               01353000
+         BL    UPCSKIP                                                  01354000
+         CLI   0(R1),C'z'                                               01355000
+         BH    UPCSKIP                                                  01356000
+UPCMOD   DS    0H                                                       01357000
+         OI    0(R1),X'40'    Force character to upper case             01358000
+UPCSKIP  DS    0H                                                       01359000
+         LA    R1,1(,R1)      Increment pointer                         01360000
+         BCT   R0,UPCASE      Decrement counter and loop if not zero    01361000
+         BR    R10            Return to caller                          01362000
+         EJECT                                                          01363000
+* --------------------------------------------------------------------- 01364000
+* Literal pool                                                          01365000
+* --------------------------------------------------------------------- 01366000
+         LTORG ,                                                        01367000
+LINEDITP LINEDIT MF=L,MAXSUBS=5                                         01368000
+LINEDISZ EQU   *-LINEDITP                                               01369000
+         EJECT                                                          01370000
+LINELEN  EQU   130            130 for VM/370; 256 for VM/SP or z/VM     01371000
+         SPACE                                                          01372000
+         CMSCRAB              Continually addressed by R13              01373000
+         ORG   MAINSTK        Local variables start here                01374000
+WORKFSCB FSCB  'WORK FILE A'  File System Control Block                 01375000
+*                                                                       01376000
+ATTNPL   DS    0D             ATTN parameter list                       01377000
+         DC    CL8'ATTN'                                                01378000
+ATTNOD   DC    CL4'XXXX'      'FIFO' or 'LIFO'                          01379000
+ATTNLN   DC    AL1(0)         length of line to be stacked              01380000
+ATTNAD   DC    AL3(0)         address of line to be stacked             01381000
+*                                                                       01382000
+LINEDITL LINEDIT MF=L,MAXSUBS=5                                         01383000
+*                                                                       01384000
+RENAMEPL DS    0D             RENAME parameter list                     01385000
+         DC    CL8'RENAME'                                              01386000
+RENOLDN  DS    CL18           old fileid                                01387000
+         DC    CL6'      '                                              01388000
+RENNEWN  DS    CL18           new fileid                                01389000
+         DC    CL6'      '                                              01390000
+RENFENCE DC    XL8'FFFFFFFFFFFFFFFF'                                    01391000
+*                                                                       01392000
+PLSTAREA DS    0D             BUILD PLISTS HERE FOR PRINTL, PUNCHL,     01393000
+*                                                   RDCARD,             01394000
+*                                                   RDTERM, and WRTERM  01395000
+         ORG   PLSTAREA                                                 01396000
+         USING RDTERME,R9                                               01397000
+RDTERME  RDTERM (2),EDIT=NO                                             01398000
+         DROP  R9                                                       01399000
+         B     RDTERMND                                                 01400000
+****                                                                    01401000
+         ORG   PLSTAREA                                                 01402000
+         USING WRTRM1E,R9                                               01403000
+WRTRM1E  WRTERM (R6),(R4),EDIT=YES                                      01404000
+         DROP  R9                                                       01405000
+         B     WRTRM1ND                                                 01406000
+****                                                                    01407000
+         ORG   PLSTAREA                                                 01408000
+         USING WRTRM2E,R9                                               01409000
+WRTRM2E  WRTERM (6),(4),EDIT=NO                                         01410000
+         DROP  R9                                                       01411000
+         B     WRTRM2ND                                                 01412000
+*                                                                       01413000
+****                                                                    01414000
+         ORG   PLSTAREA                                                 01415000
+         USING RDCARDE,R9                                               01416000
+RDCARDE  RDCARD (R2),(R3)                                               01417000
+         DROP  R9                                                       01418000
+         B     RDCARDND                                                 01419000
+*                                                                       01420000
+****                                                                    01421000
+         ORG   PLSTAREA                                                 01422000
+         USING PRINTLE,R9                                               01423000
+PRINTLE  PRINTL (R6),(R4)                                               01424000
+         DROP  R9                                                       01425000
+         B     PRINTLND                                                 01426000
+*                                                                       01427000
+****                                                                    01428000
+         ORG   PLSTAREA                                                 01429000
+         USING PUNCHCE,R9                                               01430000
+PUNCHCE  PUNCHC (R6)                                                    01431000
+         DROP  R9                                                       01432000
+         B     PUNCHCND                                                 01433000
+*                                                                       01434000
+         ORG   PLSTAREA                                                 01435000
+DIAG0BUF DS    5D             Diagnose X'00' buffer area                01436000
+*                                                                       01437000
+         ORG   ,                                                        01438000
+OUTBUF   DS    CL256          Terminal buffer                           01439000
+CMSSVALN EQU   *-CMSCRAB      Save area length                          01440000
+*                                                                       01441000
+FSCB     FSCBD                File System Control Block                 01442000
+FSCBLEN  EQU   *-FSCBD        Length of FSCB                            01443000
+         NUCON ,                                                        01444000
+         REGEQU ,                                                       01445000
+         END                                                            01446000

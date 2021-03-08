@@ -1,24 +1,29 @@
-***********************************************************************
-* VTENTRY generates a vector table entry for the memory-resident GCC  *
-* runtime routines.  It must be called from within the VTABLE macro.  *
-*                                                                     *
-* Robert O'Hara, Redmond Washington, May 2009.                        *
-* Bob Bolch and Adrian Sutherland, July 2020.                         *
-***********************************************************************
-         MACRO
-&NAME    VTENTRY ,
-         GBLA  &OFFSET
-         GBLC  &CODE
-         AIF   ('&CODE' EQ 'STUBS').A1
-         DC    V(&NAME)
-         AGO   .A2
-.A1      ANOP
-*
-&NAME    DS    0H                 Stub to call the real routine
-         ENTRY &NAME
-         L     15,GCCPTR          Load address of CMSVTAB
-         L     15,&OFFSET.(,15)   Load address of real routine
-         BR    R15                Go directly there
-.A2      ANOP
-&OFFSET  SETA  &OFFSET+4          Increment for next call
-         MEND
+*********************************************************************** 00001000
+* VTENTRY generates a vector table entry for the memory-resident GCC  * 00002000
+* runtime routines.  It must be called from within the VTABLE macro.  * 00003000
+*                                                                     * 00004000
+* Robert O'Hara, Redmond Washington, May 2009.                        * 00005000
+* Bob Bolch and Adrian Sutherland, July 2020.                         * 00006000
+*********************************************************************** 00007000
+         MACRO                                                          00008000
+&NAME    VTENTRY ,                                                      00009000
+         GBLA  &OFFSET                                                  00010000
+         GBLC  &CODE                                                    00011000
+         AIF   ('&CODE' EQ 'STUBS').A1                                  00012000
+         DC    V(&NAME)                                                 00013000
+         AGO   .A2                                                      00014000
+.A1      ANOP                                                           00015000
+*                                                                       00016000
+&NAME    DS    0H                 Stub to call the real routine         00017000
+         ENTRY &NAME                                                    00018000
+         USING CMSCRAB,R13        Save area contains some extra stuff   00019000
+         L     R15,GCCCRABA       Get address of C runtime anchor block 00020000
+         DROP  R13                Finished with CMSCRAB for now         00021000
+         USING GCCCRAB,R15        Map GCC C runtime anchor block        00022000
+         L     R15,GCCLIBVT       Get address of GCCLIB vector table    00023000
+         DROP  R15                Finished with GCCCRAB for now         00024000
+         L     R15,&OFFSET.(,R15) Load address of required routine      00025000
+         BR    R15                Branch to the required routine        00026000
+.A2      ANOP                                                           00027000
+&OFFSET  SETA  &OFFSET+4          Increment for next call               00028000
+         MEND                                                           00029000

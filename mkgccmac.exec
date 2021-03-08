@@ -1,35 +1,6 @@
 * Build the GCCLIB MACLIB
 &CONTROL OFF
-* The following allow the STUB builder to be changed from the C program
-* that generates the STUBS to the assembler macros that rather more elegantly
-* produce them (thank to Bob Bolch). Both produce the same binary.
-* The option needs to be changed in *BOTH* MKGCCLIB and MKGCCMAC EXEC files
-* And MEMBERS PARM and VTABLE MACRO need to be kept in sync to allow
-* Users to switch build options (MEMBERS PARAM is the primary version)
-* It is expected that both optons will be replaced when GCCLIB CMS deployment
-* is finalised
 *
-* &STUBTYPE = ASMGEN
-&STUBTYPE = CGEN
+EMIT Generating GCCLIB MACLIB A
 *
-&DISK = &1
-&IF .&DISK = . &DISK = E
-&DL = &CONCAT &DISK ...
-EMIT Generating GCCLIB MACLIB &DL
-*
-&IF &STUBTYPE = ASMGEN &GOTO -ASMGEN1
-&IF &STUBTYPE = CGEN &GOTO -CGEN1
-&TYPE INVALID STUBTYPE
-&EXIT 1
-*
--CGEN1
-MACLIB GEN GCCLIB CMSCRAB GCCCRAB PDPEPIL PDPPRLG PDPTOP
-&GOTO -CONT1
-*
--ASMGEN1
-MACLIB GEN GCCLIB CMSCRAB GCCCRAB PDPEPIL PDPPRLG PDPTOP VTABLE VTENTRY
-&GOTO -CONT1
-*
--CONT1
-COPY GCCLIB MACLIB A = = &DISK (REPLACE OLDDATE
-ERASE GCCLIB MACLIB A
+MACLIB GEN GCCLIB CMSCRAB GCCCRAB GCCLIBVR PDPEPIL PDPPRLG PDPTOP VTABLE VTENTRY

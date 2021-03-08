@@ -147,7 +147,6 @@ remove(const char *fname)
 /*    0 if the file was erased, otherwise the return code from fserase.                           */
 /**************************************************************************************************/
 {
-    char errmsg[80];
     char fileid[19];
 
     if (GetFileid(fname, fileid) == 0) {
@@ -174,7 +173,6 @@ rename(const char *oldfname, const char *newfname)
 /*    0 if the file was renamed, otherwise the return code from fsrename.                         */
 /**************************************************************************************************/
 {
-    char errmsg[80];
     char newfileid[19];
     char oldfileid[19];
 
@@ -746,7 +744,6 @@ GetFileid(const char *fname, char *fileid)
 {
     char *s;
     char fileinfo[40];
-    char errmsg[80];
 
     strncpy(fileinfo, fname,
             sizeof(fileinfo));                /* because strtok modifies the string :-( */

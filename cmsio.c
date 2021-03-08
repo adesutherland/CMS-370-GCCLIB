@@ -10,7 +10,7 @@
 
 /*
   TODO
-    tmpname - Static Name and counter to CRAB. Check already opened
+    tmpname - Check already opened
 */
 
 
@@ -1719,8 +1719,7 @@ tmpnam(char *name)
 /**************************************************************************************************/
 
 {
-    static int counter = 0; /* CRAB */
-    static char staticName[21]; /* CRAB */
+    int *counter = GETGCCCRAB()->tempcounter;
     CMSFILEINFO *file_state;
     struct tm *t;
     time_t theTime;
@@ -1729,18 +1728,18 @@ tmpnam(char *name)
     char fileid[19];
     char *fm = "A1";
 
-    if (!name) name = staticName;
+    if (!name) name = GETGCCCRAB()->tempname;
 
     time(&theTime);
     t = localtime(&theTime);
     strftime(fn, 9, "T%y%j%H", t);
     strftime(ft, 5, "%M%S", t);
 
-    for (counter++; counter < 10000; counter++) {
-        sprintf(fileid, "%s%s%04d%s", fn, ft, counter, fm);
+    for ((*counter)++; *counter < 10000; (*counter)++) {
+        sprintf(fileid, "%s%s%04d%s", fn, ft, *counter, fm);
         if (CMSfileState(fileid, &file_state)) {
             /* Good - File does not exist (or some other error!) */
-            sprintf(name, "%s %s%04d %s", fn, ft, counter, fm);
+            sprintf(name, "%s %s%04d %s", fn, ft, *counter, fm);
             return name;
         }
     }

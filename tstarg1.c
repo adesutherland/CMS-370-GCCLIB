@@ -104,8 +104,8 @@ int main(int argc, char *argv[]) {
 
     char *argv2[] = {"Argument\x001", "Argument\x002", "Argument\x003"};
     int lenv[] = {10, 10, 10};
-    rc = CMSfunctionDataArray("TSTARG2", "TSTARG2 binaryargs", 0, &ret, 3, argv2,
-                              lenv);
+    rc = CMSfunctionDataArray("TSTARG2", "TSTARG2 binaryargs", 0, &ret, 3,
+                              argv2, lenv);
     if (rc == 10 && ret && memcmp(ret, binary, rc) == 0)
         printf(" - Call type 5 (binary args) OK\n");
     else {

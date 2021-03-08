@@ -1,0 +1,16 @@
+******************************************************************      00001000
+* GCCLIBVR MACRO                                                 *      00002000
+* This macro defines the minimum runtime library version which   *      00003000
+* programs built using it need in order to function correctly.   *      00004000
+*                                                                *      00005000
+* Part of GCCLIB, the "Native CMS" GCC Runtime Library           *      00006000
+*                                                                *      00007000
+* Released to the public domain.                                 *      00008000
+******************************************************************      00009000
+         MACRO                                                          00010000
+         GCCLIBVR                                                       00011000
+         SPACE                                                          00012000
+MAJORVR  EQU   1                                                        00013000
+MINORVR  EQU   3                                                        00014000
+REVISION EQU   1                                                        00015000
+         MEND                                                           00016000

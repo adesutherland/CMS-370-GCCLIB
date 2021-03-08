@@ -101,7 +101,9 @@ void MAKEFILE(char *id) {
 }
 
 void DELFILE(char *id) {
-    CMSfileErase(id);
+    int status;
+    status = remove(id);
+    if (status != 0) printf("%d returned by remove(\"%s\")\n", status, id);
 }
 
 char *TRIM(char *str) {

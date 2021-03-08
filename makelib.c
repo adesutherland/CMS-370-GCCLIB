@@ -94,9 +94,16 @@ int main(int argc, char *argv[]) {
     fputs("*   ANY CHANGES WILL BE OVERWRITTEN!\n", vtable);
     fputs("*   Refer to and make changes in MAKELIB C\n", vtable);
     fputs("CMSVTAB  CSECT\n", vtable);
+    fputs("         DC    CL8'GCCLIB'\n", vtable);
+    fputs("         DC    AL1(MAJORVR)\n", vtable);
+    fputs("         DC    AL1(MINORVR)\n", vtable);
+    fputs("         DC    AL1(REVISION)\n", vtable);
+    fputs("         DC    AL1(0)\n", vtable);
+    fputs("         DC    AL4(0)\n", vtable);
     for (i = 0; i < count; i++) {
         fprintf(vtable, "         DC    V(%s)\n", functions[i]);
     }
+    fputs("         GCCLIBVR\n", vtable);
     fputs("         END\n", vtable);
     fclose(vtable);
 
@@ -122,12 +129,16 @@ void writeStub(int n) {
     fprintf(file, "*   ANY CHANGES WILL BE OVERWRITTEN!\n");
     fprintf(file, "*   Refer to and make changes in MAKELIB C\n");
     fprintf(file, "%-8s CSECT\n", functions[n]);
-    fprintf(file, "         L     15,%d(0)   Address of NUCRSV7 in NUCON\n",
-            STUB_ANCHOR_ADDRESS);
+    fprintf(file, "         USING CMSCRAB,13  Address of save area, stack etc\n");
+    fprintf(file, "         L     15,GCCCRABA Get address of ... \n");
+    fprintf(file, "         USING GCCCRAB,15  ... GCC C runtime anchor block\n");
+    fprintf(file, "         L     15,GCCLIBVT Get address of GCCLIB vector table\n");
     fprintf(file,
             "         L     15,%d(15)  Address of routine, offset in CMSVTAB\n",
             n * 4);
     fprintf(file, "         BR    15\n");
+    fprintf(file, "         GCCCRAB\n");
+    fprintf(file, "         CMSCRAB\n");
     fprintf(file, "         END\n");
 
 /*

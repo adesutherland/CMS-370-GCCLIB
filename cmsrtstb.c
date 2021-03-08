@@ -13,15 +13,30 @@
 #include <stdio.h>
 #include <signal.h>
 #include <stdlib.h>
+#include <time.h>
 
 int main(int argc, char *argv[]);
 
 void __exit(int rc);
 
-int __cstub(PLIST *plist, EPLIST *eplist) {
+int __cstub(PLIST *plist, EPLIST *eplist, void *gcclibvt) {
     GCCCRAB gcccrab;
     CMSCRAB *cmscrab;
     int x;
+    unsigned int randomseed = 1;
+    struct {
+        size_t magic;
+        size_t page_size;
+        size_t granularity;
+        size_t mmap_threshold;
+        size_t trim_threshold;
+        unsigned int default_mflags;
+    } mparams;
+    int tempcounter = 0;
+    struct tm gmtimetm;
+    char atresult[26];
+    char strfbuf[26];
+    char tempname[21];
 
     /* Default handlers */
     SIGHANDLER *handlers[6] = {SIG_DFL, SIG_DFL, SIG_DFL, SIG_DFL, SIG_DFL,
@@ -41,6 +56,9 @@ int __cstub(PLIST *plist, EPLIST *eplist) {
     cmscrab->gcccrab = &gcccrab;
     gcccrab.rootcmscrab = cmscrab;
 
+    /* Pass the address of the resident RTL vector table */
+    gcccrab.gcclibvt = gcclibvt;
+
     /* Set Global Variables */
     gcccrab.exitfunc = __exit;
     gcccrab.handlers = handlers;
@@ -56,6 +74,14 @@ int __cstub(PLIST *plist, EPLIST *eplist) {
     gcccrab.evalblok = NULL;
     gcccrab.isproc = 0;
     gcccrab.argc = 0;
+    gcccrab.randomseed = &randomseed;
+    gcccrab.tempcounter = &tempcounter;
+    gcccrab.tempname = &tempname;
+    mparams.magic = 0;
+    gcccrab.mparams = &mparams;
+    gcccrab.atresult = &atresult;
+    gcccrab.gmtimetm = &gmtimetm;
+    gcccrab.strfbuf = &strfbuf;
 
     return (__cstart(main));
 }
