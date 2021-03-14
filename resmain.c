@@ -33,7 +33,7 @@ int main(int argc, char *argv[]) {
       else if (is_same_arg("DEBUG", argv[1])) {
           version = 1;
           debug = 1;
-          CMSdebug(1);
+          CMSsetdebug(1);
       }
       else goto error;
     }

@@ -1,6 +1,8 @@
 GCCLIB Change LOG
 =================
 
+F0052 - Renamed the new CMSdebug() to CMSsetdebug() to avoid the duplicate!
+
 0.8.4 - 14 Mar 2021
 F0051 - Added CMSdirectRead() Read from the virtual console, bypassing stack
 F0050 - Added GCCLIB [VERSION|DEBUG] argument
