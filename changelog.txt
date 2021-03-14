@@ -2,6 +2,7 @@ GCCLIB Change LOG
 =================
 
 0.8.4 - 14 Mar 2021
+F0051 - Added CMSdirectRead() Read from the virtual console, bypassing stack
 F0050 - Added GCCLIB [VERSION|DEBUG] argument
           VERSION prints version
           DEBUG prints version, anchor and turns on debug mode

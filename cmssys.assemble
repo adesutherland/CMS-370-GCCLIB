@@ -1,23 +1,24 @@
-***********************************************************************
-* CMSSYS contains C interfaces to CMS system services:                *
-*    @@DEBUG  A dummy routine callable from C (set breakpoint here).  *
-*    @@ATTN   Place a line on the CMS console stack.                  *
-*    @@SVC202 Invoke a CMS system service or command.                 *
-*    @@DMSFRE Allocate free memory.                                   *
-*    @@DMSFRT Release allocated memory.                               *
-*    @@FSCLOS Close an open file and save it to disk.                 *
-*    @@FSERAS Delete a CMS file.                                      *
-*    @@FSOPEN Open a CMS file for reading or writing.                 *
-*    @@FSPOIN Set the next item in a file to be read or written.      *
-*    @@FSREAD Read a record from an open file.                        *
+*********************************************************************** 00010000
+* CMSSYS contains C interfaces to CMS system services:                * 00020000
+*    @@DEBUG  A dummy routine callable from C (set breakpoint here).  * 00030000
+*    @@ATTN   Place a line on the CMS console stack.                  * 00040000
+*    @@SVC202 Invoke a CMS system service or command.                 * 00050000
+*    @@DMSFRE Allocate free memory.                                   * 00060000
+*    @@DMSFRT Release allocated memory.                               * 00070000
+*    @@FSCLOS Close an open file and save it to disk.                 * 00080000
+*    @@FSERAS Delete a CMS file.                                      * 00090000
+*    @@FSOPEN Open a CMS file for reading or writing.                 * 00100000
+*    @@FSPOIN Set the next item in a file to be read or written.      * 00110000
+*    @@FSREAD Read a record from an open file.                        * 00120000
 *    @@FSSTAT Determine whether a file exists.                        *
 *    @@FSWRIT Write a record to an open file.                         *
 *    @@GETCLK Get the system clock time.                              *
 *    @@PRINTL Write a line to the virtual printer.                    *
 *    @@PUNCHC Write a line to the virtual card punch.                 *
 *    @@RDCARD Read a line from the virtual card reader.               *
+*    @@RDDRCT Read a line from the virtual console, bypassing stack.  *
 * #  @@RDTAPE Read a record from a virtual tape drive.                *
-*    @@RDTERM Read a line from the terminal.                          *
+*    @@RDTERM Read a line from the stack or, if empty, the console.   *
 *    @@RENAME Rename a CMS file.                                      *
 *    @@STACKN Return number of lines in the CMS console stack.        *
 * #  @@TAPCTL Position the tape on a virtual tape drive.              *
@@ -943,7 +944,7 @@ RDCARDPL EQU   *-RDCARDP
          EJECT
 ***********************************************************************
 * @@RDTERM  Entry Point                                               *
-* Read a line from the terminal.                                      *
+* Read a line from the stack, or if empty, the virtual console.       *
 *                                                                     *
 * Syntax is:                                                          *
 *    int __RDTERM(char * line)                                        *
@@ -978,6 +979,49 @@ RDTERMP  RDTERM (2),EDIT=NO
          DROP  R9
          B     RDTERMND
 RDTERMPL EQU   *-RDTERMP
+         EJECT
+***********************************************************************
+* @@RDDRCT  Entry Point                                               *
+* Read a line from the virtual console, bypassing the stack           *
+*                                                                     *
+* Syntax is:                                                          *
+*    int __RDDRCT(char * line)                                        *
+* where:                                                              *
+*    line      is a pointer to the 131-character buffer into which    *
+*              the line is read.  This line will be terminated with a *
+*              null character, forming a C string.                    *
+* returns:                                                            *
+*    (int)     Length of the string placed in the buffer.             *
+***********************************************************************
+@@RDDRCT PDPPRLG CINDEX=0,FRAME=CMSSVALN,BASER=12,ENTRY=YES
+         LA    R15,@@RDDRCT-CMSSYS
+         SLR   R12,R15
+         USING CMSSYS,R12
+         L     R2,0(R1)       get buffer address
+* Use RDTERM to read the line.
+*        RDTERM (2),EDIT=NO,TYPE=DIRECT
+         MVC   RDDRCTE(RDDRCTPL),RDDRCTP set pattern
+* Allow assembly on VM Sixpack by manually setting the TYPE=DIRECT
+         LA    R9,RDDRCTE     branch there to call it
+* Remove this later *********
+         MVI   X'19'(R9),C'D' MANUALLY SET TYPE=DIRECT
+* Remove this later *********
+         BR    R9
+RDDRCTND DS    0H             it returns here
+         LH    R0,14(,R1)     Length returned here
+*
+         LR    R15,R0         get number of bytes read as return code
+         SR    R1,R1
+         STC   R1,0(R15,R2)   place null character at end of line
+         PDPEPIL
+*
+         DS    0D             align to avoid generated CNOP
+         USING RDDRCTP,R9
+*RDDRCTP RDTERM (2),EDIT=NO,TYPE=DIRECT
+RDDRCTP  RDTERM (2),EDIT=NO TYPE=DIRECT
+         DROP  R9
+         B     RDTERMND
+RDDRCTPL EQU   *-RDDRCTP
          EJECT
 ***********************************************************************
 * @@RENAME  Entry Point                                               *
@@ -1216,6 +1260,13 @@ RDTERME  RDTERM (2),EDIT=NO
          B     RDTERMND
 ****
          ORG   PLSTAREA
+         USING RDDRCTE,R9
+*RDDRCTE  RDTERM (2),EDIT=NO,TYPE=DIRECT
+RDDRCTE  RDTERM (2),EDIT=NO TYPE=DIRECT
+         DROP  R9
+         B     RDDRCTND
+****
+         ORG   PLSTAREA
          USING WRTRM1E,R9
 WRTRM1E  WRTERM (R6),(R4),EDIT=YES
          DROP  R9
@@ -1256,7 +1307,7 @@ OUTBUF   DS    CL256          Terminal buffer
 CMSSVALN EQU   *-CMSCRAB      Save area length
 *
 FSCB     FSCBD                File System Control Block
-FSCBLEN  EQU   *-FSCBD        Length of FSCB
+FSCBLEN  EQU   *-FSCBD        Length of FSCB                            
          NUCON ,
          REGEQU ,
          END
