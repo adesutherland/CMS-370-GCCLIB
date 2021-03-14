@@ -27,6 +27,7 @@
 @@RETVAL VTENTRY
 @@RETINT VTENTRY
 @@RETDAT VTENTRY
+@@SDEBUG VTENTRY
 ***********************************************************************
 * Entry points in CMSSYS ASSEMBLE                                     *
 ***********************************************************************

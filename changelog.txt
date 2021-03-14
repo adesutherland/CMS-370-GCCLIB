@@ -1,6 +1,13 @@
 GCCLIB Change LOG
 =================
 
+0.8.4 - 14 Mar 2021
+F0050 - Added GCCLIB [VERSION|DEBUG] argument
+          VERSION prints version
+          DEBUG prints version, anchor and turns on debug mode
+      - Added CMSdebug() to set debug mode (enables memory leak warning)
+      - Initialise "scale" local variable, in log() in math.c
+
 0.8.3 - 4 Feb 2021
 F0049 - EPLIST Parsing Error
 

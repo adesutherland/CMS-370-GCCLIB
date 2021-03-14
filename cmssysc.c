@@ -508,3 +508,14 @@ int __RETINT(int value) {
         return 0;
     } else return value;
 }
+
+/**************************************************************************************************/
+/* Sets the debug mode (0=off, else debug on. It currently just turns on/off the memory leak check*/
+/* __SDEBUG(int)                                                                                   */
+/* int CMSdebug(int debug_flag)                                                                   */
+/**************************************************************************************************/
+void __SDEBUG(int debug_flag) {
+    GCCCRAB *gcccrab;
+    gcccrab = GETGCCCRAB();
+    gcccrab->debug = debug_flag;
+}

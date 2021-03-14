@@ -485,8 +485,8 @@ double log(double x) {
   Scale arguments to be in range 1 < x <= 10
 */
 
-/*
     scale = 0;
+/*
     xs = x;
     while ( xs > 10.0 ) { scale ++; xs=xs/10.0;}
     while ( xs < 1.0 ) { scale --; xs=xs*10.0;}

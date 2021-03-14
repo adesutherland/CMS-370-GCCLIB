@@ -46,6 +46,7 @@ CALLTYPE DS    F              int calltype;
 EVALBLOK DS    F              EVALBLOK *evalblok;
 ISPROC   DS    F              int isproc;
 ARGC     DS    F              int argc;
+DEBUG    DS    F              int debug;
          SPACE
 GCCGLEN  EQU   *-GCCCRAB      length of the CRAB / Global Area
          MEND

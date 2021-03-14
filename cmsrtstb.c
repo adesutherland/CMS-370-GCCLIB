@@ -56,6 +56,7 @@ int __cstub(PLIST *plist, EPLIST *eplist) {
     gcccrab.evalblok = NULL;
     gcccrab.isproc = 0;
     gcccrab.argc = 0;
+    gcccrab.debug = 0;
 
     return (__cstart(main));
 }

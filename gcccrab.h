@@ -51,6 +51,7 @@ struct GCCCRAB {
     struct EVALBLOK *evalblok;
     int isproc;
     int argc;
+    int debug;
 };
 
 /* To get the addresses of the crab */

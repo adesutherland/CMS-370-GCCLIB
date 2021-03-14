@@ -229,9 +229,11 @@ int __cstart(MAINFUNC *mainfunc) {
     dest_msp();
     size_t leaked = memoryinfo.uordblks - gcccrab->startmemoryusage;
     if (leaked) {
-        sprintf(messagebuffer, "WARNING: MEMORY FREED (%d BYTES LEAKED)",
-                leaked);
-        CMSconsoleWrite(messagebuffer, CMS_EDIT);
+        if (gcccrab->debug) {
+            sprintf(messagebuffer, "WARNING: MEMORY FREED (%d BYTES LEAKED)",
+                    leaked);
+            CMSconsoleWrite(messagebuffer, CMS_EDIT);
+        }
     }
 
     return rc;

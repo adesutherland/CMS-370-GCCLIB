@@ -146,9 +146,11 @@ static void exit_stage2(int status) {
     dest_msp();
     size_t leaked = memoryinfo.uordblks - GETGCCCRAB()->startmemoryusage;
     if (leaked) {
-        sprintf(messagebuffer, "WARNING: MEMORY FREED (%d BYTES LEAKED)",
-                leaked);
-        CMSconsoleWrite(messagebuffer, CMS_EDIT);
+        if (GETGCCCRAB()->debug) {
+            sprintf(messagebuffer, "WARNING: MEMORY FREED (%d BYTES LEAKED)",
+                    leaked);
+            CMSconsoleWrite(messagebuffer, CMS_EDIT);
+        }
     }
     GETGCCCRAB()->exitfunc(status);
 }

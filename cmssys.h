@@ -8,7 +8,7 @@
 #ifndef CMSSYS_INCLUDED
 #define CMSSYS_INCLUDED
 
-#define GCCLIB_VERSION "0.8.3"
+#define GCCLIB_VERSION "0.8.4"
 
 #include <stddef.h>
 #include <stdarg.h>
@@ -835,5 +835,14 @@ int __RETDATA(void *data, int len);
 int __RETINT(int value);
 
 #define CMSreturnvalint(a1) (__RETINT((a1)))
+
+/**************************************************************************************************/
+/* Sets the debug mode (0=off, else debug on. It currently just turns on/off the memory leak check*/
+/* __SDEBUG(int)                                                                                  */
+/* int CMSdebug(int debug_flag)                                                                   */
+/**************************************************************************************************/
+void __SDEBUG(int debug_flag);
+
+#define CMSdebug(a1) (__SDEBUG((a1)))
 
 #endif
