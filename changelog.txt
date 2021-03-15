@@ -1,6 +1,8 @@
 GCCLIB Change LOG
 =================
 
+F0053 - Removed SYSPROFB EXEC
+
 0.8.5 - 14 Mar 2021
 F0052 - Renamed the new CMSdebug() to CMSsetdebug() to avoid the duplicate!
 
