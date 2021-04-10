@@ -1,6 +1,9 @@
 GCCLIB Change LOG
 =================
 
+1.0.0 - 15 Apr 2021
+F0054 - Updated Build process for CE
+        Removed Old files / Old Build Process
 F0053 - Removed SYSPROFB EXEC
 
 0.8.5 - 14 Mar 2021

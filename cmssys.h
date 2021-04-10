@@ -8,7 +8,7 @@
 #ifndef CMSSYS_INCLUDED
 #define CMSSYS_INCLUDED
  
-#define GCCLIB_VERSION "F0053"
+#define GCCLIB_VERSION "1.0.0"
  
 #include <stddef.h>
 #include <stdarg.h>

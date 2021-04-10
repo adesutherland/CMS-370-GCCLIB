@@ -5,80 +5,81 @@
 set -e
 
 # IPL
-herccontrol -v
 herccontrol "ipl 141" -w "USER DSC LOGOFF AS AUTOLOG1"
 herccontrol "/cp start c" -w "RDR"
 herccontrol "/cp start d class a" -w "PUN"
 
-# LOGON CMSUSER
+# LOGON MAINTC
 herccontrol "/cp disc" -w "^VM/370 Online"
-herccontrol "/logon cmsuser cmsuser" -w "^CMS VERSION"
+herccontrol "/logon maintc maintc" -w "^CMS"
 herccontrol "/" -w "^Ready;"
+herccontrol "/purge rdr" -w "^Ready;"
+herccontrol "/ACCESS 394 A" -w "^Ready;"
+herccontrol "/ERASE * * A1" -w "^Ready;"
 
-# Read/Send TATA TXT
+# Read/Send ARCHIVE  YATA
 yata -c
 herccontrol -m >tmp; read mark <tmp; rm tmp
-echo "USERID  CMSUSER\n:READ  YATA     TXT     " > tmp
-cat yata.txt >> tmp
+echo "USERID  MAINTC\n:READ  ARCHIVE  YATA    " > tmp
+cat archive.yata >> tmp
 netcat -q 0 localhost 3505 < tmp
 rm tmp
 herccontrol -w "HHCRD012I" -f $mark
 herccontrol "/" -w "RDR FILE"
 
 # Prepare Source
-herccontrol "/yata -x -f READER -d f" -w "^Ready;" -t 120
-herccontrol "/fixrecfm" -w "^Ready;"
+herccontrol "/yata -x -f READER -d a" -w "^Ready;" -t 120
+herccontrol "/COPYFILE * MACRO    A (RECFM F LRECL 80" -w "^Ready"
+herccontrol "/COPYFILE * COPY     A (RECFM F LRECL 80" -w "^Ready"
+herccontrol "/COPYFILE * ASSEMBLE A (RECFM F LRECL 80" -w "^Ready"
+herccontrol "/COPYFILE * EXEC     A (RECFM F" -w "^Ready"
 
 # Make source tape and vmarc
 herccontrol "/cp disc" -w "^VM/370 Online"
 herccontrol "/logon operator operator" -w "RECONNECTED AT"
 hetinit -n -d gcclibsrc.aws
 herccontrol "devinit 480 io/gcclibsrc.aws" -w "^HHCPN098I"
-herccontrol "/attach 480 to cmsuser as 181" -w "TAPE 480 ATTACH TO CMSUSER"
+herccontrol "/attach 480 to maintc as 181" -w "TAPE 480 ATTACH"
 herccontrol "devinit 00d io/gcclibsrc.vmarc" -w "^HHCPN098I"
 herccontrol "/cp disc" -w "^VM/370 Online"
-herccontrol "/logon cmsuser cmsuser" -w "RECONNECTED AT"
+herccontrol "/logon maintc maintc" -w "RECONNECTED AT"
 herccontrol "/begin"
-herccontrol "/tape dump * * f (noprint" -w "^Ready;"
+herccontrol "/tape dump * * a (noprint" -w "^Ready;"
 herccontrol "/detach 181" -w "^Ready;"
-herccontrol "/vmarc pack * * f (pun notrace" -w "^Ready;"
+herccontrol "/vmarc pack * * a (pun notrace" -w "^Ready;"
 
-# Build
-herccontrol "/build" -w "^Ready;" -t 240
-herccontrol "/rename * * e = = e2" -w "^Ready;"
-herccontrol "/cleanup" -w "^Ready;"
+# Close and remove extra record from VMARC file
+herccontrol "devinit 00d dummy" -w "^HHCPN098I"
+truncate -s-80 gcclibsrc.vmarc
 
-# Sanity test
-herccontrol "/copy * * e = = a" -w "^Ready;"
-herccontrol "/ipl cms" -w "^CMS VERSION"
+herccontrol "/ipl cms" -w "^CMS"
 herccontrol "/" -w "^Ready;"
-herccontrol "/mktest" -w "^Ready;" -t 240
+
+herccontrol "/GCCBUILD" -w "^Ready;" -t 240
+herccontrol "/GCCGENM" -w "^Ready;"
+herccontrol "/GCCGEN" -w "^Ready;"
+
+herccontrol "/ipl cms" -w "^CMS"
+herccontrol "/" -w "^Ready;"
 
 # Make binary tape and vmarc
 herccontrol "/cp disc" -w "^VM/370 Online"
 herccontrol "/logon operator operator" -w "RECONNECTED AT"
 hetinit -n -d gcclibbin.aws
 herccontrol "devinit 480 io/gcclibbin.aws" -w "^HHCPN098I"
-herccontrol "/attach 480 to cmsuser as 181" -w "TAPE 480 ATTACH TO CMSUSER"
+herccontrol "/attach 480 to maintc as 181" -w "TAPE 480 ATTACH"
 herccontrol "devinit 00d io/gcclibbin.vmarc" -w "^HHCPN098I"
 herccontrol "/cp disc" -w "^VM/370 Online"
-herccontrol "/logon cmsuser cmsuser" -w "RECONNECTED AT"
+herccontrol "/logon maintc maintc" -w "RECONNECTED AT"
 herccontrol "/begin"
-herccontrol "/tape dump * * e (noprint" -w "^Ready;"
+herccontrol "/tape dump gcclib * a (noprint" -w "^Ready;"
+herccontrol "/tape dump gccres * a (noprint" -w "^Ready;"
 herccontrol "/detach 181" -w "^Ready;"
-herccontrol "/vmarc pack * * e (pun notrace" -w "^Ready;"
+herccontrol "/vmarc pack gcc* * a (pun notrace" -w "^Ready;"
 
-# Clean Up
-herccontrol "/erase gcclib * a" -w "^Ready;"
-herccontrol "/erase gccres * a" -w "^Ready;"
-herccontrol "/erase * h a" -w "^Ready;"
-herccontrol "/erase test * a" -w "^Ready;"
-herccontrol "/erase mktest exec a" -w "^Ready;"
-herccontrol "/erase sysprof exec a" -w "^Ready;"
-herccontrol "/cleane" -w "^Ready;"
-herccontrol "/copy cleanf exec f = = a" -w "^Ready;"
-herccontrol "/cleanf" -w "^Ready;"
-herccontrol "/erase cleanf exec a" -w "^Ready;"
+# Close and remove extra record from VMARC file
+herccontrol "devinit 00d dummy" -w "^HHCPN098I"
+truncate -s-80 gcclibbin.vmarc
 
 # LOGOFF
 herccontrol "/logoff" -w "^VM/370 Online"
@@ -86,7 +87,3 @@ herccontrol "/logoff" -w "^VM/370 Online"
 # SHUTDOWN
 herccontrol "/logon operator operator" -w "RECONNECTED AT"
 herccontrol "/shutdown" -w "^HHCCP011I"
-
-# Remove extra record from VMARC files
-truncate -s-80 gcclibsrc.vmarc
-truncate -s-80 gcclibbin.vmarc
