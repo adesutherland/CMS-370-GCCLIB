@@ -42,7 +42,7 @@ jobs:
         cp /opt/hercules/vm370/io/LICENSE exe
         cp /opt/hercules/vm370/io/README.md exe
         cp /opt/hercules/vm370/io/changelog.txt exe
-        cp /opt/hercules/vm370/disks/gccbrx.cckd exe
+        cp /opt/hercules/vm370/gccbrx.cckd exe
         chmod -R ugo+r exe
       shell: bash
 
