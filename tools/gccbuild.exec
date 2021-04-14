@@ -1,0 +1,28 @@
+&CONTROL OFF
+* Build the GCC executibles from the source on the MAINTC 394
+*
+&TYPE ******** ********
+&TYPE Setup the GCC disk search order
+EXEC GCCSRCH
+&TYPE ******** ********
+&TYPE Access the compiler output disk as A and erase all the files there
+ACCESS 194 A ( ERASE
+&TYPE ******** ********
+&TYPE Generate the GCCLIB macro library
+EXEC GCCGENM
+&TYPE ******** ********
+&TYPE Create a CMS EXEC file with the names of all
+&TYPE the ASSEMBLE files
+LISTFILE * ASSEMBLE F ( EXEC
+&TYPE ******** ********
+&TYPE Run the ASSEMBLE command to compile the files from source
+EXEC EXPLOIT EXEC GCCASM &LITERAL &FN
+&TYPE ******** ********
+&TYPE Create a CMS EXEC file with the names of all the C files
+LISTFILE * C F ( EXEC
+&TYPE ******** ********
+&TYPE Run the GCC command to compile the files from source
+EXEC EXPLOIT EXEC GCCCOMP &LITERAL &FN
+&TYPE ******** ********
+&TYPE Cleanup and exit
+ERASE CMS EXEC
