@@ -117,3 +117,4 @@ herccontrol "/logoff" -w "^VM/370 Online"
 # SHUTDOWN
 herccontrol "/logon operator operator" -w "RECONNECTED AT"
 herccontrol "/shutdown" -w "^HHCCP011I"
+herccontrol "detach 09F0"
